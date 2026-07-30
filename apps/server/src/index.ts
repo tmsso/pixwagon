@@ -1,5 +1,5 @@
 import { PROTOCOL_VERSION, roomCodeSchema } from '@pixwagon/protocol';
-import { generateRoomCode, type Env } from './env.ts';
+import { generateRoomCode, MAX_SEATS, type Env } from './env.ts';
 
 export { Room } from './room.ts';
 
@@ -30,7 +30,7 @@ export default {
     }
 
     if (path === '/api/config') {
-      return json({ protocolVersion: PROTOCOL_VERSION, maxPlayers: 6 });
+      return json({ protocolVersion: PROTOCOL_VERSION, maxPlayers: MAX_SEATS });
     }
 
     // Create a room. The code is just a name for a Durable Object — no storage

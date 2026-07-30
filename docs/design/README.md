@@ -14,6 +14,14 @@ Where Claude Design output lands, and how the sync actually works.
 
 `docs/architecture.md` is committed verbatim as the source design document and is deliberately **not** edited to reflect this. The correction lives here.
 
+## Known unknown: the `@dsCard` attribute set
+
+The sync tooling documents `group="…"` on the marker. `scripts/build-design-system.tsx` also emits `name`, `subtitle`, `width` and `height` — those names are taken from the shape of the card-registration API, so they are a well-founded inference, **but they have not been exercised through a real sync.** No upload has happened yet.
+
+**If the first `/design-sync` groups cards oddly, drops their titles, or sizes them wrong, this is the first thing to check.** Fixing it is a one-line change to the `page()` template in `scripts/build-design-system.tsx` followed by `pnpm design:build` — the whole bundle regenerates, so nothing has to be edited by hand.
+
+This is the one part of "Phase 0 is sync-ready" that rests on inference rather than on something that was run.
+
 ## The order of operations
 
 1. `pnpm design:build` — regenerate the bundle from the component shells and tokens.

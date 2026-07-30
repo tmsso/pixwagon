@@ -1,6 +1,6 @@
 import { decodeClientMessage, encode, PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type { ServerMessage } from '@pixwagon/protocol';
-import type { Env } from './env.ts';
+import { MAX_SEATS, type Env } from './env.ts';
 
 interface Attachment {
   playerId: string;
@@ -28,10 +28,31 @@ interface Attachment {
  */
 export class Room {
   #state: DurableObjectState;
-  #nextColorIndex = 0;
 
   constructor(state: DurableObjectState, _env: Env) {
     this.#state = state;
+  }
+
+  /**
+   * Lowest seat not currently occupied, derived from the live sockets.
+   *
+   * Deliberately *not* an incrementing instance field: hibernation may evict
+   * this object while sockets stay open, and a counter would restart at 0 on
+   * the next wake. The joiner would then be handed a seat someone is still
+   * sitting in — same colour *and* same hatch as an existing player, which is
+   * exactly the collision the colour-vision rules exist to prevent.
+   */
+  #nextFreeSeat(): number {
+    const taken = new Set(
+      this.#state
+        .getWebSockets()
+        .map((socket) => (socket.deserializeAttachment() as Attachment | null)?.colorIndex)
+        .filter((index): index is number => index !== undefined),
+    );
+    for (let seat = 0; seat < MAX_SEATS; seat += 1) {
+      if (!taken.has(seat)) return seat;
+    }
+    return taken.size % MAX_SEATS;
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -56,7 +77,7 @@ export class Room {
     const attachment: Attachment = {
       playerId: crypto.randomUUID(),
       name: 'guest',
-      colorIndex: this.#nextColorIndex++ % 6,
+      colorIndex: this.#nextFreeSeat(),
       code: request.headers.get('X-Room-Code') ?? '',
     };
     server.serializeAttachment(attachment);

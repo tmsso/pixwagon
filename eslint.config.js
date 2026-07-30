@@ -49,4 +49,14 @@ export default tseslint.config(
     files: ['apps/server/**/*.ts'],
     languageOptions: { globals: { ...globals.worker } },
   },
+
+  // Plain-JS build scripts: Node globals, no TypeScript rules.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
 );
