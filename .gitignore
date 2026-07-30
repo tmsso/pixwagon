@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+.wrangler/
+.dev.vars
+*.local
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test & tooling output
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Design-system render self-check output (regenerated, never committed)
+.render-check.json
+
+# NOTE: design-system/ and src/design/tokens.css ARE generated but ARE committed.
+# They are what /design-sync and anything reading the repo actually see; a
+# generated file that only exists locally is invisible to them. CI regenerates
+# both and fails if the tree comes back dirty.
