@@ -16,7 +16,7 @@ Everything `/design-sync` needs to find before any screen is designed, plus the 
 - `game-core`: full type surface + stubs that throw `NotImplementedError`. One piece of real logic — the **seeded RNG**, because it is the §6 determinism contract and everything reproducible depends on it.
 - `packs`: zod schema + the transportation pack as data (three original pictures).
 - `protocol`: versioned WebSocket message types, zod-validated inbound.
-- `apps/web`: React + Vite + TS + Tailwind v4, five route stubs, twelve component shells, PWA manifest.
+- `apps/web`: React + Vite + TS + Tailwind v4, five route stubs, thirteen component shells, PWA manifest.
 - `apps/server`: Worker router + Room Durable Object, WebSocket hibernation API, presence.
 - **Design tokens** as a real module (`apps/web/src/design/tokens.ts`), with `tokens.css` and the `design-system/` preview bundle generated from it and committed.
 - CI: format, lint, typecheck, test, build, screen render, generated-file drift, design-card render.
@@ -100,6 +100,7 @@ The riskiest infrastructure bet, validated in isolation. **No filling yet** — 
 - Flesh out the protocol: join/leave, presence, round lifecycle, roll issuance.
 - Room state in the Durable Object: players, mode, seed, round.
 - Client WebSocket layer with reconnect and resync-on-reconnect.
+- **Move the seat count somewhere both sides can read.** `MAX_SEATS` is defined in `apps/server/src/env.ts` and `playerColors.length` in `apps/web/src/design/tokens.ts`; the server cannot import the latter. Two definitions of "how many players fit" is a bug waiting for the day someone adds a seventh colour.
 - **Hibernation-aware from the start**, not as a later optimisation: per-connection state lives in the socket attachment, never in an instance field, because the runtime may evict the object while sockets stay open. Getting this wrong is only visible under real idle traffic, which is the worst time to find it.
 
 **Accept:** two devices join the same room code, see each other's presence, and see the identical seeded roll. Killing one client's network and restoring it resyncs without a page reload.

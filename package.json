@@ -20,7 +20,7 @@
     "design:check": "tsx scripts/check-design-system.ts",
     "check:screens": "tsx scripts/check-screens.tsx",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:screens && pnpm generated:check && pnpm design:check",
-    "generated:check": "pnpm tokens:build && pnpm design:build && git diff --exit-code -- apps/web/src/design/tokens.css design-system"
+    "generated:check": "pnpm tokens:build && pnpm design:build && node scripts/assert-clean.mjs apps/web/src/design/tokens.css design-system"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
