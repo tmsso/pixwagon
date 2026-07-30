@@ -1,0 +1,20 @@
+{
+  "name": "Pixwagon",
+  "short_name": "Pixwagon",
+  "description": "A real-time roll-and-fill pixel game.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7f9",
+  "theme_color": "#2a9d8a",
+  "categories": ["games"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

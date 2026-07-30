@@ -1,0 +1,14 @@
+# Committed verbatim as delivered — reformatting it would silently rewrite the
+# source design document.
+docs/architecture.md
+
+# Generated. Their formatting is the generator's business.
+design-system/
+apps/web/src/design/tokens.css
+.render-check.json
+
+# Build output and lockfiles
+dist/
+node_modules/
+.wrangler/
+pnpm-lock.yaml

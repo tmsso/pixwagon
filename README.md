@@ -8,12 +8,12 @@ Inspired by roll-and-write pixel games. All art, shape data, palettes and copy i
 
 ## Modes
 
-| Mode | Network | Description |
-| --- | --- | --- |
-| Same board | required | Everyone fills the identical picture from the same dice |
-| Own board | required | Parallel boards, own picture, compared at the end |
-| Solo | offline | Single player, no room, no referee |
-| Daily | offline after fetch | One shared seed per day |
+| Mode       | Network             | Description                                             |
+| ---------- | ------------------- | ------------------------------------------------------- |
+| Same board | required            | Everyone fills the identical picture from the same dice |
+| Own board  | required            | Parallel boards, own picture, compared at the end       |
+| Solo       | offline             | Single player, no room, no referee                      |
+| Daily      | offline after fetch | One shared seed per day                                 |
 
 No accounts at launch — identity is a display name plus a room code.
 
@@ -25,21 +25,21 @@ web (React PWA) ──WebSocket──> worker (router) ──> room (Durable Obj
       └──────── both import game-core + packs ───────────┘
 ```
 
-`game-core` is a pure, I/O-free rules module imported by **both** the client and the server: the client runs it for instant optimistic UI and offline solo, the server runs the *same code* as the authority. One rule set, no drift. Clients submit intent; the server validates and broadcasts truth.
+`game-core` is a pure, I/O-free rules module imported by **both** the client and the server: the client runs it for instant optimistic UI and offline solo, the server runs the _same code_ as the authority. One rule set, no drift. Clients submit intent; the server validates and broadcasts truth.
 
 Full reasoning in [`docs/architecture.md`](docs/architecture.md).
 
 ## Layout
 
-| Path | What it is |
-| --- | --- |
+| Path                 | What it is                                                                   |
+| -------------------- | ---------------------------------------------------------------------------- |
 | `packages/game-core` | Pure rules engine — seeded RNG, board model, move legality, scoring. No I/O. |
-| `packages/packs` | Shape-pack schema + pack data. Adding a theme is a data file, not code. |
-| `packages/protocol` | Versioned WebSocket message types shared by client and server. |
-| `apps/web` | React + Vite + TypeScript + Tailwind PWA. Canvas board renderer. |
-| `apps/server` | Cloudflare Worker entry + the per-room Durable Object. |
-| `design-system/` | Generated preview bundle — the design system as Claude Design sees it. |
-| `docs/contracts/` | The four contracts frozen early: pack schema, WS protocol, RNG, tokens. |
+| `packages/packs`     | Shape-pack schema + pack data. Adding a theme is a data file, not code.      |
+| `packages/protocol`  | Versioned WebSocket message types shared by client and server.               |
+| `apps/web`           | React + Vite + TypeScript + Tailwind PWA. Canvas board renderer.             |
+| `apps/server`        | Cloudflare Worker entry + the per-room Durable Object.                       |
+| `design-system/`     | Generated preview bundle — the design system as Claude Design sees it.       |
+| `docs/contracts/`    | The four contracts frozen early: pack schema, WS protocol, RNG, tokens.      |
 
 ## Development
 

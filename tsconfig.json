@@ -1,0 +1,20 @@
+{
+  // Repo-root config, used by `tsx` when it runs the build scripts.
+  //
+  // `include` deliberately reaches into apps/ and packages/ even though those
+  // have their own tsconfigs: tsx applies compilerOptions only to files this
+  // config actually matches, and the design-system builder imports the app's
+  // components directly. Without them listed here those files fall back to the
+  // classic JSX transform and fail at render with "React is not defined".
+  //
+  // Typechecking still runs per package (`pnpm typecheck` → each package's own
+  // tsconfig); this one is for the script runner, not for verification.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "allowImportingTsExtensions": true
+  },
+  "include": ["scripts", "vitest.config.ts", "apps/web/src", "packages/*/src"]
+}

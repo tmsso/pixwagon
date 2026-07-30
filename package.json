@@ -1,0 +1,42 @@
+{
+  "name": "pixwagon",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@11.13.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @pixwagon/web dev",
+    "build": "pnpm -r build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "tokens:build": "tsx scripts/build-tokens.ts",
+    "design:build": "pnpm --filter @pixwagon/web build && tsx scripts/build-design-system.tsx",
+    "design:check": "tsx scripts/check-design-system.ts",
+    "check:screens": "tsx scripts/check-screens.tsx",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:screens && pnpm generated:check && pnpm design:check",
+    "generated:check": "pnpm tokens:build && pnpm design:build && git diff --exit-code -- apps/web/src/design/tokens.css design-system"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.9.2",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.8.0",
+    "prettier": "^3.9.6",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
+  }
+}
