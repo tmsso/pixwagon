@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "transportation",
+  "name": "Transportation",
+  "description": "Things that carry you somewhere. The launch pack.",
+  "version": 1,
+  "pictures": [
+    {
+      "id": "tram",
+      "name": "Tram",
+      "difficulty": "easy",
+      "palette": [
+        { "name": "Body", "hex": "#d4483b" },
+        { "name": "Window", "hex": "#e8f1f5" },
+        { "name": "Wheel", "hex": "#2c3038" },
+        { "name": "Pole", "hex": "#8a9199" }
+      ],
+      "rows": [
+        ".....3......",
+        ".....3......",
+        ".0000000000.",
+        ".0111011110.",
+        ".0111011110.",
+        ".0000000000.",
+        ".0000000000.",
+        "..2......2.."
+      ]
+    },
+    {
+      "id": "sailboat",
+      "name": "Sailboat",
+      "difficulty": "easy",
+      "palette": [
+        { "name": "Hull", "hex": "#8a5a34" },
+        { "name": "Sail", "hex": "#f3ede2" },
+        { "name": "Mast", "hex": "#4a3b2a" },
+        { "name": "Water", "hex": "#3f8fbf" }
+      ],
+      "rows": [
+        ".....2.....",
+        "...112.....",
+        "..1112.....",
+        ".11112.....",
+        "111112.....",
+        ".....2.....",
+        ".0000000...",
+        "..00000....",
+        ".333333333."
+      ]
+    },
+    {
+      "id": "hot-air-balloon",
+      "name": "Hot-air balloon",
+      "difficulty": "medium",
+      "palette": [
+        { "name": "Envelope", "hex": "#e0703a" },
+        { "name": "Stripe", "hex": "#f5c451" },
+        { "name": "Basket", "hex": "#7a5230" },
+        { "name": "Rope", "hex": "#5c6670" }
+      ],
+      "rows": [
+        "...000...",
+        ".0000000.",
+        "000000000",
+        "011111110",
+        "011111110",
+        "000000000",
+        ".0000000.",
+        "..00000..",
+        "...3.3...",
+        "..22222..",
+        "..22222.."
+      ]
+    }
+  ]
+}

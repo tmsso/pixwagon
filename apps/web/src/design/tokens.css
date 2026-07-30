@@ -1,0 +1,195 @@
+/*
+ * GENERATED FILE — DO NOT EDIT.
+ * Source: apps/web/src/design/tokens.ts
+ * Regenerate: pnpm tokens:build
+ *
+ * Values are PROVISIONAL placeholders pending the design pass. See tokens.ts.
+ */
+
+@import 'tailwindcss';
+
+@theme {
+  /* --- palette ramp ------------------------------------------------------ */
+  --color-slate-50: #f6f7f9;
+  --color-slate-100: #eaedf1;
+  --color-slate-200: #d3d9e0;
+  --color-slate-300: #adb7c2;
+  --color-slate-400: #7d8996;
+  --color-slate-500: #5a6673;
+  --color-slate-600: #434e59;
+  --color-slate-700: #333c45;
+  --color-slate-800: #232a31;
+  --color-slate-900: #171c21;
+  --color-slate-950: #0e1216;
+  --color-wagon-300: #8fd4c4;
+  --color-wagon-400: #4fb8a1;
+  --color-wagon-500: #2a9d8a;
+  --color-wagon-600: #1f7a6c;
+  --color-wagon-700: #175c51;
+  --color-signal-400: #f4a259;
+  --color-signal-500: #e8853a;
+  --color-signal-600: #c96a25;
+  --color-danger-400: #ef7a72;
+  --color-danger-500: #d64a3f;
+  --color-danger-600: #ad3428;
+
+  /* --- semantic colours (light; dark overrides below) -------------------- */
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #eaedf1;
+  --color-border: #d3d9e0;
+  --color-ink: #171c21;
+  --color-ink-muted: #5a6673;
+  --color-ink-inverted: #ffffff;
+  --color-accent: #2a9d8a;
+  --color-accent-hover: #1f7a6c;
+  --color-accent-ink: #ffffff;
+  --color-warning: #e8853a;
+  --color-danger: #d64a3f;
+  --color-cell-fillable: #d3d9e0;
+  --color-cell-blank: #f6f7f9;
+  --color-cell-locked: #adb7c2;
+
+  /* --- player colours ----------------------------------------------------
+     Okabe-Ito derived, chosen to stay distinguishable under protanopia,
+     deuteranopia and tritanopia. Each is paired with a hatch pattern in
+     design/patterns.ts so colour is never the only signal. */
+  --color-player-0: #0072b2;
+  --color-player-1: #d55e00;
+  --color-player-2: #009e73;
+  --color-player-3: #e69f00;
+  --color-player-4: #cc79a7;
+  --color-player-5: #56b4e9;
+
+  /* --- type -------------------------------------------------------------- */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-display: 3rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* --- space, radius, elevation ------------------------------------------ */
+  /* Tailwind v4 derives the whole numeric scale (p-1, gap-6, …) from this. */
+  --spacing: 0.25rem;
+  /* Minimum comfortable touch target — phone-first, one-handed reach. */
+  --spacing-touch: 2.75rem;
+
+  --radius-none: 0rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgb(14 18 22 / 0.08);
+  --shadow-md: 0 4px 12px rgb(14 18 22 / 0.10);
+  --shadow-lg: 0 12px 32px rgb(14 18 22 / 0.16);
+
+  /* --- motion ------------------------------------------------------------ */
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 360ms;
+}
+
+/* Dark theme re-declares the semantic properties; utilities follow along
+   because they resolve their var() at use time. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: #0e1216;
+    --color-surface: #171c21;
+    --color-surface-sunken: #232a31;
+    --color-border: #333c45;
+    --color-ink: #f6f7f9;
+    --color-ink-muted: #7d8996;
+    --color-ink-inverted: #0e1216;
+    --color-accent: #4fb8a1;
+    --color-accent-hover: #8fd4c4;
+    --color-accent-ink: #0e1216;
+    --color-warning: #f4a259;
+    --color-danger: #ef7a72;
+    --color-cell-fillable: #333c45;
+    --color-cell-blank: #171c21;
+    --color-cell-locked: #434e59;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #0e1216;
+  --color-surface: #171c21;
+  --color-surface-sunken: #232a31;
+  --color-border: #333c45;
+  --color-ink: #f6f7f9;
+  --color-ink-muted: #7d8996;
+  --color-ink-inverted: #0e1216;
+  --color-accent: #4fb8a1;
+  --color-accent-hover: #8fd4c4;
+  --color-accent-ink: #0e1216;
+  --color-warning: #f4a259;
+  --color-danger: #ef7a72;
+  --color-cell-fillable: #333c45;
+  --color-cell-blank: #171c21;
+  --color-cell-locked: #434e59;
+}
+
+/* Named motion utilities, so the duration tokens are usable as classes and can
+   be zeroed in one place rather than component by component. */
+@utility duration-instant {
+  transition-duration: var(--duration-instant);
+  animation-duration: var(--duration-instant);
+}
+
+@utility duration-fast {
+  transition-duration: var(--duration-fast);
+  animation-duration: var(--duration-fast);
+}
+
+@utility duration-normal {
+  transition-duration: var(--duration-normal);
+  animation-duration: var(--duration-normal);
+}
+
+@utility duration-slow {
+  transition-duration: var(--duration-slow);
+  animation-duration: var(--duration-slow);
+}
+
+@utility min-h-touch {
+  min-height: var(--spacing-touch);
+}
+
+@utility size-touch {
+  width: var(--spacing-touch);
+  height: var(--spacing-touch);
+}
+
+/* One global honouring of prefers-reduced-motion, rather than each component
+   re-checking. Anything animating through the duration tokens stops here. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

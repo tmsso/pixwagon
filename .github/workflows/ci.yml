@@ -1,0 +1,47 @@
+name: CI
+
+# Deliberately unfiltered by branch. A workflow pinned to a branch that does not
+# exist never runs, and a CI that never runs looks identical to a CI that passes.
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm exec prettier --check .
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Screens render
+        run: pnpm check:screens
+
+      # Regenerates tokens.css and the design-system bundle from source and fails
+      # if either differs from what is committed. This is what stops the design
+      # system Claude Design reads from silently drifting away from tokens.ts.
+      - name: Generated files are in sync
+        run: pnpm generated:check
+
+      - name: Design-system cards render
+        run: pnpm design:check

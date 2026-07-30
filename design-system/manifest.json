@@ -1,0 +1,175 @@
+{
+  "generatedFrom": "scripts/design-system/cards.tsx",
+  "cards": [
+    {
+      "name": "Colours",
+      "path": "foundations/colors/index.html",
+      "group": "Colors",
+      "subtitle": "Semantic tokens, light and dark, plus the raw ramp",
+      "viewport": {
+        "width": 900,
+        "height": 700
+      }
+    },
+    {
+      "name": "Player colours",
+      "path": "foundations/player-colors/index.html",
+      "group": "Colors",
+      "subtitle": "Okabe-Ito derived, each paired with a hatch pattern",
+      "viewport": {
+        "width": 900,
+        "height": 420
+      }
+    },
+    {
+      "name": "Type",
+      "path": "foundations/type/index.html",
+      "group": "Type",
+      "subtitle": "Scale and weights, sans and mono",
+      "viewport": {
+        "width": 900,
+        "height": 640
+      }
+    },
+    {
+      "name": "Spacing & radius",
+      "path": "foundations/spacing/index.html",
+      "group": "Spacing",
+      "subtitle": "4px base step, radius scale, minimum touch target",
+      "viewport": {
+        "width": 900,
+        "height": 560
+      }
+    },
+    {
+      "name": "Button",
+      "path": "components/button/index.html",
+      "group": "Components",
+      "subtitle": "4 variants × 3 sizes, plus disabled and loading",
+      "viewport": {
+        "width": 900,
+        "height": 460
+      }
+    },
+    {
+      "name": "IconButton",
+      "path": "components/icon-button/index.html",
+      "group": "Components",
+      "subtitle": "Solid and ghost; an accessible label is required",
+      "viewport": {
+        "width": 700,
+        "height": 260
+      }
+    },
+    {
+      "name": "Panel",
+      "path": "components/panel/index.html",
+      "group": "Components",
+      "subtitle": "Raised and sunken tones, optional title and footer",
+      "viewport": {
+        "width": 800,
+        "height": 420
+      }
+    },
+    {
+      "name": "Dialog",
+      "path": "components/dialog/index.html",
+      "group": "Components",
+      "subtitle": "Confirmation surface over a scrim",
+      "viewport": {
+        "width": 700,
+        "height": 420
+      }
+    },
+    {
+      "name": "RoomCodeInput",
+      "path": "components/room-code-input/index.html",
+      "group": "Components",
+      "subtitle": "Empty, partial, complete and invalid",
+      "viewport": {
+        "width": 700,
+        "height": 340
+      }
+    },
+    {
+      "name": "PlayerChip",
+      "path": "components/player-chip/index.html",
+      "group": "Components",
+      "subtitle": "Active, idle, away, scored — across all six seats",
+      "viewport": {
+        "width": 800,
+        "height": 380
+      }
+    },
+    {
+      "name": "DiceFace",
+      "path": "components/dice-face/index.html",
+      "group": "Components",
+      "subtitle": "Faces 1-6, three sizes, rolling state",
+      "viewport": {
+        "width": 800,
+        "height": 340
+      }
+    },
+    {
+      "name": "BoardCell",
+      "path": "components/board-cell/index.html",
+      "group": "Board",
+      "subtitle": "Every cell state the board can show",
+      "viewport": {
+        "width": 800,
+        "height": 320
+      }
+    },
+    {
+      "name": "BoardCanvas",
+      "path": "components/board-canvas/index.html",
+      "group": "Board",
+      "subtitle": "Static stand-in — the real board is a Canvas",
+      "viewport": {
+        "width": 800,
+        "height": 460
+      }
+    },
+    {
+      "name": "RollControl",
+      "path": "components/roll-control/index.html",
+      "group": "Components",
+      "subtitle": "Idle, rolling, and awaiting the referee",
+      "viewport": {
+        "width": 800,
+        "height": 620
+      }
+    },
+    {
+      "name": "PicturePreview",
+      "path": "components/picture-preview/index.html",
+      "group": "Board",
+      "subtitle": "Target and outline modes, from real pack data",
+      "viewport": {
+        "width": 800,
+        "height": 420
+      }
+    },
+    {
+      "name": "PackCard",
+      "path": "components/pack-card/index.html",
+      "group": "Components",
+      "subtitle": "Selected and unselected, with a thumbnail",
+      "viewport": {
+        "width": 700,
+        "height": 340
+      }
+    },
+    {
+      "name": "HudFrame",
+      "path": "components/hud-frame/index.html",
+      "group": "Components",
+      "subtitle": "In-game chrome: status, board, thumb-reach controls",
+      "viewport": {
+        "width": 480,
+        "height": 800
+      }
+    }
+  ]
+}
