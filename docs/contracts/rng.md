@@ -22,11 +22,18 @@ A round's roll **must** come from `deriveSeed(roomSeed, round)`, not from one lo
 
 ```ts
 // Right — round 7 is computable directly.
-const roll = createRng(deriveSeed(roomSeed, 7)).die(6);
+const pairRng = createRng(deriveSeed(roomSeed, 7, 'pair'));
+const pair = [pairRng.pick(shapeLibrary), pairRng.pick(shapeLibrary)]; // whether these may repeat is a Phase 1 decision
+const fallback = createRng(deriveSeed(roomSeed, 7, 'fallback')).pick(fallbackFaces);
 
 // Wrong — requires having drawn rounds 0..6 first.
-const roll = sharedRng.die(6);
+const pair = [sharedRng.pick(shapeLibrary), sharedRng.pick(shapeLibrary)];
 ```
+
+(See `docs/mechanics-correction.md` for what a round issues now — a polyomino
+pair plus an independent fallback-die value, not a set of dice. Each uses its
+own discriminator on the same round seed, per the "derive, don't advance" rule
+above, so revealing one never depends on drawing the other.)
 
 Two consequences, both load-bearing:
 
@@ -41,3 +48,15 @@ Two consequences, both load-bearing:
 
 - Whether `Roll` carries the derived seed or only the round index. Currently it carries both; collapse it in Phase 4 if the redundancy proves useless.
 - Room-seed generation. Phase 0 generates room _codes_ (`apps/server/src/env.ts`) but the room seed is not yet distinct from the code. Decide in Phase 4 — a seed that is guessable from the code is fine for a friendly game, less fine for a leaderboard.
+- The exact discriminator strings for `deriveSeed(roomSeed, round, 'pair' | 'fallback')` — placeholders above; pin them in Phase 1 alongside the shape-library snapshot test.
+
+## Shape-library snapshot discipline (Phase 1)
+
+`issueRoll` will pick pieces from a fixed shape library by index (see
+`docs/mechanics-correction.md`). That library needs the same frozen-output
+discipline as this file's RNG snapshot: a pinned test asserting its order and
+contents. The library is exactly as load-bearing as the algorithm above —
+reordering or editing it silently changes every seeded room and every past
+daily puzzle, the same failure mode `rng.test.ts` exists to catch for the
+PRNG itself. Changing it is allowed; it must be a deliberate, versioned act,
+not an incidental refactor.

@@ -10,13 +10,13 @@ When code does something non-obvious — a trick, a subtlety, a workaround — e
 
 ## 1. What this is
 
-A browser-based, installable-PWA, real-time roll-and-fill pixel game. Players share a room code; each round a fair dice/combo is issued and players fill grid squares to complete a pixel picture. Modes: same board, own board, solo, daily. Phone, tablet and PC from one codebase. No accounts — identity is a display name plus a room.
+A browser-based, installable-PWA, real-time roll-and-fill pixel game. Players share a room code; each round the referee issues a fair polyomino-piece pair (take both or decline) plus an independent fallback-die offer, and players place pieces to complete a pixel picture. See `docs/mechanics-correction.md` for the full mechanic — it corrects the dice/combo model `docs/architecture.md` still describes verbatim. Modes: same board, own board, solo, daily. Phone, tablet and PC from one codebase. No accounts — identity is a display name plus a room.
 
 ## 2. The five constraints that drive every decision
 
 1. **Free-tier hobby hosting.** Every component must fit a genuinely free tier. No credit-card-required service on the critical path.
 2. **Real-time, stateful rooms.** A live room holds connections plus shared state. This is the requirement a stateless serverless model cannot satisfy, and the reason the backend lives on Durable Objects.
-3. **The server is the referee.** Dice fairness and move legality are validated server-side. Clients never self-report results in competitive modes. Determinism via seeded RNG so a room is reproducible.
+3. **The server is the referee.** Offer fairness (the piece pair and fallback die a round issues) and move legality are validated server-side. Clients never self-report results in competitive modes. Determinism via seeded RNG so a room is reproducible.
 4. **Theme-agnostic content.** Shape packs are data, not code. Adding a pack = adding a data file, no engine change. Phase 8 tests whether this held.
 5. **PWA, offline-capable for solo and daily.** Multiplayer needs the network; solo and daily must not.
 

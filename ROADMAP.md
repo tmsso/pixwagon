@@ -43,16 +43,30 @@ The scaffold exists so this can happen against real tokens rather than invented 
 
 ## Phase 1 — `game-core` + shape-pack rules
 
+**Revised 2026-07-31, before any of this was implemented** — the dice/combo
+model below is replaced by polyomino placement plus a fallback die. See
+`docs/mechanics-correction.md` for the full reasoning and what stays
+unimplemented-but-decided; `docs/architecture.md` itself is not edited (§0
+convention: corrections live beside it, same as `docs/design/README.md` does
+for design-sync). This is a bigger Phase 1 than originally scoped — two
+randomizer paths, piece rotation/mirroring, shape-fit legality, two placement
+kinds, a redesigned `fill` wire message — budget for that honestly rather than
+letting it surface as slippage.
+
 The rules engine, pure and heavily tested. Nothing here touches the network, the filesystem, or a browser global — this is what lets the identical code act as both the client's optimistic predictor and the server's referee.
 
-- Board model: build a `Board` from a pack picture; fillable vs blank cells.
-- Roll issuance: `issueRoll(roomSeed, round)` deriving from `deriveSeed(roomSeed, round)` and nothing else (see `docs/contracts/rng.md` for why a per-round derived seed rather than one advancing stream).
-- Combo derivation: what options a set of dice permits.
-- Move legality: bounds, already-filled, contiguity, colour, round, cell count — every `MoveRejection` reason exercised.
-- Completion detection and scoring.
+- Board model: build a `Board` from a pack picture; fillable vs blank cells. (Unchanged.)
+- **Shape library**: a fixed set of polyomino pieces, engine-global — not per-pack (packs stay pictures-only, per §2.4/constraint 4). Needs its own frozen-snapshot test, same discipline as `rng.test.ts`: pieces are picked from by index, so the library's order/contents are as load-bearing as the RNG algorithm itself — changing either changes every seeded room and past daily puzzle.
+- **Round issuance**: `issueRoll(roomSeed, round)` still derives everything from `deriveSeed(roomSeed, round)` and nothing else (see `docs/contracts/rng.md`) — but a round now issues a **pair offer** (two pieces, take-both-or-decline) and, from the same seed, an independent **fallback offer** (a custom die: `1 / 2 / 3 / 1+2 / 2+2 / 1+3`), both revealed up front — no information gated behind declining, which would leak the fallback value to slower-deciding players in same-board mode.
+- **Move legality — two placement kinds, chosen freely each turn**:
+  - **Pair**: both pieces placed atomically in one move — each rotated/mirrored/positioned by the player, each fitting entirely over currently-fillable, unfilled cells.
+  - **Fallback**: one or two independently-contiguous blobs sized to the die face; a compound face (e.g. `1+2`) is both-blobs-or-neither — no partial placement.
+  - Every `MoveRejection` reason exercised — the set changes from the dice-era list (`cell-count-mismatch`/`cells-not-contiguous` collapse into shape/blob-fit checks; add whatever a fixed-shape-at-a-position-and-orientation needs).
+- **Scoring, decided here**: a fixed point value per **fully completed** picture, zero for an incomplete one — no partial/percentage credit. Grouping/pattern bonus scoring is explicitly deferred, not v1.
+- **Game end — decide here, before Phase 5 needs a round lifecycle to implement against.** Two linked questions, not one: (1) does a session play a single picture, or cycle through several (closer to Pixelino's 38 animals)? `RoomState.boards` currently models exactly one board per player per room — fixed-score-per-completed-picture is degenerate (a single binary win/lose for the whole session) unless a session covers more than one picture. (2) Given that, what ends a session — fixed round count, piece-pool exhaustion, or last-picture-completed? Compound fallback faces are both-or-nothing, so any single board can strand a few cells forever; full completion of every board is no longer guaranteed in a live game either way. Write both decisions down here once made.
 - Property-based tests alongside the examples: a legal move must never be rejected, an illegal one never accepted.
 
-**Accept:** a full board can be completed start to finish inside a test, with no UI and no server; every `MoveRejection` variant has a test that produces it.
+**Accept:** a full board can be completed start to finish inside a test (an achievability property of the engine — favorable rolls exist that complete a board; this is not a claim that every live game reaches 100%), with no UI and no server; every `MoveRejection` variant has a test that produces it; the shape library has a passing frozen-snapshot test.
 
 ---
 
@@ -125,7 +139,7 @@ The core competitive loop. Filling goes through the referee.
 - End-of-round comparison and the results screen.
 - Rematch keeping the same players with a fresh seed.
 
-**Accept:** two players finish different pictures from the same dice; the results screen ranks them; rematch starts a new game without anyone rejoining.
+**Accept:** two players finish different pictures from the same round-by-round offers (pair + fallback, per `docs/mechanics-correction.md`); the results screen ranks them; rematch starts a new game without anyone rejoining.
 
 ---
 
