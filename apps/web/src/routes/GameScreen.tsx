@@ -20,15 +20,26 @@ export function GameScreen() {
       }
       controls={
         <RollControl
-          dice={[
-            { sides: 6, value: 4 },
-            { sides: 6, value: 2 },
+          pair={[
+            {
+              id: 'a',
+              cells: [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 },
+                { x: 0, y: 1 },
+                { x: 1, y: 1 },
+              ],
+            },
+            {
+              id: 'b',
+              cells: [
+                { x: 0, y: 0 },
+                { x: 1, y: 0 },
+              ],
+            },
           ]}
-          options={[
-            { id: 'a', label: 'Fill', cells: 4 },
-            { id: 'b', label: 'Fill', cells: 2 },
-          ]}
-          selectedOptionId="a"
+          fallbackFace={[1, 2]}
+          selectedChoice="pair"
         />
       }
     >

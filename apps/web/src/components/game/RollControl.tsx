@@ -1,85 +1,71 @@
-import { Button } from '../ui/Button.tsx';
-import { DiceFace } from './DiceFace.tsx';
+import type { ReactNode } from 'react';
+import { DiceFace, type FallbackFace } from './DiceFace.tsx';
+import { PieceGlyph } from './PieceGlyph.tsx';
 
-export interface ComboOptionView {
+export interface PieceOfferView {
   id: string;
-  label: string;
-  cells: number;
+  cells: readonly { x: number; y: number }[];
 }
 
+export type OfferChoice = 'pair' | 'fallback';
+
 export interface RollControlProps {
-  dice: readonly { sides: number; value: number }[];
-  options?: readonly ComboOptionView[];
-  selectedOptionId?: string;
+  /** The round's offered pair — placed together or declined, never partially. */
+  pair: readonly [PieceOfferView, PieceOfferView];
+  /** The round's independent fallback-die value. Revealed up front, not gated
+   *  behind declining the pair — see docs/mechanics-correction.md for why:
+   *  a decline-to-reveal design would leak the value to slower-deciding
+   *  players in same-board mode. */
+  fallbackFace: FallbackFace;
+  selectedChoice?: OfferChoice;
   /** True between submitting a fill and the referee's answer. */
   awaitingServer?: boolean;
-  rolling?: boolean;
-  canRoll?: boolean;
-  onRoll?: () => void;
-  onSelectOption?: (id: string) => void;
+  onChoose?: (choice: OfferChoice) => void;
 }
 
 /**
- * The roll/combo control from architecture.md §4B.
+ * The round-offer control (docs/mechanics-correction.md): a polyomino pair and
+ * an independent fallback die, both already known — the player picks one,
+ * freely, every round. This replaces the old single "Roll" + combo-list
+ * control from the dice/combo model.
  *
- * `awaitingServer` is the state that matters most and the one easiest to forget:
- * clients submit intent and the server decides (§5), so there is a real window
- * where the player must not be able to submit again. It disables the controls
- * rather than hiding them, so the layout does not jump.
+ * `awaitingServer` is the state that matters most and the one easiest to
+ * forget: clients submit intent and the server decides, so there is a real
+ * window where the player must not be able to submit again. It disables the
+ * controls rather than hiding them, so the layout does not jump.
  */
 export function RollControl({
-  dice,
-  options = [],
-  selectedOptionId,
+  pair,
+  fallbackFace,
+  selectedChoice,
   awaitingServer = false,
-  rolling = false,
-  canRoll = true,
-  onRoll,
-  onSelectOption,
+  onChoose,
 }: RollControlProps) {
-  const locked = awaitingServer || rolling;
-
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-2">
-          {dice.map((die, index) => (
-            <DiceFace key={index} value={die.value} sides={die.sides} rolling={rolling} />
-          ))}
-        </div>
-        <Button onClick={onRoll} disabled={!canRoll || locked} loading={rolling}>
-          {rolling ? 'Rolling' : 'Roll'}
-        </Button>
-      </div>
+      <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Round offer">
+        <OfferCard
+          label="Pair"
+          selected={selectedChoice === 'pair'}
+          disabled={awaitingServer}
+          onSelect={() => onChoose?.('pair')}
+        >
+          <div className="flex gap-2">
+            {pair.map((piece) => (
+              <PieceGlyph key={piece.id} cells={piece.cells} />
+            ))}
+          </div>
+        </OfferCard>
 
-      {options.length > 0 ? (
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Combo options">
-          {options.map((option) => {
-            const selected = option.id === selectedOptionId;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                disabled={locked}
-                onClick={() => onSelectOption?.(option.id)}
-                className={[
-                  'min-h-touch rounded-lg border px-3 py-2 text-sm transition-colors duration-fast',
-                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                  'disabled:cursor-not-allowed disabled:opacity-50',
-                  selected
-                    ? 'border-accent bg-accent text-accent-ink'
-                    : 'border-border bg-surface text-ink hover:bg-surface-sunken',
-                ].join(' ')}
-              >
-                {option.label}
-                <span className="ml-2 font-mono opacity-70">×{option.cells}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+        <OfferCard
+          label="Fallback"
+          selected={selectedChoice === 'fallback'}
+          disabled={awaitingServer}
+          onSelect={() => onChoose?.('fallback')}
+        >
+          <DiceFace face={fallbackFace} />
+        </OfferCard>
+      </div>
 
       {awaitingServer ? (
         <p className="text-sm text-ink-muted" role="status">
@@ -87,5 +73,40 @@ export function RollControl({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function OfferCard({
+  label,
+  selected,
+  disabled,
+  onSelect,
+  children,
+}: {
+  label: string;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      className={[
+        'flex min-h-touch flex-col items-center gap-2 rounded-lg border px-4 py-3 transition-colors duration-fast',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        selected
+          ? 'border-accent bg-accent/10'
+          : 'border-border bg-surface hover:bg-surface-sunken',
+      ].join(' ')}
+    >
+      <span className="font-mono text-xs uppercase tracking-wide text-ink-muted">{label}</span>
+      {children}
+    </button>
   );
 }
