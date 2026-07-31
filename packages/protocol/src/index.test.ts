@@ -31,17 +31,87 @@ describe('decodeClientMessage', () => {
     if (!result.ok && expectedError) expect(result.error).toBe(expectedError);
   });
 
-  it('rejects an oversized fill rather than letting it reach the board', () => {
+  const piecePlacement = (x: number, y: number) => ({
+    pieceId: 'domino',
+    orientation: { rotation: 0, mirrored: false },
+    origin: { x, y },
+  });
+
+  it('accepts a well-formed pair fill', () => {
+    const result = decodeClientMessage(
+      JSON.stringify({
+        type: 'fill',
+        round: 0,
+        choice: { kind: 'pair', placements: [piecePlacement(0, 0), piecePlacement(2, 0)] },
+      }),
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('accepts a well-formed compound fallback fill', () => {
+    const result = decodeClientMessage(
+      JSON.stringify({
+        type: 'fill',
+        round: 0,
+        choice: {
+          kind: 'fallback',
+          blobs: [
+            [{ x: 0, y: 0 }],
+            [
+              { x: 3, y: 3 },
+              { x: 4, y: 3 },
+            ],
+          ],
+        },
+      }),
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects a pair fill with only one placement (atomic — both or neither)', () => {
+    const result = decodeClientMessage(
+      JSON.stringify({
+        type: 'fill',
+        round: 0,
+        choice: { kind: 'pair', placements: [piecePlacement(0, 0)] },
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a fallback fill with more than 2 blobs', () => {
+    const result = decodeClientMessage(
+      JSON.stringify({
+        type: 'fill',
+        round: 0,
+        choice: { kind: 'fallback', blobs: [[{ x: 0, y: 0 }], [{ x: 1, y: 1 }], [{ x: 2, y: 2 }]] },
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects an oversized fallback blob rather than letting it reach the board', () => {
     const cells = Array.from({ length: 64 }, (_, i) => ({ x: i, y: 0 }));
     const result = decodeClientMessage(
-      JSON.stringify({ type: 'fill', round: 0, comboId: 'a', cells }),
+      JSON.stringify({ type: 'fill', round: 0, choice: { kind: 'fallback', blobs: [cells] } }),
     );
     expect(result.ok).toBe(false);
   });
 
   it('rejects negative cell coordinates', () => {
     const result = decodeClientMessage(
-      JSON.stringify({ type: 'fill', round: 0, comboId: 'a', cells: [{ x: -1, y: 0 }] }),
+      JSON.stringify({
+        type: 'fill',
+        round: 0,
+        choice: { kind: 'fallback', blobs: [[{ x: -1, y: 0 }]] },
+      }),
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects an unknown move-choice kind', () => {
+    const result = decodeClientMessage(
+      JSON.stringify({ type: 'fill', round: 0, choice: { kind: 'jackpot' } }),
     );
     expect(result.ok).toBe(false);
   });

@@ -23,7 +23,8 @@ A round's roll **must** come from `deriveSeed(roomSeed, round)`, not from one lo
 ```ts
 // Right — round 7 is computable directly.
 const pairRng = createRng(deriveSeed(roomSeed, 7, 'pair'));
-const pair = [pairRng.pick(shapeLibrary), pairRng.pick(shapeLibrary)]; // whether these may repeat is a Phase 1 decision
+const first = pairRng.pick(shapeLibrary);
+const second = pairRng.pick(shapeLibrary.filter((piece) => piece.id !== first.id)); // never repeats
 const fallback = createRng(deriveSeed(roomSeed, 7, 'fallback')).pick(fallbackFaces);
 
 // Wrong — requires having drawn rounds 0..6 first.
@@ -44,19 +45,31 @@ Two consequences, both load-bearing:
 
 `rng.test.ts` pins the first five values for seed `pixwagon` with an inline snapshot. Changing the algorithm changes every seeded room and every past daily puzzle. That is allowed, but it must be a deliberate, versioned act — the failing snapshot is the tripwire, not an inconvenience to update away.
 
+## Decided in Phase 1 (2026-08-01)
+
+- The discriminator strings are exactly `'pair'` and `'fallback'` —
+  `deriveSeed(roomSeed, round, 'pair')` and `deriveSeed(roomSeed, round,
+'fallback')`. `roll.ts`'s `issueRoll` and `roll.test.ts` pin this; changing
+  either string is the same class of change as changing the shape library's
+  order, not a refactor.
+- A pair offer never repeats a piece: the pair's second piece is drawn from
+  the library with the first excluded, both from the same `'pair'`-derived
+  RNG stream (one stream, two draws — not two independent streams that could
+  coincide).
+
 ## Not yet decided
 
 - Whether `Roll` carries the derived seed or only the round index. Currently it carries both; collapse it in Phase 4 if the redundancy proves useless.
 - Room-seed generation. Phase 0 generates room _codes_ (`apps/server/src/env.ts`) but the room seed is not yet distinct from the code. Decide in Phase 4 — a seed that is guessable from the code is fine for a friendly game, less fine for a leaderboard.
-- The exact discriminator strings for `deriveSeed(roomSeed, round, 'pair' | 'fallback')` — placeholders above; pin them in Phase 1 alongside the shape-library snapshot test.
 
 ## Shape-library snapshot discipline (Phase 1)
 
-`issueRoll` will pick pieces from a fixed shape library by index (see
-`docs/mechanics-correction.md`). That library needs the same frozen-output
-discipline as this file's RNG snapshot: a pinned test asserting its order and
-contents. The library is exactly as load-bearing as the algorithm above —
-reordering or editing it silently changes every seeded room and every past
-daily puzzle, the same failure mode `rng.test.ts` exists to catch for the
-PRNG itself. Changing it is allowed; it must be a deliberate, versioned act,
-not an incidental refactor.
+`issueRoll` (`packages/game-core/src/roll.ts`) picks pieces from the fixed
+shape library (`shapes.ts`) by index (see `docs/mechanics-correction.md`).
+That library carries the same frozen-output discipline as this file's RNG
+snapshot: `shapes.test.ts` pins its order and contents. The library is
+exactly as load-bearing as the algorithm above — reordering or editing it
+silently changes every seeded room and every past daily puzzle, the same
+failure mode `rng.test.ts` exists to catch for the PRNG itself. Changing it
+is allowed; it must be a deliberate, versioned act, not an incidental
+refactor.
