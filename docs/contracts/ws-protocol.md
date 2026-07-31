@@ -55,3 +55,4 @@ Per-connection state lives in the socket **attachment** (`serializeAttachment`),
 
 - `state` and `delta` payloads are `z.unknown()` in Phase 0. Phase 4 types them once the room state settles — typing them now would be guessing.
 - Whether `request-roll` is host-only or anyone-can. Phase 4.
+- **The `fill` message shape is stale.** `comboId` + `cells` describes the dice/combo model `docs/mechanics-correction.md` replaces. Phase 1 needs a `choice: { kind: 'pair' | 'fallback', placements: [...] }`-shaped replacement — atomic pair placement means one message carries both piece placements. Not rewritten yet; `index.test.ts` still locks the old shape until it is.
