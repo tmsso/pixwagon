@@ -38,6 +38,43 @@ export const cellRefSchema = z.object({
 
 export const gameModeSchema = z.enum(['same-board', 'own-board', 'solo', 'daily']);
 
+/**
+ * A piece's orientation at placement time (docs/mechanics-correction.md):
+ * rotation and mirroring are the player's free choice, not fixed by the offer.
+ * `pieceId` is validated as a non-empty string, not a strict enum of the 9
+ * shape-library ids — protocol validates shape, game-core validates whether
+ * this specific id is a real piece (`applyMove`'s `unknown-piece` rejection),
+ * the same split already used for `comboId` before this rewrite.
+ */
+export const orientationSchema = z.object({
+  rotation: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
+  mirrored: z.boolean(),
+});
+
+export const piecePlacementSchema = z.object({
+  pieceId: z.string().min(1),
+  orientation: orientationSchema,
+  origin: cellRefSchema,
+});
+
+/**
+ * Atomic pair placement means one message carries both piece placements. A
+ * fallback move carries one blob per size its face requires — at most 2 blobs
+ * (compound faces), each at most 3 cells (the largest single blob, in the
+ * `3` and `1+3` faces) — both-blobs-or-neither for a compound face is a
+ * game-core legality rule (`incomplete-compound-choice`), not a wire shape.
+ */
+export const moveChoiceSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('pair'),
+    placements: z.tuple([piecePlacementSchema, piecePlacementSchema]),
+  }),
+  z.object({
+    kind: z.literal('fallback'),
+    blobs: z.array(z.array(cellRefSchema).min(1).max(3)).min(1).max(2),
+  }),
+]);
+
 // ---------------------------------------------------------------------------
 // Client → server
 // ---------------------------------------------------------------------------
@@ -58,8 +95,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('fill'),
     round: z.number().int().nonnegative(),
-    comboId: z.string().min(1),
-    cells: z.array(cellRefSchema).min(1).max(16),
+    choice: moveChoiceSchema,
   }),
   z.object({ type: z.literal('rematch') }),
   /** Liveness. Kept explicit so hibernation behaviour is testable. */

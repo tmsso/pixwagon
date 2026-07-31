@@ -79,6 +79,9 @@ export const FALLBACK_BLOB_SIZES: Readonly<Record<FallbackFaceId, readonly numbe
   '1+3': [1, 3],
 };
 
+/** Every fallback face id, in the order `docs/mechanics-correction.md` lists them. */
+export const FALLBACK_FACE_IDS = Object.keys(FALLBACK_BLOB_SIZES) as readonly FallbackFaceId[];
+
 /**
  * What the referee issued for a round: a pair offer (two distinct pieces from
  * `SHAPE_LIBRARY`, take-both-or-decline) and an independent fallback offer,
