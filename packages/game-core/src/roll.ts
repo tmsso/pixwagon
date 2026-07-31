@@ -13,8 +13,3 @@ import type { Roll, Seed } from './types.js';
 export function issueRoll(_roomSeed: Seed, _round: number): Roll {
   throw new NotImplementedError('issueRoll');
 }
-
-/** Phase 1: derive the legal combo options a set of dice permits. */
-export function comboOptionsFor(_roll: Pick<Roll, 'dice'>): Roll['combo'] {
-  throw new NotImplementedError('comboOptionsFor');
-}
