@@ -11,5 +11,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "echo \"(game-core is consumed as TypeScript source; no build step)\""
+  },
+  "dependencies": {
+    "@pixwagon/packs": "workspace:*"
   }
 }

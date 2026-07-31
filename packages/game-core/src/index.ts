@@ -10,7 +10,21 @@
 export * from './types.js';
 export { NotImplementedError } from './not-implemented.js';
 export { createRng, deriveSeed, type Rng } from './rng.js';
+export {
+  ALL_ORIENTATIONS,
+  cellKey,
+  cellsAt,
+  distinctOrientationsOf,
+  getPiece,
+  normalize,
+  SHAPE_LIBRARY,
+  type CellOffset,
+  type Orientation,
+  type Piece,
+  type PieceId,
+  type Rotation,
+} from './shapes.js';
 export { areContiguous, cellAt, cellIndex, createBoard, inBounds, isComplete } from './board.js';
-export { comboOptionsFor, issueRoll } from './roll.js';
-export { applyMove, legalCellsFor } from './moves.js';
+export { issueRoll } from './roll.js';
+export { applyMove, legalCellsFor, type PieceOrigin } from './moves.js';
 export { scoreBoard, scoreRound } from './scoring.js';
