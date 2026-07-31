@@ -16,6 +16,7 @@ import { DiceFace } from '../../apps/web/src/components/game/DiceFace.tsx';
 import { HudFrame } from '../../apps/web/src/components/game/HudFrame.tsx';
 import { PackCard } from '../../apps/web/src/components/game/PackCard.tsx';
 import { PicturePreview } from '../../apps/web/src/components/game/PicturePreview.tsx';
+import { PieceGlyph } from '../../apps/web/src/components/game/PieceGlyph.tsx';
 import { PlayerChip } from '../../apps/web/src/components/game/PlayerChip.tsx';
 import { RollControl } from '../../apps/web/src/components/game/RollControl.tsx';
 import { Button } from '../../apps/web/src/components/ui/Button.tsx';
@@ -35,6 +36,36 @@ import {
   spacing,
 } from '../../apps/web/src/design/tokens.ts';
 import { transportation } from '../../packages/packs/src/index.ts';
+
+// Sample polyomino footprints for preview purposes only — the real shape
+// library is Phase 1 game-core work (docs/mechanics-correction.md).
+const DOMINO = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+];
+const TROMINO_L = [
+  { x: 0, y: 0 },
+  { x: 0, y: 1 },
+  { x: 1, y: 1 },
+];
+const TETROMINO_SQUARE = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 1, y: 1 },
+];
+const TETROMINO_I = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 2, y: 0 },
+  { x: 3, y: 0 },
+];
+const TETROMINO_S = [
+  { x: 1, y: 0 },
+  { x: 2, y: 0 },
+  { x: 0, y: 1 },
+  { x: 1, y: 1 },
+];
 
 export interface Card {
   /** Path inside the design-system project. */
@@ -431,31 +462,48 @@ export const cards: Card[] = [
     path: 'components/dice-face/index.html',
     name: 'DiceFace',
     group: 'Components',
-    subtitle: 'Faces 1-6, three sizes, rolling state',
+    subtitle: 'The fallback-die faces: 1 / 2 / 3 / 1+2 / 2+2 / 1+3, three sizes, rolling state',
     viewport: { width: 800, height: 340 },
     render: () => (
       <div className="flex flex-col gap-6">
         <Variant label="faces">
           <Row>
-            {[1, 2, 3, 4, 5, 6].map((value) => (
-              <DiceFace key={value} value={value} />
+            {([1, 2, 3, [1, 2], [2, 2], [1, 3]] as const).map((face, i) => (
+              <DiceFace key={i} face={face} />
             ))}
           </Row>
         </Variant>
         <Variant label="sizes">
           <Row>
-            <DiceFace value={5} size="sm" />
-            <DiceFace value={5} size="md" />
-            <DiceFace value={5} size="lg" />
+            <DiceFace face={[1, 3]} size="sm" />
+            <DiceFace face={[1, 3]} size="md" />
+            <DiceFace face={[1, 3]} size="lg" />
           </Row>
         </Variant>
-        <Variant label="rolling and non-d6">
+        <Variant label="rolling">
           <Row>
-            <DiceFace value={3} rolling />
-            <DiceFace value={11} sides={12} />
+            <DiceFace face={3} rolling />
+            <DiceFace face={[2, 2]} rolling />
           </Row>
         </Variant>
       </div>
+    ),
+  },
+
+  {
+    path: 'components/piece-glyph/index.html',
+    name: 'PieceGlyph',
+    group: 'Components',
+    subtitle: "One offered polyomino's footprint — domino through tetromino",
+    viewport: { width: 800, height: 260 },
+    render: () => (
+      <Variant label="shapes">
+        <Row>
+          {[DOMINO, TROMINO_L, TETROMINO_SQUARE, TETROMINO_I, TETROMINO_S].map((cells, i) => (
+            <PieceGlyph key={i} cells={cells} />
+          ))}
+        </Row>
+      </Variant>
     ),
   },
 
@@ -532,36 +580,31 @@ export const cards: Card[] = [
     path: 'components/roll-control/index.html',
     name: 'RollControl',
     group: 'Components',
-    subtitle: 'Idle, rolling, and awaiting the referee',
-    viewport: { width: 800, height: 620 },
+    subtitle: 'Pair vs. fallback, both revealed up front; awaiting the referee',
+    viewport: { width: 800, height: 420 },
     render: () => {
-      const dice = [
-        { sides: 6, value: 4 },
-        { sides: 6, value: 2 },
-      ];
-      const options = [
-        { id: 'a', label: 'Fill', cells: 4 },
-        { id: 'b', label: 'Fill', cells: 2 },
-        { id: 'c', label: 'Sum', cells: 6 },
-      ];
+      const pair = [
+        { id: 'a', cells: TETROMINO_S },
+        { id: 'b', cells: TROMINO_L },
+      ] as const;
       return (
         <div className="flex flex-col gap-6">
-          <Variant label="ready, option selected">
+          <Variant label="pair selected">
             <div className="w-96">
-              <RollControl dice={dice} options={options} selectedOptionId="a" />
+              <RollControl pair={pair} fallbackFace={[1, 2]} selectedChoice="pair" />
             </div>
           </Variant>
-          <Variant label="rolling">
+          <Variant label="fallback selected">
             <div className="w-96">
-              <RollControl dice={dice} options={options} rolling />
+              <RollControl pair={pair} fallbackFace={[1, 2]} selectedChoice="fallback" />
             </div>
           </Variant>
           <Variant label="awaiting server truth">
             <div className="w-96">
               <RollControl
-                dice={dice}
-                options={options}
-                selectedOptionId="c"
+                pair={pair}
+                fallbackFace={[1, 2]}
+                selectedChoice="pair"
                 awaitingServer
               />
             </div>
@@ -654,12 +697,12 @@ export const cards: Card[] = [
             }
             controls={
               <RollControl
-                dice={[
-                  { sides: 6, value: 6 },
-                  { sides: 6, value: 1 },
+                pair={[
+                  { id: 'a', cells: TETROMINO_SQUARE },
+                  { id: 'b', cells: DOMINO },
                 ]}
-                options={[{ id: 'a', label: 'Fill', cells: 6 }]}
-                selectedOptionId="a"
+                fallbackFace={2}
+                selectedChoice="pair"
               />
             }
           >

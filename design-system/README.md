@@ -11,4 +11,4 @@ Upload it with `/design-sync` against a project of type *design system* — that
 type is fixed at creation, so a regular Design project cannot be converted into
 one later.
 
-17 cards across groups: Colors, Type, Spacing, Components, Board.
+18 cards across groups: Colors, Type, Spacing, Components, Board.

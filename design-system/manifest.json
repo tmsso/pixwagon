@@ -105,10 +105,20 @@
       "name": "DiceFace",
       "path": "components/dice-face/index.html",
       "group": "Components",
-      "subtitle": "Faces 1-6, three sizes, rolling state",
+      "subtitle": "The fallback-die faces: 1 / 2 / 3 / 1+2 / 2+2 / 1+3, three sizes, rolling state",
       "viewport": {
         "width": 800,
         "height": 340
+      }
+    },
+    {
+      "name": "PieceGlyph",
+      "path": "components/piece-glyph/index.html",
+      "group": "Components",
+      "subtitle": "One offered polyomino's footprint — domino through tetromino",
+      "viewport": {
+        "width": 800,
+        "height": 260
       }
     },
     {
@@ -135,10 +145,10 @@
       "name": "RollControl",
       "path": "components/roll-control/index.html",
       "group": "Components",
-      "subtitle": "Idle, rolling, and awaiting the referee",
+      "subtitle": "Pair vs. fallback, both revealed up front; awaiting the referee",
       "viewport": {
         "width": 800,
-        "height": 620
+        "height": 420
       }
     },
     {
