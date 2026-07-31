@@ -12,7 +12,7 @@ currently calls for.
 
 Instead, this repo ships `design-system/`: 17 fully self-contained, standalone
 preview-card HTML files (Tailwind compiled inline, no external stylesheet
-dependency), generated from the *real* components in
+dependency), generated from the _real_ components in
 `apps/web/src/components/{ui,game}/` by `scripts/build-design-system.tsx`
 (`pnpm design:build`), and verified locally by `pnpm design:check`. Each file
 already carries the `<!-- @dsCard group="…" name="…" subtitle="…" width="…"
@@ -44,7 +44,7 @@ components) but not live composability.
   component changes) has no anchor to skip against: it will need a full
   re-upload of the whole `design-system/` tree, not an incremental diff. That's
   expected and correct for this shape, not a bug.
-- If a re-sync is ever done via the *real* converter (because we've decided to
+- If a re-sync is ever done via the _real_ converter (because we've decided to
   build the live bundle), treat it as a first-time import into this same
   project, not a resync — the shape is changing, not just the content.
 - Card grouping/sizing metadata (`group`, `name`, `subtitle`, `width`, `height`
