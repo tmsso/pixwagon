@@ -1,5 +1,6 @@
 import { NotImplementedError } from './not-implemented.js';
-import type { Board, Move, MoveResult, Roll } from './types.js';
+import type { Orientation, PieceId } from './shapes.js';
+import type { Board, CellRef, Move, MoveResult, Roll } from './types.js';
 
 /**
  * Phase 1: the referee's core question — given a board, the roll in force, and a
@@ -14,7 +15,20 @@ export function applyMove(_board: Board, _roll: Roll, _move: Move): MoveResult {
   throw new NotImplementedError('applyMove');
 }
 
-/** Phase 1: cheap pre-check for UI affordances (which cells to highlight). */
-export function legalCellsFor(_board: Board, _roll: Roll, _comboId: string): Board['cells'] {
+/** A placement `legalCellsFor` found: this piece fits here, in this orientation. */
+export interface PieceOrigin {
+  orientation: Orientation;
+  origin: CellRef;
+}
+
+/**
+ * Phase 1: cheap pre-check for UI affordances — every orientation/origin pair
+ * at which `pieceId` currently fits this board, so the client can highlight
+ * legal placements without asking the server. Board-only: a piece's fit
+ * doesn't depend on the round in force (see docs/mechanics-correction.md —
+ * `legalCellsFor`'s old `Board['cells']` return type couldn't express "valid
+ * origins across up to 8 orientations", hence the new return shape).
+ */
+export function legalCellsFor(_board: Board, _pieceId: PieceId): readonly PieceOrigin[] {
   throw new NotImplementedError('legalCellsFor');
 }
