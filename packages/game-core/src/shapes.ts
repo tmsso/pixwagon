@@ -116,11 +116,19 @@ export const SHAPE_LIBRARY: readonly Piece[] = [
   },
 ];
 
+/**
+ * Runtime membership check — the type-checker enforces `PieceId` at compile
+ * time, but a `pieceId` arriving over the wire is only validated as a
+ * non-empty string (protocol/src/index.ts); this is the actual "is it real"
+ * check the referee runs before trusting one (`applyMove`'s `unknown-piece`).
+ */
+export function isKnownPiece(id: string): id is PieceId {
+  return SHAPE_LIBRARY.some((piece) => piece.id === id);
+}
+
 export function getPiece(id: PieceId): Piece {
-  // Non-null assertion is sound: PieceId is a closed union matching SHAPE_LIBRARY exactly;
-  // a lookup miss would mean the two had drifted apart, which the frozen-snapshot test below
-  // and TypeScript's exhaustiveness both guard against.
-  const piece = SHAPE_LIBRARY.find((candidate) => candidate.id === id)!;
+  const piece = SHAPE_LIBRARY.find((candidate) => candidate.id === id);
+  if (!piece) throw new Error(`unknown piece id "${id}"`);
   return piece;
 }
 

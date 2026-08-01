@@ -16,6 +16,7 @@ export {
   cellsAt,
   distinctOrientationsOf,
   getPiece,
+  isKnownPiece,
   normalize,
   SHAPE_LIBRARY,
   type CellOffset,
@@ -27,4 +28,4 @@ export {
 export { areContiguous, cellAt, cellIndex, createBoard, inBounds, isComplete } from './board.js';
 export { issueRoll } from './roll.js';
 export { applyMove, legalCellsFor, type PieceOrigin } from './moves.js';
-export { scoreBoard, scoreRound } from './scoring.js';
+export { POINTS_PER_COMPLETED_PICTURE, scoreBoard, scoreRound } from './scoring.js';

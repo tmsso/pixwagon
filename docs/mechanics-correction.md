@@ -47,9 +47,13 @@ Replaces every "dice/combo" mention in `docs/architecture.md` §1, §2.3, §3,
   an incomplete one. No partial/percentage credit. Grouping/pattern bonus
   scoring (closer to Pixelino's own habitat/trophy variants) is explicitly
   deferred — a later phase, not v1.
-- **Game end**: not yet decided (see `ROADMAP.md` Phase 1) — fixed round
-  count vs. piece-pool exhaustion. Needed because "board reaches 100%, then
-  next board" no longer holds as the only way a board's turn ends.
+- **Game end, decided 2026-08-01** (see `ROADMAP.md` Phase 1 for the full
+  reasoning): a session cycles through its pack's pictures, ending on
+  piece-pool exhaustion — engineered as a precomputed session round budget,
+  not a stateful without-replacement draw, so it stays compatible with
+  `deriveSeed(roomSeed, round)`'s late-joiner guarantee (`docs/contracts/rng.md`).
+  Needed because "board reaches 100%, then next board" no longer holds as the
+  only way a board's turn ends.
 
 ## What survives unchanged
 
@@ -60,16 +64,22 @@ Replaces every "dice/combo" mention in `docs/architecture.md` §1, §2.3, §3,
 - Server-is-the-referee, client-submits-intent, seeded determinism for late
   joiners and daily puzzles — none of this moves.
 
-## What needs rewriting (Phase 1 work — not done in this pass)
+## What needed rewriting (Phase 1 work — done 2026-08-01, across 3 PRs)
+
+Kept as a historical record of the scope this correction identified before any
+of it was built; every item below landed except the design-system/component
+rework, which is deliberately deferred to Phase 2 (see `ROADMAP.md` Phase 1's
+non-goal note — regenerating `design-system/**` mid-design-pass would churn
+what Tamas is reviewing in Claude Design).
 
 - `packages/game-core/src/types.ts` — `Die`, `Roll.dice`, `ComboOption.cells`
   describe the old model and must be replaced.
-- `packages/game-core/src/roll.ts`, `moves.ts` — `issueRoll`,
-  `comboOptionsFor`, `applyMove`, `legalCellsFor` all need the new shapes.
-  `legalCellsFor`'s **return type** changes, not just its body — it currently
-  returns `Board['cells']`, which can't express "valid origins for piece S
-  across up to 8 orientations." It's a public `index.ts` export; treat this
-  as a signature change.
+- `packages/game-core/src/roll.ts`, `moves.ts` — `issueRoll`, `applyMove`,
+  `legalCellsFor` all needed the new shapes; `comboOptionsFor` had no
+  pair+fallback equivalent and was removed outright rather than reshaped —
+  the offer _is_ the roll now, nothing further to derive without the board.
+  `legalCellsFor`'s **return type** changed as flagged: `(board, pieceId) =>
+readonly { orientation, origin }[]`, not the old `Board['cells']`.
 - `packages/protocol/src/index.ts:58-63` — the `fill` client message
   (`comboId` + `cells`, capped at 16) describes the old model. It needs a
   `choice: { kind: 'pair' | 'fallback', placements: [...] }`-shaped
