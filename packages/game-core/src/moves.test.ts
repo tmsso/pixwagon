@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isComplete } from './board.js';
+import { createBoard, isComplete } from './board.js';
 import { applyMove, legalCellsFor } from './moves.js';
+import { issueRoll } from './roll.js';
 import { cellsAt, getPiece } from './shapes.js';
 import type { PieceId } from './shapes.js';
+import { FALLBACK_BLOB_SIZES } from './types.js';
 import type { Board, CellRef, CellState, Move, Roll } from './types.js';
 
 function board(width: number, height: number, overrides: Record<string, CellState> = {}): Board {
@@ -398,25 +400,115 @@ describe('legalCellsFor', () => {
   });
 });
 
-describe('Phase 1 accept: a full board can be completed start to finish', () => {
-  it('fills a whole synthetic board via a sequence of legal fallback moves', () => {
-    const width = 4;
-    const height = 3;
-    let current = board(width, height);
+/**
+ * Grows a `size`-cell contiguous blob from the first still-fillable cell
+ * found (row-major scan), skipping cells in `avoid` (already claimed by an
+ * earlier blob this same round). Used only by the greedy solver below, to
+ * find *some* legal fallback move each round — not a claim about how a real
+ * client would choose one.
+ */
+function findBlob(board: Board, size: number, avoid: Set<string>): CellRef[] | null {
+  for (let y = 0; y < board.size.height; y += 1) {
+    for (let x = 0; x < board.size.width; x += 1) {
+      const key = `${x},${y}`;
+      if (board.cells[y * board.size.width + x] !== 'fillable' || avoid.has(key)) continue;
 
-    let round = 0;
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const r = roll({ round, fallback: '1' });
-        const move: Move = {
-          playerId: 'p1',
-          round,
-          choice: { kind: 'fallback', blobs: [[{ x, y }]] },
-        };
-        const result = applyMove(current, r, move);
-        expect(result.ok).toBe(true);
-        if (result.ok) current = result.board;
-        round += 1;
+      const included: CellRef[] = [{ x, y }];
+      const includedKeys = new Set([key]);
+      while (included.length < size) {
+        let grew = false;
+        for (const cell of [...included]) {
+          const neighbors: CellRef[] = [
+            { x: cell.x + 1, y: cell.y },
+            { x: cell.x - 1, y: cell.y },
+            { x: cell.x, y: cell.y + 1 },
+            { x: cell.x, y: cell.y - 1 },
+          ];
+          for (const neighbor of neighbors) {
+            const nKey = `${neighbor.x},${neighbor.y}`;
+            if (includedKeys.has(nKey) || avoid.has(nKey)) continue;
+            if (
+              neighbor.x < 0 ||
+              neighbor.y < 0 ||
+              neighbor.x >= board.size.width ||
+              neighbor.y >= board.size.height
+            )
+              continue;
+            if (board.cells[neighbor.y * board.size.width + neighbor.x] !== 'fillable') continue;
+            included.push(neighbor);
+            includedKeys.add(nKey);
+            grew = true;
+            if (included.length === size) break;
+          }
+          if (included.length === size) break;
+        }
+        if (!grew) break; // stuck — this starting cell can't reach the required size
+      }
+      if (included.length === size) return included;
+    }
+  }
+  return null;
+}
+
+describe('Phase 1 accept: a full board can be completed start to finish', () => {
+  it('completes a real pack picture using real issueRoll offers (achievability, not just move mechanics)', () => {
+    // Greedy solver: each round, take the pair if any two non-overlapping
+    // legal placements exist for its two offered pieces; otherwise take the
+    // fallback if its required blob(s) can be found; otherwise skip the
+    // round entirely (no move exists yet — a later round's differently-shaped
+    // offer may still open things up). "achievability-0" is a concrete
+    // witness seed for which this converges within a small round budget on
+    // the shipped tram picture (54 fillable cells) — found by search, not
+    // assumed; ROADMAP.md Phase 1's Accept line only claims a favorable
+    // sequence of rolls exists, not that every seed converges.
+    let current = createBoard('transportation', 'tram');
+    const seed = 'achievability-0';
+    const maxRounds = 100;
+
+    for (let round = 0; round < maxRounds && !isComplete(current); round += 1) {
+      const r = issueRoll(seed, round);
+      let applied = false;
+
+      const [pieceA, pieceB] = r.pair;
+      const placementsA = legalCellsFor(current, pieceA);
+      const placementsB = legalCellsFor(current, pieceB);
+      outer: for (const pa of placementsA) {
+        for (const pb of placementsB) {
+          const move: Move = {
+            playerId: 'p1',
+            round,
+            choice: {
+              kind: 'pair',
+              placements: [
+                { pieceId: pieceA, orientation: pa.orientation, origin: pa.origin },
+                { pieceId: pieceB, orientation: pb.orientation, origin: pb.origin },
+              ],
+            },
+          };
+          const result = applyMove(current, r, move);
+          if (result.ok) {
+            current = result.board;
+            applied = true;
+            break outer;
+          }
+        }
+      }
+
+      if (!applied) {
+        const sizes = FALLBACK_BLOB_SIZES[r.fallback];
+        const avoid = new Set<string>();
+        const blobs: CellRef[][] = [];
+        for (const size of sizes) {
+          const blob = findBlob(current, size, avoid);
+          if (!blob) break;
+          for (const cell of blob) avoid.add(`${cell.x},${cell.y}`);
+          blobs.push(blob);
+        }
+        if (blobs.length === sizes.length) {
+          const move: Move = { playerId: 'p1', round, choice: { kind: 'fallback', blobs } };
+          const result = applyMove(current, r, move);
+          if (result.ok) current = result.board;
+        }
       }
     }
 
