@@ -4,11 +4,11 @@ import { decodeClientMessage, encode, PROTOCOL_VERSION, roomCodeSchema } from '.
 describe('decodeClientMessage', () => {
   it('accepts a well-formed join', () => {
     const result = decodeClientMessage(
-      JSON.stringify({ type: 'join', protocolVersion: PROTOCOL_VERSION, name: 'Tamas' }),
+      JSON.stringify({ type: 'join', protocolVersion: PROTOCOL_VERSION, name: 'Alex' }),
     );
     expect(result).toEqual({
       ok: true,
-      message: { type: 'join', protocolVersion: PROTOCOL_VERSION, name: 'Tamas' },
+      message: { type: 'join', protocolVersion: PROTOCOL_VERSION, name: 'Alex' },
     });
   });
 

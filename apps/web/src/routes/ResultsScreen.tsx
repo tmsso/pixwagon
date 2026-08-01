@@ -27,7 +27,7 @@ export function ResultsScreen() {
 
       <Panel title="Scores" tone="sunken">
         <div className="grid gap-2">
-          <PlayerChip name="Tamas" colorIndex={0} score={38} />
+          <PlayerChip name="Alex" colorIndex={0} score={38} />
           <PlayerChip name="Guest" colorIndex={1} score={31} />
         </div>
       </Panel>

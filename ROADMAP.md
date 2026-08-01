@@ -25,7 +25,7 @@ Everything `/design-sync` needs to find before any screen is designed, plus the 
 
 ---
 
-## Phase 0.5 — Design interlude _(not a code phase — Tamas drives this)_
+## Phase 0.5 — Design interlude _(not a code phase — the admin drives this)_
 
 The scaffold exists so this can happen against real tokens rather than invented ones.
 

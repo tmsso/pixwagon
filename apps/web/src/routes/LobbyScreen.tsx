@@ -22,7 +22,7 @@ export function LobbyScreen() {
 
       <Panel title="In this room">
         <div className="flex flex-wrap gap-2">
-          <PlayerChip name="Tamas" colorIndex={0} active />
+          <PlayerChip name="Alex" colorIndex={0} active />
           <PlayerChip name="Guest" colorIndex={1} />
           <PlayerChip name="Kim" colorIndex={2} connected={false} />
         </div>

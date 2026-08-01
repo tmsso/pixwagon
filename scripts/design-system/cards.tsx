@@ -358,7 +358,7 @@ export const cards: Card[] = [
           <div className="w-80">
             <Panel title="Scores">
               <div className="flex flex-col gap-2">
-                <PlayerChip name="Tamas" colorIndex={0} score={38} />
+                <PlayerChip name="Alex" colorIndex={0} score={38} />
                 <PlayerChip name="Guest" colorIndex={1} score={31} />
               </div>
             </Panel>
@@ -691,7 +691,7 @@ export const cards: Card[] = [
             connection="connecting"
             players={
               <>
-                <PlayerChip name="Tamas" colorIndex={0} score={12} active />
+                <PlayerChip name="Alex" colorIndex={0} score={12} active />
                 <PlayerChip name="Guest" colorIndex={1} score={9} />
               </>
             }

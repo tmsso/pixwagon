@@ -70,7 +70,7 @@ Kept as a historical record of the scope this correction identified before any
 of it was built; every item below landed except the design-system/component
 rework, which is deliberately deferred to Phase 2 (see `ROADMAP.md` Phase 1's
 non-goal note — regenerating `design-system/**` mid-design-pass would churn
-what Tamas is reviewing in Claude Design).
+what the admin is reviewing in Claude Design).
 
 - `packages/game-core/src/types.ts` — `Die`, `Roll.dice`, `ComboOption.cells`
   describe the old model and must be replaced.

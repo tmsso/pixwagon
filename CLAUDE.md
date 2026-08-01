@@ -4,7 +4,7 @@ Project brief for Claude Code. Read this fully before writing code. `ROADMAP.md`
 
 ## Communicating with the admin
 
-Tamas is a non-developer tech lead — comfortable with technical jargon and reasoning, not with the specifics of modern web/JS tooling. On first use of a new technology, library or tool, give a one-line explanation of what it is and why it is being used here. Skip that for genuinely universal things (HTML, CSS, plain JavaScript). At the end of a planning session, include a short table of technologies introduced (name, what it is, why here) as a learning reference.
+The admin is a non-developer tech lead — comfortable with technical jargon and reasoning, not with the specifics of modern web/JS tooling. On first use of a new technology, library or tool, give a one-line explanation of what it is and why it is being used here. Skip that for genuinely universal things (HTML, CSS, plain JavaScript). At the end of a planning session, include a short table of technologies introduced (name, what it is, why here) as a learning reference.
 
 When code does something non-obvious — a trick, a subtlety, a workaround — explain the _why_ briefly in a comment. Several already exist in this repo; keep the habit.
 

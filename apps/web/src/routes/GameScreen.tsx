@@ -14,7 +14,7 @@ export function GameScreen() {
       connection="online"
       players={
         <>
-          <PlayerChip name="Tamas" colorIndex={0} score={0} active />
+          <PlayerChip name="Alex" colorIndex={0} score={0} active />
           <PlayerChip name="Guest" colorIndex={1} score={0} />
         </>
       }
