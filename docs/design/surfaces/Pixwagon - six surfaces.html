@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>Pixwagon — six surfaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pixwagon-surfaces.css">
+</head>
+<body style="width:1900px;height:6820px;background:#e9ebee">
+
+<div class="frame" style="left:80px;top:56px;width:1000px">
+<div class="row" style="gap:12px;margin-bottom:14px"><span style="display:grid;grid-template-columns:14px 14px;gap:2px"><i style="width:14px;height:14px;background:#2a9d8a;display:block;border-radius:2px"></i><i style="width:14px;height:14px;background:#171c21;display:block;border-radius:2px"></i><i style="width:14px;height:14px;background:#171c21;display:block;border-radius:2px"></i><i style="width:14px;height:14px;background:#2a9d8a;display:block;border-radius:2px"></i></span><span class="t-2xl">Pixwagon — the six surfaces</span></div>
+<p class="t-base muted" style="max-width:760px">Phone-first, 390×844. Every screen is built from the synced design system — no new components, no new tokens. Dark cards are annotations that travel with the handoff.</p>
+<p class="t-sm muted mono" style="margin-top:10px">design-system @ tmsso/pixwagon · light theme · Inter + JetBrains Mono</p>
+</div>
+
+<!-- ───────────────── 1 · HOME ───────────────── -->
+<div class="rowhead" style="left:80px;top:290px"><em>Surface 01 · route /</em>Home<p>Legible in three seconds: what the game is, then the three ways in. Name is the only identity — no account surface anywhere.</p></div>
+
+<div class="frame" style="left:80px;top:460px">
+<p class="cap"><b>Home</b><span>first visit — no display name yet</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>5G · 100%</span></div>
+<div class="screen">
+<div class="row" style="gap:10px"><span style="display:grid;grid-template-columns:11px 11px;gap:2px"><i style="width:11px;height:11px;background:#2a9d8a;display:block;border-radius:2px"></i><i style="width:11px;height:11px;background:#171c21;display:block;border-radius:2px"></i><i style="width:11px;height:11px;background:#171c21;display:block;border-radius:2px"></i><i style="width:11px;height:11px;background:#2a9d8a;display:block;border-radius:2px"></i></span><h1 class="t-xl">Pixwagon</h1></div>
+<p class="t-sm muted">Roll, fill squares, finish the picture together.</p>
+<div class="panel" style="display:flex;align-items:center;gap:14px">
+<span data-pic="tram" data-cell="13" data-mode="target"></span>
+<div class="stack gap2"><p class="t-sm" style="font-weight:500">Same picture, same rolls.</p><p class="t-xs muted">Ten minutes, two to six players, one phone each.</p></div>
+</div>
+<div class="field"><label class="eyebrow" for="nm">Your name</label><input class="input ph" id="nm" value="e.g. Alex"><p class="t-xs muted">No account, no email. Just something your friends will recognise.</p></div>
+<div class="spacer"></div>
+<div class="stack gap2">
+<button class="btn lg full">Play with friends</button>
+<div class="row" style="gap:8px"><button class="btn secondary full">Solo</button><button class="btn secondary full">Daily</button></div>
+<a class="t-sm" href="#packs" style="text-align:center;padding:8px">Browse packs · Transportation</a>
+</div>
+</div></div></div>
+
+<div class="frame" style="left:530px;top:460px">
+<p class="cap"><b>Home</b><span>returning — name remembered</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>5G · 100%</span></div>
+<div class="screen">
+<div class="row"><h1 class="t-xl">Hi, Alex</h1><span class="spacer"></span><button class="iconbtn" aria-label="Change name">✎</button></div>
+<div class="panel" style="display:flex;gap:14px;align-items:center">
+<span data-pic="balloon" data-cell="11" data-mode="outline"></span>
+<div class="stack gap2"><span class="eyebrow">Today's puzzle</span><p class="t-base" style="font-weight:500">Hot-air balloon</p><p class="t-xs muted">Medium · works offline</p></div>
+</div>
+<button class="btn full">Play the daily</button>
+<div class="spacer"></div>
+<div class="stack gap2">
+<button class="btn secondary full lg">Play with friends</button>
+<button class="btn secondary full lg">Solo</button>
+<a class="t-sm" href="#packs" style="text-align:center;padding:8px">Transportation · 3 pictures ›</a>
+</div>
+</div></div></div>
+
+<div class="frame" style="left:980px;top:460px">
+<p class="cap"><b>Home</b><span>daily already completed today</span></p>
+<div class="phone"><div class="status"><span>21:07</span><span>5G · 62%</span></div>
+<div class="screen">
+<div class="row"><h1 class="t-xl">Hi, Alex</h1><span class="spacer"></span><button class="iconbtn" aria-label="Change name">✎</button></div>
+<div class="panel" style="display:flex;gap:14px;align-items:center">
+<span data-pic="balloon" data-cell="11" data-mode="target"></span>
+<div class="stack gap2"><span class="eyebrow">Today's puzzle</span><p class="t-base" style="font-weight:500">Hot-air balloon</p><div class="row" style="gap:6px"><span class="pill accent">Done</span><span class="t-xs muted mono">14 rounds</span></div></div>
+</div>
+<div class="row" style="gap:8px"><button class="btn secondary full">See your picture</button></div>
+<p class="t-xs muted" style="text-align:center">Next puzzle in 6h 12m</p>
+<div class="spacer"></div>
+<div class="stack gap2">
+<button class="btn lg full">Play with friends</button>
+<button class="btn secondary full lg">Solo</button>
+<a class="t-sm" href="#packs" style="text-align:center;padding:8px">Browse packs</a>
+</div>
+</div></div></div>
+
+<div class="note frame" style="left:1450px;top:498px">
+<span class="n">Annotation 06</span>
+<h3>Thumb reach is a layout rule, not a nicety</h3>
+<p>Every control here is at least <code>2.75rem</code> tall, and each screen's primary action sits in the lower half — the top half carries state, the bottom half carries actions.</p>
+<p>Consequence for Home: the name field can sit high because it is optional on return; the three mode buttons cannot.</p>
+</div>
+
+<!-- ───────────────── 2 · LOBBY ───────────────── -->
+<div class="rowhead" style="left:80px;top:1410px"><em>Surface 02 · route /lobby</em>Lobby<p>Join by code or create a room. The code is the whole product's sharing mechanism, so it gets the largest type on the screen.</p></div>
+
+<div class="frame" style="left:80px;top:1580px">
+<p class="cap"><b>Lobby</b><span>entering a code → invalid</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>5G · 100%</span></div>
+<div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back">←</button><h1 class="t-lg">Join a room</h1></div>
+<p class="t-sm muted">Ask whoever started the game for their four letters.</p>
+<div class="stack gap2" style="margin-top:4px">
+<div class="codeboxes"><span class="bad">Z</span><span class="bad">Z</span><span class="bad">Z</span><span class="bad">Z</span></div>
+<p class="t-sm danger-t" role="alert">No room with that code.</p>
+<p class="t-xs muted mono">A–Z without I, O, 0 or 1</p>
+</div>
+<div class="panel sunken" style="padding:12px"><p class="t-xs muted">Codes are read out loud across a table. If it sounds ambiguous, it isn't in the alphabet.</p></div>
+<div class="spacer"></div>
+<div class="stack gap2">
+<button class="btn full disabled">Join room</button>
+<p class="t-xs muted" style="text-align:center">or</p>
+<button class="btn secondary full">Create a room</button>
+</div>
+</div></div></div>
+
+<div class="frame" style="left:530px;top:1580px">
+<p class="cap"><b>Lobby</b><span>waiting for others — 1 player, you are host</span></p>
+<div class="phone"><div class="status"><span>9:42</span><span>5G · 100%</span></div>
+<div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back">←</button><h1 class="t-lg">Your room</h1></div>
+<div class="panel" style="text-align:center;padding:20px 16px">
+<span class="eyebrow">Room code</span>
+<p class="bigcode" style="margin:10px 0 12px">PIXW</p>
+<div class="row" style="gap:8px;justify-content:center"><button class="btn secondary sm">Copy link</button><button class="btn secondary sm">Share</button></div>
+</div>
+<div class="panel sunken" style="padding:12px">
+<div class="ph">Players · 1 of 6</div>
+<div class="wrap"><span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="t-xs muted">host</span></span></div>
+<p class="t-xs muted" style="margin-top:10px">Waiting for someone to join.</p>
+</div>
+<div class="stack gap2"><span class="eyebrow">Mode</span><div class="seg"><span class="on">Same board</span><span>Own board</span></div></div>
+<div class="row panel" style="padding:12px 14px"><span data-pic="tram" data-cell="6" data-mode="target"></span><div class="stack" style="margin-left:12px"><p class="t-sm" style="font-weight:500">Transportation</p><p class="t-xs muted">3 pictures · Easy</p></div><span class="spacer"></span><a class="t-sm" href="#packs">Change</a></div>
+<div class="spacer"></div>
+<button class="btn full disabled">Start game</button>
+<p class="t-xs muted" style="text-align:center">Needs one more player</p>
+</div></div></div>
+
+<div class="frame" style="left:980px;top:1580px">
+<p class="cap"><b>Lobby</b><span>ready — room full at 6</span></p>
+<div class="phone"><div class="status"><span>9:44</span><span>5G · 99%</span></div>
+<div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back">←</button><h1 class="t-lg">Your room</h1><span class="spacer"></span><span class="mono t-lg" style="letter-spacing:.16em">PIXW</span></div>
+<div class="panel sunken" style="padding:12px">
+<div class="ph">Players · 6 of 6</div>
+<div class="wrap">
+<span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="t-xs muted">host</span></span>
+<span class="chip"><span class="sw p1"></span><b>Guest</b></span>
+<span class="chip"><span class="sw p2"></span><b>Mika</b></span>
+<span class="chip"><span class="sw p3"></span><b>Rui</b></span>
+<span class="chip"><span class="sw p4"></span><b>Tomi</b></span>
+<span class="chip"><span class="sw p5"></span><b>Bea</b></span>
+</div>
+<p class="t-xs muted" style="margin-top:10px">Room is full — no one else can join with this code.</p>
+</div>
+<div class="stack gap2"><span class="eyebrow">Mode</span><div class="seg"><span>Same board</span><span class="on">Own board</span></div><p class="t-xs muted">Everyone fills their own copy. Compared at the end.</p></div>
+<div class="row panel" style="padding:12px 14px"><span data-pic="sailboat" data-cell="6" data-mode="target"></span><div class="stack" style="margin-left:12px"><p class="t-sm" style="font-weight:500">Sailboat</p><p class="t-xs muted">Transportation · Easy</p></div><span class="spacer"></span><a class="t-sm" href="#packs">Change</a></div>
+<div class="spacer"></div>
+<button class="btn lg full">Start game</button>
+<p class="t-xs muted" style="text-align:center">Only the host can start</p>
+</div></div></div>
+
+<div class="note frame" style="left:1450px;top:1618px">
+<span class="n">Annotation 05</span>
+<h3>The room code is spoken, not typed</h3>
+<p>Monospace, generously letterspaced, and the biggest thing on the lobby screen. The alphabet already excludes <code>I O 0 1</code>, so the design never has to disambiguate them visually.</p>
+<p>Entry uses <code>RoomCodeInput</code> at its full <code>2.75rem</code> boxes — four targets, not one text field.</p>
+</div>
+
+<!-- ───────────────── 3 · GAME ───────────────── -->
+<div class="rowhead" style="left:80px;top:2530px"><em>Surface 03 · route /r/:code</em>Game<p>The board is the hero and sits centred; status is a thin band above it; the offer control is pinned to the bottom so the layout never moves between states.</p></div>
+
+<div class="frame" style="left:80px;top:2700px">
+<p class="cap"><b>Game</b><span>offer available — nothing chosen yet</span></p>
+<div class="phone"><div class="status"><span>9:51</span><span>5G · 96%</span></div>
+<div class="hud">
+<header><div class="row" style="gap:12px;align-items:baseline"><span class="mono t-lg" style="letter-spacing:.16em">PIXW</span><span class="t-sm muted">Round 3</span></div><span class="pill">Connected</span></header>
+<div class="players"><span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="sc">12</span></span><span class="chip"><span class="sw p1"></span><b>Guest</b><span class="sc">9</span></span><span class="chip"><span class="sw p2"></span><b>Mika</b><span class="sc">7</span></span></div>
+<main><div class="board"><span data-pic="tram" data-cell="26" data-mode="board" data-progress="0.34" data-seats="0,1,2"></span></div><p class="t-sm muted">Tram · 34 of 62 squares</p></main>
+<footer>
+<p class="t-sm" style="font-weight:500">Your turn — take the pair or the die.</p>
+<div class="offers">
+<div class="offer"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span></span></div>
+<div class="offer"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div>
+</div>
+</footer>
+</div></div></div>
+
+<div class="frame" style="left:530px;top:2700px">
+<p class="cap"><b>Game</b><span>filling — pair selected, candidate cells lit</span></p>
+<div class="phone"><div class="status"><span>9:51</span><span>5G · 96%</span></div>
+<div class="hud">
+<header><div class="row" style="gap:12px;align-items:baseline"><span class="mono t-lg" style="letter-spacing:.16em">PIXW</span><span class="t-sm muted">Round 3</span></div><span class="pill">Connected</span></header>
+<div class="players"><span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="sc">12</span></span><span class="chip"><span class="sw p1"></span><b>Guest</b><span class="sc">9</span></span><span class="chip"><span class="sw p2"></span><b>Mika</b><span class="sc">7</span></span></div>
+<main><div class="board"><span data-pic="tram" data-cell="26" data-mode="board" data-progress="0.34" data-seats="0,1,2" data-cand="7,3;8,3;7,4;8,4"></span></div><p class="t-sm muted">Drag to move · tap to place both pieces</p></main>
+<footer>
+<div class="offers">
+<div class="offer on"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span></span></div>
+<div class="offer"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div>
+</div>
+<button class="btn full">Place 4 squares</button>
+</footer>
+</div></div></div>
+
+<div class="frame" style="left:980px;top:2700px">
+<p class="cap"><b>Game</b><span>awaiting the referee → fill rejected · someone away</span></p>
+<div class="phone"><div class="status"><span>9:52</span><span>5G · 95%</span></div>
+<div class="hud">
+<header><div class="row" style="gap:12px;align-items:baseline"><span class="mono t-lg" style="letter-spacing:.16em">PIXW</span><span class="t-sm muted">Round 3</span></div><span class="pill warn">Connecting…</span></header>
+<div class="players"><span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="sc">12</span></span><span class="chip"><span class="sw p1"></span><b>Guest</b><span class="sc">11</span></span><span class="chip away"><span class="sw p2"></span><b>Mika</b><span class="t-xs muted">away</span></span></div>
+<main><div class="board"><span data-pic="tram" data-cell="26" data-mode="board" data-progress="0.34" data-seats="0,1,2" data-inv="2,6;3,6"></span></div><div class="toast">Those two squares went back — Guest reached them first.</div></main>
+<footer>
+<div class="offers">
+<div class="offer on off"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span></span></div>
+<div class="offer off"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div>
+</div>
+<button class="btn full disabled">Waiting for the referee…</button>
+</footer>
+</div></div></div>
+
+<div class="note frame" style="left:1450px;top:2738px">
+<span class="n">Annotation 01</span>
+<h3><code>BoardCell</code> carries six states, and one of them is a rollback</h3>
+<p><code>blank · fillable · candidate · filled · locked · invalid</code>. <code>invalid</code> is the visible undo when the referee rejects an optimistic fill — it must read as "that was taken back", never as a mistake the player made.</p>
+<p>Hence the wording in the third frame: it names who got there first instead of scolding.</p>
+</div>
+
+<div class="note frame" style="left:1450px;top:3050px">
+<span class="n">Annotation 03</span>
+<h3>The board scales in whole pixels</h3>
+<p>It renders on Canvas with integer scaling and no smoothing, so cell size steps rather than glides between phone and desktop. No soft shadows on cells, no fractional sizes, no per-cell rounding beyond 0.</p>
+</div>
+
+<div class="note frame" style="left:1450px;top:3300px">
+<span class="n">Annotation 07 · revision</span>
+<h3><code>DiceFace</code> combos stack onto two lines</h3>
+<p>The combination faces (<code>1+2 · 2+2 · 1+3</code>) previously ran as one inline row — blob, <code>+</code>, blob — which crowded the 48px face at <code>md</code> and clipped at <code>sm</code>.</p>
+<p>Each blob now takes its own line, separated by a hairline rule in <code>--border</code>. Two blobs still read as two, the <code>+</code> glyph is no longer needed, and the face is comfortable at all three sizes.</p>
+</div>
+
+<!-- ───────────────── 4 · ROLL CONTROL ───────────────── -->
+<div class="rowhead" style="left:80px;top:3660px"><em>Surface 04 · component, lives inside Game</em>Roll / offer control<p>Where every turn actually happens. The pair and the fallback die are both revealed up front — a decline-to-reveal design would leak the die value to slower players in same-board mode.</p></div>
+
+<div class="frame" style="left:80px;top:3880px">
+<div class="panel" style="padding:24px;border-radius:20px;background:#f6f7f9">
+<div class="states">
+<div class="statecard"><span class="lb">idle — offer not yet issued</span><div class="rc"><div class="offers"><div class="offer off"><span class="lb">Pair</span><div class="skel" style="width:70px"></div></div><div class="offer off"><span class="lb">Fallback</span><div class="skel" style="width:44px"></div></div></div><p class="t-sm muted">Next offer at the top of the round.</p></div></div>
+<div class="statecard"><span class="lb">rolling</span><div class="rc"><div class="offers"><div class="offer"><span class="lb">Pair</span><span class="glyphs" style="opacity:.5"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></span></div><div class="offer"><span class="lb">Fallback</span><span class="die rolling"><span class="pips"><i></i><i></i><i></i></span></span></div></div><p class="t-sm muted" role="status">Rolling…</p></div></div>
+<div class="statecard"><span class="lb">options available — nothing chosen</span><div class="rc"><div class="offers"><div class="offer"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span></span></div><div class="offer"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div></div><p class="t-sm">Take the pair, or take the die.</p></div></div>
+<div class="statecard"><span class="lb">pair selected</span><div class="rc"><div class="offers"><div class="offer on"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span></span></div><div class="offer"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div></div><button class="btn full">Place 4 squares</button></div></div>
+<div class="statecard"><span class="lb">awaiting server truth — disabled, not hidden</span><div class="rc"><div class="offers"><div class="offer on off"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span></span></div><div class="offer off"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div></div><button class="btn full disabled">Waiting for the referee…</button></div></div>
+<div class="statecard"><span class="lb">no legal move</span><div class="rc"><div class="offers"><div class="offer off"><span class="lb">Pair</span><span class="glyphs"><span class="glyph" style="grid-template-columns:repeat(4,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></span></div><div class="offer off"><span class="lb">Fallback</span><span class="die"><span class="combo"><span class="pips"><i></i><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></span></span></div></div><p class="t-sm muted">Nothing fits on your board this round.</p><button class="btn secondary full">Pass the round</button></div></div>
+</div>
+</div>
+</div>
+
+<div class="note frame" style="left:1450px;top:3880px">
+<span class="n">Annotation 04</span>
+<h3>Disabled beats hidden</h3>
+<p>Between submitting a fill and the referee's answer, the control stays in place at the same height and dims. Hiding it would collapse the footer and shift the board at the exact moment the player is watching it.</p>
+<p>Same reason the <em>no legal move</em> state keeps both offers on screen and adds a pass action instead of emptying the footer.</p>
+</div>
+
+<!-- ───────────────── 5 · RESULTS ───────────────── -->
+<div class="rowhead" style="left:80px;top:4600px"><em>Surface 05 · route /results</em>Results<p>The finished picture is the reward, so it is revealed first and full-colour. Scores sit under it; the rematch is the primary action, in the lower half.</p></div>
+
+<div class="frame" style="left:80px;top:4770px">
+<p class="cap"><b>Results</b><span>solo completion</span></p>
+<div class="phone"><div class="status"><span>10:03</span><span>5G · 92%</span></div>
+<div class="screen">
+<div class="stack gap2"><span class="eyebrow">Picture complete</span><h1 class="t-2xl">Hot-air balloon</h1></div>
+<div class="panel" style="display:grid;place-items:center;padding:20px"><span data-pic="balloon" data-cell="26" data-mode="target"></span></div>
+<div class="row panel sunken" style="justify-content:space-around;padding:14px">
+<div class="stack" style="text-align:center"><span class="mono t-lg">14</span><span class="t-xs muted">rounds</span></div>
+<div class="stack" style="text-align:center"><span class="mono t-lg">52</span><span class="t-xs muted">squares</span></div>
+<div class="stack" style="text-align:center"><span class="mono t-lg">4:12</span><span class="t-xs muted">time</span></div>
+</div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full">Play again</button><button class="btn secondary full">Choose another picture</button></div>
+</div></div></div>
+
+<div class="frame" style="left:530px;top:4770px">
+<p class="cap"><b>Results</b><span>multiplayer, ranked — own board mode</span></p>
+<div class="phone"><div class="status"><span>10:03</span><span>5G · 92%</span></div>
+<div class="screen">
+<div class="stack gap2"><span class="eyebrow">Round over · Tram</span><h1 class="t-2xl">Alex wins</h1></div>
+<div class="panel" style="display:grid;place-items:center;padding:16px"><span data-pic="tram" data-cell="24" data-mode="target"></span></div>
+<div class="stack gap2">
+<div class="rank win"><span class="pos">1</span><span class="sw p0"></span><b class="t-base">Alex</b><span class="sc">38</span></div>
+<div class="rank"><span class="pos">2</span><span class="sw p1"></span><b class="t-base">Guest</b><span class="sc">31</span></div>
+<div class="rank"><span class="pos">3</span><span class="sw p2"></span><b class="t-base">Mika</b><span class="sc">22</span></div>
+</div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full">Rematch</button><button class="btn secondary full">Back to the room</button></div>
+</div></div></div>
+
+<div class="frame" style="left:980px;top:4770px">
+<p class="cap"><b>Results</b><span>a tie · someone left mid-game</span></p>
+<div class="phone"><div class="status"><span>10:04</span><span>5G · 91%</span></div>
+<div class="screen">
+<div class="stack gap2"><span class="eyebrow">Round over · Sailboat</span><h1 class="t-2xl">It's a tie</h1></div>
+<div class="panel" style="display:grid;place-items:center;padding:16px"><span data-pic="sailboat" data-cell="24" data-mode="target"></span></div>
+<div class="stack gap2">
+<div class="rank win"><span class="pos">1</span><span class="sw p0"></span><b class="t-base">Alex</b><span class="pill accent">Tied</span><span class="sc">34</span></div>
+<div class="rank win"><span class="pos">1</span><span class="sw p3"></span><b class="t-base">Rui</b><span class="pill accent">Tied</span><span class="sc">34</span></div>
+<div class="rank left"><span class="pos">3</span><span class="sw p2"></span><b class="t-base">Mika</b><span class="t-xs muted">left · score kept</span><span class="sc">22</span></div>
+</div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full">Rematch</button><button class="btn ghost full">Leave room</button></div>
+</div></div></div>
+
+<div class="note frame" style="left:1450px;top:4808px">
+<span class="n">Annotation 02</span>
+<h3>Colour is never the only signal</h3>
+<p>The six seat colours are Okabe–Ito derived and each carries a hatch: solid, diagonal, dots, horizontal, cross, vertical. Every swatch on every surface — chips, ranks, filled cells — keeps the hatch.</p>
+<p>The same rule covers state: an absent player is dimmed <em>and</em> labelled "away"; a selected pack is ticked <em>and</em> outlined.</p>
+</div>
+
+<!-- ───────────────── 6 · PACKS ───────────────── -->
+<div class="rowhead" style="left:80px;top:5710px" id="packs"><em>Surface 06 · route /packs</em>Pack picker<p>Two levels: packs, then the pictures inside one. Both make it obvious that more are coming without pretending they exist yet.</p></div>
+
+<div class="frame" style="left:80px;top:5880px">
+<p class="cap"><b>Packs</b><span>one selected · one coming soon</span></p>
+<div class="phone"><div class="status"><span>9:47</span><span>5G · 98%</span></div>
+<div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back">←</button><h1 class="t-lg">Packs</h1></div>
+<div class="stack gap3">
+<div class="packcard on">
+<span class="thumb"><span data-pic="tram" data-cell="5" data-mode="target"></span></span>
+<div class="stack" style="flex:1;min-width:0"><div class="row" style="gap:8px"><h3 class="t-base">Transportation</h3><span class="pill">Easy</span></div><p class="t-xs muted">Things that carry you somewhere.</p><p class="t-xs muted mono" style="margin-top:4px">3 pictures</p></div>
+<span class="tick">✓</span>
+</div>
+<div class="packcard locked">
+<span class="thumb" style="display:grid;place-items:center;width:66px;height:66px"><span class="t-xs muted mono">soon</span></span>
+<div class="stack" style="flex:1;min-width:0"><div class="row" style="gap:8px"><h3 class="t-base">Garden</h3><span class="pill">Coming soon</span></div><p class="t-xs muted">Small green things, in season.</p><p class="t-xs muted mono" style="margin-top:4px">8 pictures</p></div>
+</div>
+</div>
+<div class="panel sunken" style="padding:14px"><p class="t-sm muted">Packs are free and arrive with app updates. Nothing here is bought, and nothing is locked behind an account.</p></div>
+<div class="spacer"></div>
+<button class="btn lg full">Use Transportation</button>
+</div></div></div>
+
+<div class="frame" style="left:530px;top:5880px">
+<p class="cap"><b>Packs</b><span>inside a pack · one already completed</span></p>
+<div class="phone"><div class="status"><span>9:48</span><span>5G · 98%</span></div>
+<div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back">←</button><div class="stack"><h1 class="t-lg">Transportation</h1><p class="t-xs muted">3 pictures · Easy</p></div></div>
+<div class="tiles">
+<div class="tile on"><span data-pic="tram" data-cell="9" data-mode="target"></span><div class="stack" style="align-items:center;gap:4px"><p class="t-sm" style="font-weight:500">Tram</p><span class="pill accent">✓ Completed</span></div></div>
+<div class="tile"><span data-pic="sailboat" data-cell="9" data-mode="outline"></span><div class="stack" style="align-items:center;gap:4px"><p class="t-sm" style="font-weight:500">Sailboat</p><span class="t-xs muted">Easy · 46 squares</span></div></div>
+<div class="tile"><span data-pic="balloon" data-cell="9" data-mode="outline"></span><div class="stack" style="align-items:center;gap:4px"><p class="t-sm" style="font-weight:500">Hot-air balloon</p><span class="pill">Today's daily</span></div></div>
+<div class="tile ghosted"><p class="t-sm">More pictures<br>on the way</p></div>
+</div>
+<div class="spacer"></div>
+<button class="btn lg full">Play Sailboat</button>
+<p class="t-xs muted" style="text-align:center">Solo and daily work with no connection.</p>
+</div></div></div>
+
+<div class="note frame" style="left:1450px;top:5918px">
+<span class="n">Annotation 08</span>
+<h3>Offline is a first-class state, not an error</h3>
+<p>Solo and daily run with no network at all, so no flow in them may depend on a green connection indicator. The connection pill exists only inside a room, and reads <em>Connecting…</em> in warning tone rather than red.</p>
+<p>Equally: nothing on any surface implies a profile, a login, or a saved history beyond "the daily you already did today".</p>
+</div>
+
+<script src="render-pictures.js"></script>
+</body>
+</html>
