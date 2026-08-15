@@ -8,6 +8,11 @@ build/
 .env.*
 !.env.example
 
+# Claude Code local-machine settings — not shared, and `*.local` above
+# doesn't match a `.local.` segment mid-filename the way it matches a
+# trailing `.local` extension.
+.claude/settings.local.json
+
 # Editor / OS
 .DS_Store
 .idea/

@@ -13,13 +13,14 @@
     "build": "pnpm -r build",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "tokens:build": "tsx scripts/build-tokens.ts",
     "design:build": "pnpm --filter @pixwagon/web build && tsx scripts/build-design-system.tsx",
     "design:check": "tsx scripts/check-design-system.ts",
     "check:screens": "tsx scripts/check-screens.tsx",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:screens && pnpm generated:check && pnpm design:check",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:screens && pnpm generated:check && pnpm design:check",
     "generated:check": "pnpm tokens:build && pnpm design:build && node scripts/assert-clean.mjs apps/web/src/design/tokens.css design-system"
   },
   "devDependencies": {
