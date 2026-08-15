@@ -11,6 +11,12 @@ export interface BoardCanvasProps {
    *  constant — per-cell player attribution is a same-board (Phase 5) concern,
    *  and `CellState` deliberately doesn't carry a player id (game-core/types.ts). */
   colorIndex?: number;
+  /** Cells staged in the pending choice but not yet committed — the
+   *  `candidate` state (`docs/design/surfaces/` Annotation 01). */
+  candidateCells?: readonly CellRef[];
+  /** True while briefly showing `applyMove`'s rejection on the candidate
+   *  cells before they clear — the `invalid` state. */
+  invalid?: boolean;
   onCellPress?: (cell: CellRef) => void;
 }
 
@@ -29,6 +35,8 @@ export function BoardCanvas({
   board,
   cellSize = 20,
   colorIndex = 0,
+  candidateCells = [],
+  invalid = false,
   onCellPress,
 }: BoardCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -57,6 +65,8 @@ export function BoardCanvas({
     const fillable = styles.getPropertyValue('--color-cell-fillable').trim() || '#d3d9e0';
     const locked = styles.getPropertyValue('--color-cell-locked').trim() || '#adb7c2';
     const border = styles.getPropertyValue('--color-border').trim() || '#d3d9e0';
+    const accent = styles.getPropertyValue('--color-accent').trim() || '#2a9d8a';
+    const danger = styles.getPropertyValue('--color-danger').trim() || '#d64a3f';
     const color = playerColor(colorIndex);
 
     ctx.fillStyle = blank;
@@ -100,7 +110,19 @@ export function BoardCanvas({
       ctx.lineTo(width * cellSize, y * cellSize + 0.5);
       ctx.stroke();
     }
-  }, [board, width, height, cellSize, colorIndex]);
+
+    // Candidate/invalid overlay last, so the dashed outline sits above the
+    // grid lines rather than under them.
+    if (candidateCells.length > 0) {
+      ctx.strokeStyle = invalid ? danger : accent;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      for (const cell of candidateCells) {
+        ctx.strokeRect(cell.x * cellSize + 1, cell.y * cellSize + 1, cellSize - 2, cellSize - 2);
+      }
+      ctx.setLineDash([]);
+    }
+  }, [board, width, height, cellSize, colorIndex, candidateCells, invalid]);
 
   return (
     <canvas

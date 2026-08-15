@@ -1,5 +1,5 @@
 import { cellsAt, getPiece } from '@pixwagon/game-core';
-import type { FallbackFaceId, PieceId } from '@pixwagon/game-core';
+import type { FallbackFaceId, Orientation, PieceId } from '@pixwagon/game-core';
 import type { FallbackFace } from '../components/game/DiceFace.tsx';
 import type { PieceOfferView } from '../components/game/RollControl.tsx';
 
@@ -9,12 +9,18 @@ import type { PieceOfferView } from '../components/game/RollControl.tsx';
  * component so they're testable the same way game-core itself is tested.
  */
 
-/** A piece as offered, at its canonical (unrotated, unmirrored) orientation —
- *  rotation/mirroring is a placement-time choice (Phase 2's placement UI),
- *  not something the offer itself carries. */
-export function pieceOfferView(pieceId: PieceId): PieceOfferView {
+const CANONICAL: Orientation = { rotation: 0, mirrored: false };
+
+/** A piece's footprint at a given orientation, as `PieceGlyph` wants it —
+ *  defaults to the canonical (unrotated, unmirrored) orientation for the
+ *  round-offer display; the placement editor passes the pending piece's
+ *  current orientation while the player is composing a move. */
+export function pieceOfferView(
+  pieceId: PieceId,
+  orientation: Orientation = CANONICAL,
+): PieceOfferView {
   const piece = getPiece(pieceId);
-  const cells = cellsAt(piece, { rotation: 0, mirrored: false });
+  const cells = cellsAt(piece, orientation);
   return { id: pieceId, cells: cells.map((cell) => ({ x: cell.dx, y: cell.dy })) };
 }
 
