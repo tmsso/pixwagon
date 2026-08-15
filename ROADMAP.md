@@ -25,7 +25,7 @@ Everything `/design-sync` needs to find before any screen is designed, plus the 
 
 ---
 
-## Phase 0.5 — Design interlude _(not a code phase — the admin drives this)_
+## Phase 0.5 — Design interlude _(not a code phase — the admin drives this)_ ✅ **Accepted 2026-08-15**
 
 The scaffold exists so this can happen against real tokens rather than invented ones.
 
@@ -36,6 +36,13 @@ The scaffold exists so this can happen against real tokens rather than invented 
 5. Bring the result back with the **Handoff button**, which opens a fresh Claude Code session preloaded with the design context.
 
 **Accept:** Design generates against our card index rather than approximated colours and invented component names; the output lands in `docs/design/`.
+
+Landed in `docs/design/handoff/` (chat transcripts + sync record) and
+`docs/design/surfaces/` (the annotated six-surface canvas), via PR #8. That
+PR also shipped the one code change the handoff specified: `DiceFace.tsx`'s
+combination faces (`1+2`/`2+2`/`1+3`) now stack their two blobs on separate
+lines with a hairline rule instead of a crowded inline row. Building the six
+surfaces out as real routes is still Phase 2, not started by that PR.
 
 > Direction note: every `DesignSync` write method points repo → Design. The Design → repo direction is the Handoff button, not a `/design-sync` pull. See `docs/design/README.md`.
 
