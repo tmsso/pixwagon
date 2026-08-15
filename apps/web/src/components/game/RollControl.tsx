@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '../ui/Button.tsx';
 import { DiceFace, type FallbackFace } from './DiceFace.tsx';
 import { PieceGlyph } from './PieceGlyph.tsx';
 
@@ -21,6 +22,11 @@ export interface RollControlProps {
   /** True between submitting a fill and the referee's answer. */
   awaitingServer?: boolean;
   onChoose?: (choice: OfferChoice) => void;
+  /** The design surfaces' "pair selected" statecard shows a commit button
+   *  ("Place 4 squares") inside the control itself, once a choice is fully
+   *  composed. Omit to keep the control choose-only (e.g. mid-composition,
+   *  before the pending choice is complete). */
+  commit?: { label: string; disabled: boolean; onCommit: () => void; onCancel: () => void };
 }
 
 /**
@@ -40,6 +46,7 @@ export function RollControl({
   selectedChoice,
   awaitingServer = false,
   onChoose,
+  commit,
 }: RollControlProps) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
@@ -71,6 +78,15 @@ export function RollControl({
         <p className="text-sm text-ink-muted" role="status">
           Waiting for the referee…
         </p>
+      ) : commit ? (
+        <div className="flex gap-2">
+          <Button size="lg" className="flex-1" disabled={commit.disabled} onClick={commit.onCommit}>
+            {commit.label}
+          </Button>
+          <Button variant="secondary" size="lg" onClick={commit.onCancel}>
+            Cancel
+          </Button>
+        </div>
       ) : null}
     </div>
   );
