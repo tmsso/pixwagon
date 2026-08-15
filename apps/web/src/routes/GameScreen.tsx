@@ -1,4 +1,4 @@
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { scoreBoard } from '@pixwagon/game-core';
 import type { CellRef } from '@pixwagon/game-core';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
@@ -81,9 +81,16 @@ export function GameScreen() {
       }
       controls={
         status === 'complete' ? (
-          <p className="text-center text-sm font-medium text-ink" role="status">
-            Picture complete! +{score.points} points
-          </p>
+          <div className="grid gap-3 text-center">
+            <p className="text-sm font-medium text-ink" role="status">
+              Picture complete! +{score.points} points
+            </p>
+            <Link to="/results">
+              <Button size="lg" className="w-full">
+                See results
+              </Button>
+            </Link>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             <RollControl

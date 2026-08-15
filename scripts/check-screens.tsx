@@ -56,8 +56,8 @@ const screens: ScreenCase[] = [
     name: 'Results',
     path: '/results',
     element: <ResultsScreen />,
-    // Pulls a real picture name out of the transportation pack.
-    expect: ['Round over', 'Rematch', 'Tram'],
+    // Pulls a real picture name and live score out of the solo store.
+    expect: ['Rematch', 'Tram', 'Score'],
   },
   {
     name: 'PackPicker',

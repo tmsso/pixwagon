@@ -83,16 +83,22 @@ export interface SoloGameState {
   passRound: () => void;
 }
 
-const DEFAULT_CONFIG: SoloSessionConfig = {
-  // A fresh id per page load, not a fixed constant: unlike the daily puzzle
-  // (Phase 7), an ordinary solo game shouldn't replay identically on reload.
-  // `?seed=` overrides this — see docs/contracts/rng.md and the Phase 1
-  // achievability test's `achievability-0` witness, which is what a live
-  // verification pass should pass in to get a reliably completable board.
-  roomSeed: `solo-${crypto.randomUUID()}`,
-  packId: 'transportation',
-  pictureId: 'tram',
-};
+/** The pack/picture Phase 2 ships (Phase 8 tests adding a second pack, not
+ *  this phase) and a brand-new random seed — unlike the daily puzzle (Phase
+ *  7), an ordinary solo game shouldn't replay identically on reload, or on
+ *  the next "Solo"/"Rematch" press. `?seed=` overrides this at session start
+ *  — see docs/contracts/rng.md and the Phase 1 achievability test's
+ *  `achievability-0` witness, which is what a live verification pass should
+ *  pass in to get a reliably completable board. A function, not a constant:
+ *  a constant would freeze its `randomUUID()` at module load and every call
+ *  site "starting a fresh game" would silently replay the same one seed. */
+export function freshSoloConfig(): SoloSessionConfig {
+  return {
+    roomSeed: `solo-${crypto.randomUUID()}`,
+    packId: 'transportation',
+    pictureId: 'tram',
+  };
+}
 
 function sessionFromConfig(config: SoloSessionConfig) {
   return {
@@ -108,10 +114,11 @@ function sessionFromConfig(config: SoloSessionConfig) {
   };
 }
 
-/** Reads `?seed=` from the current URL, if any — see `DEFAULT_CONFIG`'s note. */
+/** Reads `?seed=` from the current URL, if any — see `freshSoloConfig`'s note. */
 export function initialSoloConfig(search: string): SoloSessionConfig {
   const seed = new URLSearchParams(search).get('seed');
-  return seed ? { ...DEFAULT_CONFIG, roomSeed: seed } : DEFAULT_CONFIG;
+  const config = freshSoloConfig();
+  return seed ? { ...config, roomSeed: seed } : config;
 }
 
 function updatePending(
@@ -126,7 +133,7 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
     // Module-scope `window` access would break under `renderToStaticMarkup`
     // (scripts/check-screens.tsx runs this store in Node); guard it so the
     // default config still wins server-side.
-    typeof window === 'undefined' ? DEFAULT_CONFIG : initialSoloConfig(window.location.search),
+    typeof window === 'undefined' ? freshSoloConfig() : initialSoloConfig(window.location.search),
   ),
 
   start: (config) => set(sessionFromConfig(config)),

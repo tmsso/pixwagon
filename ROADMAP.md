@@ -77,17 +77,17 @@ The rules engine, pure and heavily tested. Nothing here touches the network, the
 
 ---
 
-## Phase 2 — Local solo playable
+## Phase 2 — Local solo playable ✅ **Accepted 2026-08-16**
 
 `web` + `game-core` + one pack, no network. Proves the game is fun and the board interaction works before any multiplayer complexity exists.
 
 - Canvas board renderer, drawing the states `BoardCell` already defines. Crisp integer scaling, device-pixel-ratio aware.
 - **Touch and mouse input for piece placement — corrected 2026-08-15 to match `docs/mechanics-correction.md`, which this bullet predates.** Not "drag to fill contiguous cells" (that was the dice-era model). Per round: rotate/mirror/position each of the pair's two pieces independently, committed as one atomic move (no partial placement); or place one or two independent blobs sized to the fallback die's face, each blob dragged into place, compound faces both-or-nothing. Undo before commit, either path. **Correction, 2026-08-15:** `docs/design/surfaces/` has no annotation specifying the on-board placement gesture — the slot this bullet originally pointed to (annotation 7) was repurposed for the `DiceFace` combo-stacking fix in PR #8 and never carried placement guidance. The affordance is designed in this phase from what the handoff _does_ specify: `BoardCell`'s `candidate`/`invalid` states (`docs/design/surfaces/` Annotation 01) and the disabled-not-hidden control pattern (Annotation 04). Concretely: tap a piece in the roll control to select it, tap a board cell to place it as `candidate` cells at a default orientation, rotate/mirror buttons adjust the pending candidate, tapping a different cell moves it, and a commit button (mirroring `RollControl`'s existing "Place N squares" state) submits the whole choice atomically through `applyMove`.
-- Real screens replacing the Phase 0 placeholders, built from the design handoff (landed at `docs/design/handoff/` and `docs/design/surfaces/`, PR #8).
+- Real screens replacing the Phase 0 placeholders, built from the design handoff (landed at `docs/design/handoff/` and `docs/design/surfaces/`, PR #8). **Scoped 2026-08-16:** Home, Game, and PackPicker are the three the Phase 0 scaffold's own `ScaffoldNotice` tags "Phase 2" — those are real. Lobby stays a placeholder (tagged "Phase 4"; it needs a room to actually join, which doesn't exist until then). Results was tagged "Phase 6" by that same Phase 0 guess, but the design handoff's own Surface 05 is explicitly captioned "solo completion" — a later, more specific source than a pre-design placeholder — so it's built for real here too; Phase 6 still owns the multiplayer ranked-comparison version of the same route.
 - **Client state, decided 2026-08-15: zustand**, not a bare reducer. Reasoning: Phase 4/5 will need a WebSocket handler to dispatch state updates from outside the React tree (a reconnect/resync event has no natural React event to hang a `dispatch` off), and a zustand store's plain `getState()`/`setState()` outside components is a better fit for that than threading a reducer's `dispatch` through a context. The solo store built in this phase (`apps/web/src/state/soloGame.ts`) is the first real use; multiplayer will likely need a second store shaped around `RoomState`, not a reuse of this one.
 - Ships as a static page.
 
-**Accept:** a single player completes a transportation picture in a browser on a phone-sized viewport, offline, with no server running.
+**Accept:** ✅ a single player completes a transportation picture in a browser on a phone-sized viewport, offline, with no server running. Verified live 2026-08-16 against `achievability-0` (the Phase 1 witness seed): 50 rounds played through real pointer clicks in real Chromium at a 390×844 viewport — Home → Solo → full completion → Results → Rematch — zero console errors. Delivered across 3 PRs (#10 store + board render, #11 placement + round loop, #12 real screens); see the project memory entry for gotchas found along the way (a round-indexing bug, a fallback-legality false positive).
 
 ---
 
