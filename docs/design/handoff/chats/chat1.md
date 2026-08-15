@@ -23,4 +23,3 @@ _[tool: str_replace_edit]_
 _[tool: check_design_system]_
 
 Clean — added the Google Fonts `@import` to `surfaces/pixwagon-surfaces.css` so Inter and JetBrains Mono resolve as real `@font-face` sources; tokens unchanged.
-

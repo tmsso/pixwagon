@@ -12,6 +12,10 @@ export default tseslint.config(
       // Generated — the generator is linted instead.
       'apps/web/src/design/tokens.css',
       'design-system/**',
+      // Standalone design-tool output — a self-contained prototype script run
+      // via a plain <script> tag, not part of the app bundle. Same treatment
+      // as design-system/** above.
+      'docs/design/surfaces/**',
     ],
   },
 

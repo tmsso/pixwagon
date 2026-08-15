@@ -4,7 +4,7 @@ Output of the Phase 0.5 design pass (`docs/design/BRIEF.md`), landed here per th
 Handoff-button fallback described in `docs/design/README.md`.
 
 - `chats/` — the Claude Design conversation transcripts (`DiceFace formatting
-  revision`, `Commit changes`). They record the reasoning behind the changes
+revision`, `Commit changes`). They record the reasoning behind the changes
   below; read them before touching this handoff further.
 - `github.md` — the sync record Claude Design kept of what it pulled from and
   proposed back to this repo.
