@@ -25,6 +25,7 @@ catalog:
   vite: ^8.2.0
   wrangler: ^4.116.0
   zod: ^4.4.3
+  zustand: ^5.0.15
 
 minimumReleaseAgeExclude:
   - '@cloudflare/workerd-darwin-64@1.20260730.1'

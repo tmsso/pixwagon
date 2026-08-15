@@ -15,7 +15,8 @@
     "@pixwagon/protocol": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
