@@ -46,9 +46,9 @@ export function DiceFace({ face, rolling = false, size = 'md' }: DiceFaceProps) 
       {typeof face === 'number' ? (
         <BlobDots count={face} size={size} />
       ) : (
-        <span className={['flex items-center', DOT_GAP[size]].join(' ')}>
+        <span className={['flex flex-col items-center', DOT_GAP[size]].join(' ')}>
           <BlobDots count={face[0]} size={size} />
-          <span className="font-mono text-xs text-ink-muted">+</span>
+          <span className="h-px w-full bg-border" />
           <BlobDots count={face[1]} size={size} />
         </span>
       )}
