@@ -82,8 +82,8 @@ The rules engine, pure and heavily tested. Nothing here touches the network, the
 `web` + `game-core` + one pack, no network. Proves the game is fun and the board interaction works before any multiplayer complexity exists.
 
 - Canvas board renderer, drawing the states `BoardCell` already defines. Crisp integer scaling, device-pixel-ratio aware.
-- Touch and mouse input; drag to fill multiple cells; undo before commit.
-- Real screens replacing the Phase 0 placeholders, built from the design handoff.
+- **Touch and mouse input for piece placement — corrected 2026-08-15 to match `docs/mechanics-correction.md`, which this bullet predates.** Not "drag to fill contiguous cells" (that was the dice-era model). Per round: rotate/mirror/position each of the pair's two pieces independently, committed as one atomic move (no partial placement); or place one or two independent blobs sized to the fallback die's face, each blob dragged into place, compound faces both-or-nothing. Undo before commit, either path. See `docs/design/surfaces/` annotation 7 for the on-board placement affordance.
+- Real screens replacing the Phase 0 placeholders, built from the design handoff (landed at `docs/design/handoff/` and `docs/design/surfaces/`, PR #8).
 - Client state: pick a store (zustand or a reducer) — decide in this phase and record the choice here.
 - Ships as a static page.
 
