@@ -23,7 +23,14 @@ const CONNECTION_LABEL = {
  * thumb reach at the bottom. Phone-first, so controls go last in both the DOM
  * and the layout rather than being a desktop sidebar that gets reflowed.
  */
-export function HudFrame({ roomCode, round, connection, players, children, controls }: HudFrameProps) {
+export function HudFrame({
+  roomCode,
+  round,
+  connection,
+  players,
+  children,
+  controls,
+}: HudFrameProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">

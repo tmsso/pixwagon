@@ -25,7 +25,12 @@ export interface BoardCanvasProps {
  * `fillable`, `locked` read straight off design tokens — only `filled` needs the
  * player hatch).
  */
-export function BoardCanvas({ board, cellSize = 20, colorIndex = 0, onCellPress }: BoardCanvasProps) {
+export function BoardCanvas({
+  board,
+  cellSize = 20,
+  colorIndex = 0,
+  onCellPress,
+}: BoardCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const { width, height } = board.size;
 
