@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>Pixwagon — pass 02 surfaces</title>
+<link rel="stylesheet" href="pass02.css">
+<style>body{min-width:4400px;min-height:12600px;background:#e9ecef}</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="ic-rot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><rect x="7" y="9" width="9" height="9"></rect><path d="M6 7.5V3.5h4"></path><path d="M6.2 3.6A9 9 0 0 1 20 8"></path></symbol>
+<symbol id="ic-mir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M12 2v20" stroke-dasharray="3 3"></path><path d="M9 6H4v12h5"></path><path d="M15 6h5v12h-5"></path></symbol>
+<symbol id="ic-clr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><rect x="4" y="4" width="16" height="16"></rect><path d="M9 9l6 6M15 9l-6 6"></path></symbol>
+<symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M14 5l-7 7 7 7"></path></symbol>
+<symbol id="ic-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M4 20h4l11-11-4-4L4 16v4z"></path></symbol>
+<symbol id="ic-install" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M12 3v11"></path><path d="M7 10l5 5 5-5"></path><path d="M4 19h16"></path></symbol>
+<symbol id="ic-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M3 3l18 18"></path><path d="M5 12a10 10 0 0 1 5-2.6"></path><path d="M8.5 15.5a5 5 0 0 1 2.3-1.3"></path><path d="M12 19h.01"></path></symbol>
+<symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M20 12a8 8 0 1 1-2.4-5.7"></path><path d="M20 4v5h-5"></path></symbol>
+</defs></svg>
+
+<!-- ══ PART A ══ -->
+<div class="parthead" style="left:80px;top:60px">
+<span class="kicker">Part A · authoritative</span>
+<h2>Corrective surfaces — the real mechanic</h2>
+<p>Every round the referee issues two offers, both revealed up front: <b>the pair</b> (two polyominoes, placed together or not at all) and <b>the single</b> (one custom-die value — one blob, or two independent blobs for a compound face). The player picks one, freely, every round. Surfaces keep their numbers; 07 is new. Built against <code>shapes.ts</code>, <code>placement.ts</code>, <code>RollControl.tsx</code>, <code>PlacementEditor.tsx</code> and the real Transportation pack.</p>
+</div>
+
+<!-- Surface 01 · Home -->
+<div class="rowhead" style="left:80px;top:300px"><em>Surface 01</em>Home<p>Unchanged in direction — dice/combo language scrubbed. Three ways in, name-only identity, primary action in the lower half.</p></div>
+<div class="frame" style="left:80px;top:470px">
+<p class="cap"><b>01a</b><span>first visit · no name yet</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row" style="gap:12px"><div class="logogrid"><i class="p0"></i><i class="p1"></i><i class="p3"></i><i class="p2"></i></div><h1 class="t-2xl">Pixwagon</h1></div>
+<p class="t-sm muted">Fill a picture together, one shape at a time.</p>
+<div class="panel row" style="gap:14px"><div data-pic="balloon" data-mode="outline" data-cell="7"></div><div><p class="t-sm">Today’s picture</p><p class="t-xs muted">Same picture, same offers, everyone.</p></div></div>
+<div class="field"><label class="t-sm">Your name</label><div class="input ph">e.g. Alex</div><p class="t-xs muted">Shown to the room. No account, ever.</p></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play with friends</button><div class="row" style="gap:8px"><button class="btn secondary" style="flex:1">Solo</button><button class="btn secondary" style="flex:1">Daily</button></div><a class="t-sm" style="text-align:center">Browse packs · Transportation</a></div>
+</div></div></div>
+<div class="frame" style="left:550px;top:470px">
+<p class="cap"><b>01b</b><span>returning · daily not started</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><h1 class="t-2xl">Hi, Alex</h1><div class="spacer"></div><button class="iconbtn" aria-label="Change your name"><svg width="20" height="20"><use href="#ic-edit"></use></svg></button></div>
+<div class="panel stack gap3"><span class="eyebrow">Today’s daily</span><div class="row" style="gap:14px"><div data-pic="balloon" data-mode="outline" data-cell="8"></div><div><p class="t-base" style="font-weight:500">Hot-air balloon</p><p class="t-xs muted">Medium · works offline</p></div></div></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play the daily</button><div class="row" style="gap:8px"><button class="btn secondary" style="flex:1">Play with friends</button><button class="btn secondary" style="flex:1">Solo</button></div><a class="t-sm" style="text-align:center">Transportation · 3 pictures ›</a></div>
+</div></div></div>
+<div class="frame" style="left:1020px;top:470px">
+<p class="cap"><b>01c</b><span>daily complete</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><h1 class="t-2xl">Hi, Alex</h1><div class="spacer"></div><button class="iconbtn" aria-label="Change your name"><svg width="20" height="20"><use href="#ic-edit"></use></svg></button></div>
+<div class="panel stack gap3"><span class="eyebrow">Today’s daily</span><div class="row" style="gap:14px"><div data-pic="balloon" data-mode="target" data-cell="8"></div><div class="stack gap2"><p class="t-base" style="font-weight:500">Hot-air balloon</p><div class="row" style="gap:6px"><span class="pill accent">Done</span><span class="t-xs mono muted">14 rounds</span></div></div></div><button class="btn secondary full">See your picture</button></div>
+<p class="t-xs muted" style="text-align:center">Next puzzle in 6h 12m</p>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play with friends</button><button class="btn secondary full">Solo</button><a class="t-sm" style="text-align:center">Browse packs</a></div>
+</div></div></div>
+<div class="note" style="position:absolute;left:1490px;top:470px">
+<span class="n">Annotation 01 · unchanged</span><h3>The board is the hero; the choice sits in thumb reach</h3><p>Every screen puts its primary action in the lower half of 390×844. All targets ≥ <code>minTouchTarget</code> (2.75rem). Context and state live in the upper half, where a thumb does not reach.</p>
+</div>
+<div class="note" style="position:absolute;left:1490px;top:760px">
+<span class="n">Annotation 10 · new</span><h3>“The pair” and “the single”, not “fallback”</h3><p><code>RollControl</code>’s <code>label="Fallback"</code> frames the die as error recovery. It is not: the player chooses between the two offers every round, deliberately.</p><p>Ship <b>The pair</b> / <b>The single</b> — plain, parallel, and each describes what you get rather than when you’d resort to it. <code>OfferChoice</code>’s wire values (<code>'pair' | 'fallback'</code>) stay as they are; this is display copy only.</p><p>Copy to retire everywhere: “roll a combo”, “dice”, “fallback”, “if the pair doesn’t fit”.</p>
+</div>
+
+<!-- Surface 03 · Game -->
+<div class="rowhead" style="left:80px;top:1390px"><em>Surface 03</em>Game — the turn, start to finish<p>The redesigned flow: both offers shown → pick one → the composition sheet rises over the board → tap the board to place → commit → referee answers. The board never moves between these states.</p></div>
+<div class="frame" style="left:80px;top:1560px">
+<p class="cap"><b>03a</b><span>offer shown · nothing chosen</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 3</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0"></div></div><p class="hint">Take <b>the pair</b> or <b>the single</b>.</p></div></main>
+<footer><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div></footer>
+</div></div></div>
+<div class="frame" style="left:550px;top:1560px">
+<p class="cap"><b>03b</b><span>pair chosen · 0 of 2 placed</span></p>
+<div class="phone"><div class="hud withsheet"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 3</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0"></div></div></div></main>
+<div class="scrim"></div>
+<div class="sheet"><div class="grip"></div>
+<div class="chosenbar"><span class="sw-lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i></span></div><span class="swap">Switch</span></div>
+<div class="pieces" role="radiogroup" aria-label="Piece to place"><button class="pcard on" role="radio" aria-checked="true"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">Tap the board</span></button><button class="pcard" role="radio" aria-checked="false"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">Not placed</span></button></div>
+<div class="tools"><button class="tool" aria-label="Turn"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></button><button class="tool" aria-label="Flip"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></button><button class="tool off" aria-label="Take back" disabled><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div>
+<div class="row" style="gap:8px"><button class="btn lg disabled" style="flex:1" disabled>Place 5 squares</button><button class="btn secondary lg">Cancel</button></div>
+</div></div></div></div>
+<div class="frame" style="left:1020px;top:1560px">
+<p class="cap"><b>03c</b><span>pair · 1 of 2 placed, ghost on board</span></p>
+<div class="phone"><div class="hud withsheet"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 3</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0" data-ghost="3,3;4,3;3,4"></div></div></div></main>
+<div class="scrim"></div>
+<div class="sheet"><div class="grip"></div>
+<div class="chosenbar"><span class="sw-lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i></span></div><span class="swap">Switch</span></div>
+<div class="pieces" role="radiogroup" aria-label="Piece to place"><button class="pcard done" role="radio" aria-checked="false"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">On the board</span></button><button class="pcard on" role="radio" aria-checked="true"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">Tap the board</span></button></div>
+<div class="tools"><button class="tool" aria-label="Turn"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></button><button class="tool" aria-label="Flip"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></button><button class="tool" aria-label="Take back"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div>
+<div class="row" style="gap:8px"><button class="btn lg disabled" style="flex:1" disabled>Place 5 squares</button><button class="btn secondary lg">Cancel</button></div>
+</div></div></div></div>
+<div class="frame" style="left:1490px;top:1560px">
+<p class="cap"><b>03d</b><span>single · two blobs, one still short</span></p>
+<div class="phone"><div class="hud withsheet"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 3</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0" data-ghost="7,3" data-ghost2="9,5"></div></div></div></main>
+<div class="scrim"></div>
+<div class="sheet"><div class="grip"></div>
+<div class="chosenbar"><span class="sw-lb">The single</span><div class="combo" style="gap:2px"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="swap">Switch</span></div>
+<div class="pieces" role="radiogroup" aria-label="Blob to place"><button class="pcard done" role="radio" aria-checked="false"><span class="dots"><i class="f"></i></span><span class="st">1 of 1 · done</span></button><button class="pcard on" role="radio" aria-checked="true"><span class="dots"><i class="f"></i><i></i></span><span class="st">1 more square</span></button></div>
+<p class="t-xs muted">Two separate blobs. They don’t need to touch.</p>
+<div class="row" style="gap:8px"><button class="btn lg disabled" style="flex:1" disabled>Place 3 squares</button><button class="btn secondary lg">Cancel</button></div>
+</div></div></div></div>
+<div class="frame" style="left:1960px;top:1560px">
+<p class="cap"><b>03e</b><span>complete · ready to commit</span></p>
+<div class="phone"><div class="hud withsheet"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 3</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0" data-ghost="3,3;4,3;3,4" data-ghost2="8,4;9,4"></div></div></div></main>
+<div class="scrim"></div>
+<div class="sheet"><div class="grip"></div>
+<div class="chosenbar"><span class="sw-lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i></span></div><span class="swap">Switch</span></div>
+<div class="pieces" role="radiogroup" aria-label="Piece to place"><button class="pcard done" role="radio" aria-checked="false"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">On the board</span></button><button class="pcard on" role="radio" aria-checked="true"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">On the board</span></button></div>
+<div class="tools"><button class="tool" aria-label="Turn"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></button><button class="tool" aria-label="Flip"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></button><button class="tool" aria-label="Take back"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div>
+<div class="row" style="gap:8px"><button class="btn lg" style="flex:1">Place 5 squares</button><button class="btn secondary lg">Cancel</button></div>
+</div></div></div></div>
+<div class="frame" style="left:2430px;top:1560px">
+<p class="cap"><b>03f</b><span>awaiting the referee · layout stable</span></p>
+<div class="phone"><div class="hud withsheet"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 3</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0" data-ghost="3,3;4,3;3,4" data-ghost2="8,4;9,4"></div></div></div></main>
+<div class="scrim"></div>
+<div class="sheet" style="opacity:.55"><div class="grip"></div>
+<div class="chosenbar"><span class="sw-lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,10px)"><i class="on"></i><i class="on"></i></span></div></div>
+<div class="pieces"><span class="pcard done"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">On the board</span></span><span class="pcard done"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">On the board</span></span></div>
+<div class="tools"><span class="tool off"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></span><span class="tool off"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></span><span class="tool off"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></span></div>
+<div class="row" style="gap:8px"><button class="btn lg disabled" style="flex:1" disabled>Placing…</button><button class="btn secondary lg disabled" disabled>Cancel</button></div>
+</div></div></div></div>
+<div class="frame" style="left:2900px;top:1560px">
+<p class="cap"><b>03g</b><span>rejected · rolled back</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">PIXW</span><span class="t-sm muted">Round 3</span></div><span class="pill warn">Connecting…</span></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span><span class="chip"><span class="sw sq p1"></span><b>Sam</b><span class="sc">9</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".34" data-seats="0,1" data-inv="3,3;4,3"></div></div><div class="toast" role="alert">Those two squares went back — Sam reached them first.</div></div></main>
+<footer><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div><p class="t-sm muted" style="text-align:center">Try those pieces somewhere else.</p></footer>
+</div></div></div>
+<div class="frame" style="left:3370px;top:1560px">
+<p class="cap"><b>03h</b><span>no legal move · pass</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 9</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".82" data-seats="0" data-lock="1,7;10,7"></div></div><p class="hint">Nothing fits on your board this round.</p></div></main>
+<footer><div class="offers"><button class="offer off"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(4,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">8 squares</span></button><button class="offer off"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">2 + 2 squares</span></button></div><button class="btn secondary lg full">Pass the round</button></footer>
+</div></div></div>
+<div class="note" style="position:absolute;left:3840px;top:1560px">
+<span class="n">Annotation 09 · new</span><h3>The on-board gesture, finally specified</h3><p>Phase 2 inferred this from <code>BoardCell.candidate</code>. It is now design, not inference:</p><p><b>Pair.</b> Tap any board cell to drop the active piece’s origin there. Tapping elsewhere <i>moves</i> it — never adds a second copy. Turn and Flip act on the placed ghost in place, pivoting around the origin cell.</p><p><b>Single.</b> Taps toggle individual cells into the active blob; tapping a chosen cell removes it. Contiguity is checked at commit, not per tap, so a player can backtrack through an invalid detour (<code>placement.ts</code> already behaves this way).</p><p>Placing the active piece hands focus to whichever piece is still unplaced — the two-tap path needs no explicit “switch piece” step.</p>
+</div>
+<div class="note" style="position:absolute;left:3840px;top:2060px">
+<span class="n">Annotation 12 · new</span><h3>The footer stack resolves as a sheet</h3><p>Board + offers + editor + pass + rejection cannot coexist at full size on 390×844. So: the offers stay in the footer, and <code>PlacementEditor</code> rises over the board as a sheet with a scrim — a <b>fixed 284px</b> (34% of 844), the same height for pair and single composition so switching offers never resizes it.</p><p>The board <b>never changes size</b> across 03a–03f — 269×185px at every step — and it is never occluded. It does move once: opening the sheet re-centres it 76px upward into the space above the sheet, one settle at the start of composing, and then nothing moves while the player is placing. Resizing the board mid-placement, or letting the gap above the sheet change between offers, is what this rules out. The board area reserves exactly the sheet height (284px) so that gap is identical in every composition state.</p><p>Sheet transition uses <code>duration.slow</code>; under <code>prefers-reduced-motion</code> the tokens zero and the sheet simply appears.</p>
+</div>
+<div class="note" style="position:absolute;left:3840px;top:2500px">
+<span class="n">Annotation 04 · unchanged</span><h3>Disabled, never hidden</h3><p>03f keeps every control mounted at full height and drops to 55% opacity. Hiding the sheet mid-flight would collapse it and drag the board down at exactly the wrong moment.</p>
+</div>
+<!-- Surface 04 · the offer control -->
+<div class="rowhead" style="left:80px;top:2950px"><em>Surface 04</em>The offer control · <code style="font:500 20px/1 var(--mono)">RollControl</code><p>Two deliberate choices, both revealed before the player decides. Every state keeps the same height so the footer never jumps.</p></div>
+<div class="frame" style="left:80px;top:3140px"><div class="states">
+<div class="statecard"><span class="lb">1 · waiting for the offer</span><div class="rc"><div class="offers"><div class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="skel" style="width:34px;height:34px;border-radius:6px"></span><span class="skel" style="width:34px;height:34px;border-radius:6px"></span></div><span class="skel" style="width:52px"></span></div><div class="offer"><span class="lb">The single</span><span class="skel" style="width:44px;height:44px;border-radius:8px"></span><span class="skel" style="width:52px"></span></div></div><p class="t-sm muted" role="status">Next offer at the top of the round.</p></div></div>
+<div class="statecard"><span class="lb">2 · rolling</span><div class="rc"><div class="offers"><div class="offer" style="opacity:.5"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></div><div class="offer"><span class="lb">The single</span><div class="die rolling"><span class="pips"><i></i><i></i><i></i></span></div><span class="t-xs muted">rolling</span></div></div><p class="t-sm muted" role="status">Rolling…</p></div></div>
+<div class="statecard"><span class="lb">3 · both shown · nothing chosen</span><div class="rc"><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div><p class="t-sm muted">Take the pair, or take the single.</p></div></div>
+<div class="statecard"><span class="lb">4 · pair chosen · composing</span><div class="rc"><div class="offers"><button class="offer on"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div><div class="row" style="gap:8px"><button class="btn disabled" style="flex:1" disabled>Place 5 squares</button><button class="btn secondary">Cancel</button></div></div></div>
+<div class="statecard"><span class="lb">5 · single chosen · composing</span><div class="rc"><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer on"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div><div class="row" style="gap:8px"><button class="btn" style="flex:1">Place 3 squares</button><button class="btn secondary">Cancel</button></div></div></div>
+<div class="statecard"><span class="lb">6 · awaiting the referee</span><div class="rc"><div class="offers"><span class="offer on off"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></span><span class="offer off"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></span></div><div class="row" style="gap:8px"><button class="btn disabled" style="flex:1" disabled>Placing…</button><button class="btn secondary disabled" disabled>Cancel</button></div></div></div>
+<div class="statecard"><span class="lb">7 · rejected · rolled back</span><div class="rc"><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div><p class="t-sm" role="alert" style="color:var(--ink)">Those two squares went back — Sam reached them first.</p></div></div>
+<div class="statecard"><span class="lb">8 · no legal move</span><div class="rc"><div class="offers"><span class="offer off"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(4,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">8 squares</span></span><span class="offer off"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">2 + 2 squares</span></span></div><p class="t-sm muted">Nothing fits on your board this round.</p><button class="btn secondary full">Pass the round</button></div></div>
+<div class="statecard"><span class="lb">9 · round scored</span><div class="rc"><div class="panel sunken row" style="gap:12px;padding:12px"><span class="sw sq p0"></span><p class="t-sm">Picture complete</p><span class="spacer"></span><span class="mono t-lg">+1</span></div><p class="t-xs muted">A finished picture scores its full value. An unfinished one scores nothing.</p><button class="btn full">Next picture</button></div></div>
+</div></div>
+<div class="note" style="position:absolute;left:1420px;top:3140px">
+<span class="n">Annotation 13 · new</span><h3>Both offers, always, in that order</h3><p>The pair sits left, the single right, in every state — including states 1, 2 and 8 where neither is actionable. Nothing is ever gated behind declining: in same-board mode a decline-to-reveal would leak the single’s value to slower players purely by reaction speed.</p><p>“5 squares” / “1 + 2 squares” under each glyph is the one number a player needs and the reason <code>pendingCellCount</code> exists. State 8 keeps both offers on screen, dimmed, and <i>adds</i> Pass — it does not empty the footer.</p>
+</div>
+
+<!-- Surface 07 · composition -->
+<div class="rowhead" style="left:80px;top:3980px"><em>Surface 07 · new</em>Piece &amp; blob composition · <code style="font:500 20px/1 var(--mono)">PlacementEditor</code><p>The editor as its own surface. Replaces <code>placed at (3, 5)</code>, <code>2/3</code> and “blob 1 / blob 2” with copy a player should actually see.</p></div>
+<div class="frame" style="left:80px;top:4170px"><div class="states">
+<div class="statecard"><span class="lb">pair · nothing placed yet</span><div class="rc"><div class="pieces" role="radiogroup" aria-label="Piece to place"><button class="pcard on" role="radio" aria-checked="true"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">Tap the board</span></button><button class="pcard" role="radio" aria-checked="false"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">Not placed</span></button></div><div class="tools"><button class="tool"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></button><button class="tool"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></button><button class="tool off" disabled><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div></div></div>
+<div class="statecard"><span class="lb">pair · one down, one to go</span><div class="rc"><div class="pieces" role="radiogroup" aria-label="Piece to place"><button class="pcard done" role="radio" aria-checked="false"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">On the board</span></button><button class="pcard on" role="radio" aria-checked="true"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">Tap the board</span></button></div><div class="tools"><button class="tool"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></button><button class="tool"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></button><button class="tool"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div><p class="t-xs muted">Both pieces go down together, or neither does.</p></div></div>
+<div class="statecard"><span class="lb">pair · turning the active piece</span><div class="rc"><div class="pieces"><span class="pcard on"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i class="on"></i><i></i><i></i><i class="on"></i><i class="on"></i><i></i></span><span class="st">Turned once</span></span><span class="pcard done"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span><span class="st">On the board</span></span></div><div class="tools"><button class="tool on"><svg width="22" height="22"><use href="#ic-rot"></use></svg><span>Turn</span></button><button class="tool"><svg width="22" height="22"><use href="#ic-mir"></use></svg><span>Flip</span></button><button class="tool"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div><p class="t-xs muted">Turning pivots the ghost around the square you tapped.</p></div></div>
+<div class="statecard"><span class="lb">single · 1+2 · first blob done</span><div class="rc"><div class="pieces" role="radiogroup" aria-label="Blob to place"><button class="pcard done" role="radio" aria-checked="false"><span class="dots"><i class="f"></i></span><span class="st">1 of 1 · done</span></button><button class="pcard on" role="radio" aria-checked="true"><span class="dots"><i class="f"></i><i></i></span><span class="st">1 more square</span></button></div><p class="t-xs muted">Two separate blobs. They don’t need to touch.</p><div class="tools"><button class="tool"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div></div></div>
+<div class="statecard"><span class="lb">single · 2+2 · both complete</span><div class="rc"><div class="pieces"><span class="pcard done"><span class="dots"><i class="f"></i><i class="f"></i></span><span class="st">2 of 2 · done</span></span><span class="pcard done"><span class="dots"><i class="f"></i><i class="f"></i></span><span class="st">2 of 2 · done</span></span></div><p class="t-xs muted">Ready — 4 squares.</p><div class="tools"><button class="tool"><svg width="22" height="22"><use href="#ic-clr"></use></svg><span>Take back</span></button></div></div></div>
+<div class="statecard"><span class="lb">iconography · geometric outline, 22px</span><div class="rc"><div class="row" style="gap:16px;justify-content:center;padding:6px 0"><span class="tool" style="border:none"><svg width="28" height="28"><use href="#ic-rot"></use></svg><span>Turn</span></span><span class="tool" style="border:none"><svg width="28" height="28"><use href="#ic-mir"></use></svg><span>Flip</span></span><span class="tool" style="border:none"><svg width="28" height="28"><use href="#ic-clr"></use></svg><span>Take back</span></span></div><p class="t-xs muted">1.7px stroke, square caps, <code>currentColor</code>. Each icon carries a text label — the three actions run every turn and are worth the vertical space. Labels are the accessible name; no tooltip-only affordances.</p></div></div>
+</div></div>
+<div class="frame" style="left:1420px;top:4600px"><p class="cap"><b>Board scale</b><span>integer steps, no fractional cells</span></p><div class="scalerow">
+<div class="scalecol"><div data-pic="balloon" data-mode="board" data-cell="20" data-progress=".5" data-seats="0"></div><span class="lb"><b>20px</b>390–767px<br>phone</span></div>
+<div class="scalecol"><div data-pic="balloon" data-mode="board" data-cell="28" data-progress=".5" data-seats="0"></div><span class="lb"><b>28px</b>768–1179px<br>tablet</span></div>
+<div class="scalecol"><div data-pic="balloon" data-mode="board" data-cell="40" data-progress=".5" data-seats="0"></div><span class="lb"><b>40px</b>1180px+<br>desktop</span></div>
+</div></div>
+<div class="note" style="position:absolute;left:2460px;top:4170px">
+<span class="n">Annotation 11 · new</span><h3>Board scaling: three integer steps</h3><p><code>cellSize</code> is not fluid. It steps <b>20 → 28 → 40</b> at 768px and 1180px, and nothing in between — a Canvas board with a fractional cell size renders soft edges, which is the one thing a pixel-placement game cannot afford.</p><p>Pick the step, then centre the board in its area; never scale to fill. When the picture’s grid does not divide the viewport evenly the leftover space is margin, not a wider cell. If a picture at the chosen step would exceed the available width, drop one step rather than fitting to width.</p><p>Cells keep a 1px gap and no corner rounding, no per-cell shadow. <code>imageSmoothingEnabled = false</code>, and snap the whole board to whole device pixels at <code>devicePixelRatio</code>.</p>
+</div>
+<div class="note" style="position:absolute;left:2460px;top:4700px">
+<span class="n">Annotation 14 · new</span><h3>Composition copy, not debug output</h3><p>Retire <code>placed at (3, 5)</code>. A player who just tapped a square knows where it is; the coordinate was only ever useful to whoever wrote the reducer. Its slot now reads state: <b>Tap the board</b> → <b>On the board</b>.</p><p>Retire <code>2/3</code> and <code>blob 1</code>. Blob progress reads <b>1 more square</b> while short and <b>2 of 2 · done</b> when full, with a dot row showing the count. What a player needs is how many are left, not a fraction.</p><p>Take back clears the active piece or blob only — that is <code>clearActive</code>, and it is the undo-before-commit path. Cancel abandons the whole choice and returns to the offers.</p>
+</div>
+<!-- Surface 05 · Results -->
+<div class="rowhead" style="left:80px;top:5300px"><em>Surface 05</em>Results<p>Direction unchanged; scoring copy corrected — a picture scores its full value or nothing, and a session ends on its round budget, not on one board.</p></div>
+<div class="frame" style="left:80px;top:5490px">
+<p class="cap"><b>05a</b><span>solo · picture complete</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2"><span class="eyebrow">Picture complete</span><h1 class="t-2xl">Hot-air balloon</h1></div>
+<div class="panel" style="display:grid;place-items:center;padding:20px"><div data-pic="balloon" data-mode="target" data-cell="24"></div></div>
+<div class="panel sunken row" style="justify-content:space-between"><div class="stack" style="align-items:center"><span class="mono t-xl">14</span><span class="t-xs muted">rounds</span></div><div class="stack" style="align-items:center"><span class="mono t-xl">52</span><span class="t-xs muted">squares</span></div><div class="stack" style="align-items:center"><span class="mono t-xl">4:12</span><span class="t-xs muted">time</span></div></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play again</button><button class="btn secondary full">Choose another picture</button></div>
+</div></div></div>
+<div class="frame" style="left:550px;top:5490px">
+<p class="cap"><b>05b</b><span>solo · stranded, picture unfinished</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2"><span class="eyebrow">Rounds used up</span><h1 class="t-2xl">Three squares short</h1></div>
+<div class="panel" style="display:grid;place-items:center;padding:20px"><div data-pic="sailboat" data-mode="board" data-cell="22" data-progress=".88" data-seats="0" data-lock="0,4;5,0;9,8"></div></div>
+<p class="t-sm muted">Nothing fitted those last three. It happens — some boards strand a few squares.</p>
+<div class="panel sunken row" style="justify-content:space-between"><span class="t-sm">Score this picture</span><span class="mono t-lg">0</span></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Try this picture again</button><button class="btn secondary full">Choose another picture</button></div>
+</div></div></div>
+<div class="frame" style="left:1020px;top:5490px">
+<p class="cap"><b>05c</b><span>session over · pack cycled</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2"><span class="eyebrow">Session over · Transportation</span><h1 class="t-2xl">Two of three</h1></div>
+<div class="compare"><div class="mini"><div data-pic="tram" data-mode="target" data-cell="11"></div><span class="t-xs">Tram</span><span class="pill accent">Done</span></div><div class="mini"><div data-pic="balloon" data-mode="target" data-cell="11"></div><span class="t-xs">Balloon</span><span class="pill accent">Done</span></div></div>
+<div class="panel row" style="gap:14px"><div data-pic="sailboat" data-mode="board" data-cell="9" data-progress=".7" data-seats="0"></div><div><p class="t-sm" style="font-weight:500">Sailboat</p><p class="t-xs muted">Unfinished · scores nothing</p></div></div>
+<div class="panel sunken row" style="justify-content:space-between"><span class="t-sm">Final score</span><span class="mono t-xl">2</span></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">New session</button><button class="btn secondary full">Browse packs</button></div>
+</div></div></div>
+<div class="note" style="position:absolute;left:1490px;top:5490px">
+<span class="n">Annotation 15 · new</span><h3>All or nothing, said plainly</h3><p>A finished picture scores its fixed value; an unfinished one scores zero. There is no partial credit, so results copy must never imply progress was worth something — 05b shows a 0 next to an 88%-filled board on purpose.</p><p>And it must not read as failure. A board that strands cells is a property of the mechanic, not a mistake, so the line names the cause (“nothing fitted those last three”) and offers the same picture again.</p><p>Sessions end on a precomputed round budget across the pack’s pictures — 05c is the real end screen; 05a is one picture inside it.</p>
+</div>
+
+<!-- Surface 06 · Packs -->
+<div class="rowhead" style="left:80px;top:6370px"><em>Surface 06</em>Pack picker<p>Direction unchanged. Packs are pictures only — shapes are engine-global, so a pack never advertises pieces.</p></div>
+<div class="frame" style="left:80px;top:6560px">
+<p class="cap"><b>06a</b><span>pack list</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back"><svg width="20" height="20"><use href="#ic-back"></use></svg></button><h1 class="t-xl">Packs</h1></div>
+<button class="packcard on"><div class="thumb"><div data-pic="tram" data-mode="target" data-cell="6"></div></div><div class="stack gap2" style="flex:1"><p class="t-lg">Transportation</p><div class="row" style="gap:6px"><span class="pill">Easy</span><span class="t-xs muted">3 pictures</span></div></div><span class="tick">✓</span></button>
+<button class="packcard locked"><div class="thumb" style="width:52px;height:52px;display:grid;place-items:center"><span class="t-xs muted">soon</span></div><div class="stack gap2" style="flex:1"><p class="t-lg">Garden</p><span class="pill">Coming soon</span></div></button>
+<div class="panel sunken"><p class="t-sm muted">Packs are free and arrive with app updates. Nothing here is bought, and nothing is locked behind an account.</p></div>
+<div class="spacer"></div>
+<button class="btn lg full">Use Transportation</button>
+</div></div></div>
+<div class="frame" style="left:550px;top:6560px">
+<p class="cap"><b>06b</b><span>inside a pack</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back"><svg width="20" height="20"><use href="#ic-back"></use></svg></button><div><h1 class="t-xl">Transportation</h1><p class="t-xs muted">3 pictures · Easy</p></div></div>
+<div class="tiles">
+<div class="tile on"><div data-pic="tram" data-mode="target" data-cell="10"></div><span class="pill accent">✓ Completed</span></div>
+<div class="tile"><div data-pic="sailboat" data-mode="outline" data-cell="10"></div><span class="t-xs muted">Easy · 46 squares</span></div>
+<div class="tile"><div data-pic="balloon" data-mode="outline" data-cell="9"></div><span class="pill">Today’s daily</span></div>
+<div class="tile ghosted"><span class="t-xs">More pictures on the way</span></div>
+</div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full">Play Sailboat</button><p class="t-xs muted" style="text-align:center">Solo and daily work with no connection.</p></div>
+</div></div></div>
+
+<!-- ══ PART B ══ -->
+<div class="parthead" style="left:80px;top:7440px">
+<span class="kicker">Part B · authoritative</span>
+<h2>Phase 3 · the installable shell</h2>
+<p>Install, offline, update and first paint. The whole point of Annotation 08 is that offline is a working state, not an error — so the offline screens are the ordinary screens, with one honest line of copy and nothing red.</p>
+</div>
+<div class="frame" style="left:80px;top:7680px">
+<p class="cap"><b>08a</b><span>install prompt · after a finished picture</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2"><span class="eyebrow">Picture complete</span><h1 class="t-2xl">Tram</h1></div>
+<div class="panel" style="display:grid;place-items:center;padding:20px"><div data-pic="tram" data-mode="target" data-cell="22"></div></div>
+<div class="spacer"></div>
+<div class="installcard"><div class="row" style="gap:12px;align-items:flex-start"><svg width="24" height="24" style="color:var(--accent-hover);flex-shrink:0"><use href="#ic-install"></use></svg><div><p class="t-base" style="font-weight:500">Keep Pixwagon on your home screen</p><p class="t-sm muted">Opens instantly, and solo and daily keep working with no signal.</p></div></div><div class="row2"><button class="btn" style="flex:1">Add to home screen</button><button class="btn ghost">Not now</button></div></div>
+</div></div></div>
+<div class="frame" style="left:550px;top:7680px">
+<p class="cap"><b>08b</b><span>dismissed · quiet entry point remains</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><h1 class="t-2xl">Hi, Alex</h1><div class="spacer"></div><button class="iconbtn" aria-label="Change your name"><svg width="20" height="20"><use href="#ic-edit"></use></svg></button></div>
+<div class="panel stack gap3"><span class="eyebrow">Today’s daily</span><div class="row" style="gap:14px"><div data-pic="balloon" data-mode="outline" data-cell="8"></div><div><p class="t-base" style="font-weight:500">Hot-air balloon</p><p class="t-xs muted">Medium · works offline</p></div></div></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play the daily</button><div class="row" style="gap:8px"><button class="btn secondary" style="flex:1">Play with friends</button><button class="btn secondary" style="flex:1">Solo</button></div><button class="btn ghost sm" style="align-self:center;gap:6px"><svg width="16" height="16"><use href="#ic-install"></use></svg>Add to home screen</button></div>
+</div></div></div>
+<div class="frame" style="left:1020px;top:7680px">
+<p class="cap"><b>09a</b><span>offline · Home</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>✈ ▮▮</span></div><div class="screen">
+<div class="row"><h1 class="t-2xl">Hi, Alex</h1><div class="spacer"></div><span class="offlinepill"><svg width="14" height="14"><use href="#ic-offline"></use></svg>Offline</span></div>
+<div class="panel stack gap3"><span class="eyebrow">Today’s daily</span><div class="row" style="gap:14px"><div data-pic="balloon" data-mode="outline" data-cell="8"></div><div><p class="t-base" style="font-weight:500">Hot-air balloon</p><p class="t-xs muted">Downloaded · ready to play</p></div></div></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play the daily</button><button class="btn secondary full">Solo</button><div class="panel sunken row" style="gap:10px;padding:12px"><svg width="18" height="18" style="color:var(--ink-muted);flex-shrink:0"><use href="#ic-offline"></use></svg><p class="t-xs muted">Playing with friends needs a connection. Everything else is here.</p></div></div>
+</div></div></div>
+<div class="frame" style="left:1490px;top:7680px">
+<p class="cap"><b>09b</b><span>offline · solo game, nothing changes</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">SOLO</span><span class="t-sm muted">Round 5</span></div></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">18</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="balloon" data-mode="board" data-cell="20" data-progress=".55" data-seats="0"></div></div><p class="hint">Take <b>the pair</b> or <b>the single</b>.</p></div></main>
+<footer><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="glyph" style="grid-template-columns:repeat(1,14px)"><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="die"><span class="pips"><i></i><i></i><i></i></span></div><span class="t-xs muted">3 squares</span></button></div></footer>
+</div></div></div>
+<div class="frame" style="left:1960px;top:7680px">
+<p class="cap"><b>10</b><span>new version available</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="updatebar"><svg width="18" height="18" style="color:var(--accent-hover);flex-shrink:0"><use href="#ic-refresh"></use></svg><p class="t-sm" style="flex:1">A new version is ready.</p><button class="btn sm">Reload</button></div>
+<div class="row"><h1 class="t-2xl">Hi, Alex</h1><div class="spacer"></div><button class="iconbtn" aria-label="Change your name"><svg width="20" height="20"><use href="#ic-edit"></use></svg></button></div>
+<div class="panel stack gap3"><span class="eyebrow">Today’s daily</span><div class="row" style="gap:14px"><div data-pic="balloon" data-mode="outline" data-cell="8"></div><div><p class="t-base" style="font-weight:500">Hot-air balloon</p><p class="t-xs muted">Medium · works offline</p></div></div></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Play the daily</button><div class="row" style="gap:8px"><button class="btn secondary" style="flex:1">Play with friends</button><button class="btn secondary" style="flex:1">Solo</button></div></div>
+</div></div></div>
+<div class="frame" style="left:2430px;top:7680px">
+<p class="cap"><b>11</b><span>splash · shell booting from cache</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="splash"><div class="splashmark"><div class="logogrid lg"><i class="p0"></i><i class="p1"></i><i class="p3"></i><i class="p2"></i></div><p class="t-xl">Pixwagon</p><div class="bar"><i></i></div></div></div></div></div>
+<div class="note" style="position:absolute;left:2900px;top:7680px">
+<span class="n">Annotation 16 · new</span><h3>Offline is a state, not an incident</h3><p>Nothing turns red, nothing blocks, nothing modal. 09b is byte-for-byte the ordinary solo game — a solo board has no server to miss, so showing a connection indicator there would be inventing a problem.</p><p>Home gains one neutral <code>Offline</code> pill and one line telling the truth about what is unavailable: playing with friends. Never “no internet connection” as a title.</p><p>The install prompt appears <b>after</b> a completed picture — the one moment the app has earned it — never on first load. “Not now” suppresses it for 30 days; a second dismissal retires it permanently and leaves only the quiet ghost button in 08b. No account exists to remember, so this lives in local storage and that is fine.</p>
+</div>
+<div class="note" style="position:absolute;left:2900px;top:8200px">
+<span class="n">Annotation 17 · new</span><h3>First paint, and motion that can be switched off</h3><p>The splash is the cached shell: mark, wordmark, and a determinate bar only if boot exceeds 400ms — below that it flashes and is worse than nothing. Background is <code>bg</code>, so the splash and Home share a background and the handoff is invisible.</p><p>The update bar is a banner, not a dialog: a service-worker update must never interrupt a round. If a game is in progress it waits for the results screen.</p><p>Every animation here reads <code>duration.*</code>. Under <code>prefers-reduced-motion</code> those tokens zero and each has a static equivalent — the boot bar becomes a static label, the sheet appears without sliding, the rolling shimmer becomes a plain “Rolling…”.</p>
+</div>
+<!-- ══ DIVIDER ══ -->
+<div class="divider" style="left:80px;top:8760px"><b>▼ Everything below this line is provisional</b><span>Parts A and B above are authoritative. Everything below is designed against <code>RoomState</code> and protocol shapes that do not exist yet (Phases 4–6). Treat it as a starting point those phases refine — not a frozen spec. Designing against an unbuilt model is what paused the last pass.</span></div>
+<div class="parthead prov" style="left:80px;top:8900px">
+<span class="kicker">Part C · provisional</span>
+<h2>Multiplayer · forward design</h2>
+<p>Six seats, host-started, two board modes. Every identity here carries its hatch as well as its hue — forward-designed multiplayer is exactly where colour-only identity creeps back in.</p>
+</div>
+<div class="rowhead" style="left:80px;top:9160px"><em>Surface 02 · provisional</em>Lobby<p><span class="provtag">Provisional</span></p></div>
+<div class="frame" style="left:80px;top:9360px">
+<p class="cap"><b>02a</b><span>entering a code</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back"><svg width="20" height="20"><use href="#ic-back"></use></svg></button><h1 class="t-xl">Join a room</h1></div>
+<p class="t-sm muted">Ask whoever set it up for the four letters.</p>
+<div class="stack gap2"><div class="codeboxes"><span class="on">P</span><span class="on">I</span><span class="empty">–</span><span class="empty">–</span></div><p class="t-xs muted">A–Z without I, O, 0 or 1</p></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full disabled" disabled>Join room</button><p class="t-xs muted" style="text-align:center">or</p><button class="btn secondary full">Create a room</button></div>
+</div></div></div>
+<div class="frame" style="left:550px;top:9360px">
+<p class="cap"><b>02b</b><span>invalid code</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row"><button class="iconbtn" aria-label="Back"><svg width="20" height="20"><use href="#ic-back"></use></svg></button><h1 class="t-xl">Join a room</h1></div>
+<div class="stack gap2"><div class="codeboxes"><span class="bad">Z</span><span class="bad">Z</span><span class="bad">Z</span><span class="bad">Z</span></div><p class="t-sm danger-t" role="alert">No room with that code.</p><p class="t-xs muted">A–Z without I, O, 0 or 1</p></div>
+<div class="panel sunken"><p class="t-xs muted">Those four letters are left out on purpose — read aloud, they’re the ones people get wrong.</p></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full disabled" disabled>Join room</button><p class="t-xs muted" style="text-align:center">or</p><button class="btn secondary full">Create a room</button></div>
+</div></div></div>
+<div class="frame" style="left:1020px;top:9360px">
+<p class="cap"><b>02c</b><span>waiting · host · 1 of 6</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2" style="align-items:center;padding-top:8px"><span class="eyebrow">Room code</span><p class="bigcode">PIXW</p><div class="row" style="gap:8px"><button class="btn secondary sm">Copy link</button><button class="btn secondary sm">Share</button></div></div>
+<div class="panel sunken stack gap3"><span class="ph">Players · 1 of 6</span><div class="wrap"><span class="chip active"><span class="sw sq p0"></span><b>Alex</b><span class="sc">host</span></span></div><p class="t-xs muted">Waiting for someone to join.</p></div>
+<div class="stack gap2"><span class="eyebrow">Boards</span><div class="seg"><span class="on">Same board</span><span>Own board</span></div><p class="t-xs muted">Everyone fills the same picture from the same offers.</p></div>
+<div class="panel row" style="gap:14px"><div data-pic="tram" data-mode="target" data-cell="7"></div><div style="flex:1"><p class="t-sm" style="font-weight:500">Transportation</p><p class="t-xs muted">3 pictures · Easy</p></div><a class="t-sm">Change</a></div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full disabled" disabled>Start game</button><p class="t-xs muted" style="text-align:center">Needs one more player</p></div>
+</div></div></div>
+<div class="frame" style="left:1490px;top:9360px">
+<p class="cap"><b>02d</b><span>ready · 3 of 6</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2" style="align-items:center;padding-top:8px"><span class="eyebrow">Room code</span><p class="bigcode">PIXW</p><div class="row" style="gap:8px"><button class="btn secondary sm">Copy link</button><button class="btn secondary sm">Share</button></div></div>
+<div class="panel sunken stack gap3"><span class="ph">Players · 3 of 6</span><div class="wrap"><span class="chip active"><span class="sw sq p0"></span><b>Alex</b><span class="sc">host</span></span><span class="chip"><span class="sw sq p1"></span><b>Sam</b></span><span class="chip"><span class="sw sq p2"></span><b>Guest</b></span></div></div>
+<div class="stack gap2"><span class="eyebrow">Boards</span><div class="seg"><span>Same board</span><span class="on">Own board</span></div><p class="t-xs muted">Everyone gets their own copy. Compared at the end.</p></div>
+<div class="panel row" style="gap:14px"><div data-pic="sailboat" data-mode="target" data-cell="7"></div><div style="flex:1"><p class="t-sm" style="font-weight:500">Transportation</p><p class="t-xs muted">3 pictures · Easy</p></div><a class="t-sm">Change</a></div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full">Start game</button><p class="t-xs muted" style="text-align:center">Only the host can start</p></div>
+</div></div></div>
+<div class="frame" style="left:1960px;top:9360px">
+<p class="cap"><b>02e</b><span>full · 6 of 6</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="row" style="gap:10px"><span class="eyebrow">Room</span><span class="mono t-lg" style="letter-spacing:.16em">PIXW</span><div class="spacer"></div><button class="btn secondary sm">Share</button></div>
+<div class="panel sunken stack gap3"><span class="ph">Players · 6 of 6</span><div class="wrap"><span class="chip active"><span class="sw sq p0"></span><b>Alex</b><span class="sc">host</span></span><span class="chip"><span class="sw sq p1"></span><b>Sam</b></span><span class="chip"><span class="sw sq p2"></span><b>Jo</b></span><span class="chip"><span class="sw sq p3"></span><b>Ravi</b></span><span class="chip"><span class="sw sq p4"></span><b>Mia</b></span><span class="chip"><span class="sw sq p5"></span><b>Guest</b></span></div><p class="t-xs muted">Room is full — six is the most we can tell apart on a board.</p></div>
+<div class="stack gap2"><span class="eyebrow">Boards</span><div class="seg"><span>Same board</span><span class="on">Own board</span></div></div>
+<div class="spacer"></div>
+<button class="btn lg full">Start game</button>
+</div></div></div>
+<div class="note prov" style="position:absolute;left:2430px;top:9360px">
+<span class="n">Annotation 18 · new · provisional</span><h3>Six seats, and why the number is six</h3><p>The cap is <code>playerColors.length</code> — six hues that stay distinguishable under the common colour-vision deficiencies, each with its own hatch. The repo currently has two definitions of the maximum (<code>MAX_PLAYERS</code> in tokens.ts and a <code>MAX_SEATS</code> elsewhere); ROADMAP Phase 4 flags it. <b>Six</b>, derived from the colour list, one definition.</p><p>02e says so in player words rather than exposing a limit: “six is the most we can tell apart on a board.”</p>
+</div>
+<div class="note prov" style="position:absolute;left:2430px;top:9820px">
+<span class="n">Annotation 02 · unchanged, extended</span><h3>Hatch travels with hue, everywhere</h3><p>Every seat swatch in Parts A, B and C uses <code>patternStyle()</code> geometry — solid, diagonal, dots, horizontal, cross, vertical — not just a hex fill. The board Canvas reproduces the same geometry.</p><p>Extended this pass to cover forward-designed surfaces: lobby chips, presence rows, own-board comparison tiles and rank rows all carry the pattern.</p>
+</div>
+<div class="rowhead" style="left:80px;top:10340px"><em>Surface 12 · provisional</em>Game, networked<p><span class="provtag">Provisional</span></p></div>
+<div class="frame" style="left:80px;top:10540px">
+<p class="cap"><b>12a</b><span>same board · connected · your turn</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">PIXW</span><span class="t-sm muted">Round 3</span></div><span class="pill">Connected</span></header>
+<div class="players"><span class="chip active turnring"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span><span class="chip"><span class="sw sq p1"></span><b>Sam</b><span class="sc">9</span></span><span class="chip"><span class="sw sq p2"></span><b>Jo</b><span class="sc">7</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".42" data-seats="0,1,2"></div></div><p class="hint">Your turn — take <b>the pair</b> or <b>the single</b>.</p></div></main>
+<footer><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button></div></footer>
+</div></div></div>
+<div class="frame" style="left:550px;top:10540px">
+<p class="cap"><b>12b</b><span>waiting on another player</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">PIXW</span><span class="t-sm muted">Round 3</span></div><span class="pill">Connected</span></header>
+<div class="players"><span class="chip"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span><span class="chip active turnring"><span class="sw sq p1"></span><b>Sam</b><span class="sc">9</span></span><span class="chip"><span class="sw sq p2"></span><b>Jo</b><span class="sc">7</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".42" data-seats="0,1,2"></div></div><p class="hint">Sam is placing.</p></div></main>
+<footer><div class="offers"><span class="offer off"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></span><span class="offer off"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></span></div><p class="t-sm muted" style="text-align:center">Same offers for you next.</p></footer>
+</div></div></div>
+<div class="frame" style="left:1020px;top:10540px">
+<p class="cap"><b>12c</b><span>reconnecting · a player dropped</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">PIXW</span><span class="t-sm muted">Round 4</span></div><span class="pill warn">Connecting…</span></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">12</span></span><span class="chip away"><span class="sw sq p1"></span><b>Sam</b><span class="sc">away</span></span><span class="chip"><span class="sw sq p2"></span><b>Jo</b><span class="sc">7</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="tram" data-mode="board" data-cell="20" data-progress=".48" data-seats="0,1,2"></div></div><p class="hint">Sam dropped out. Their squares stay; the round carries on.</p></div></main>
+<footer><div class="offers"><span class="offer off"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></span><span class="offer off"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></span></div><p class="t-sm muted" style="text-align:center">Reconnecting… your last move is safe.</p></footer>
+</div></div></div>
+<div class="frame" style="left:1490px;top:10540px">
+<p class="cap"><b>12d</b><span>own board · others’ progress, not their cells</span></p>
+<div class="phone"><div class="hud"><header><div class="row" style="gap:12px"><span class="mono t-lg" style="letter-spacing:.14em">PIXW</span><span class="t-sm muted">Round 6</span></div><span class="pill">Connected</span></header>
+<div class="players"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">31/52</span></span><span class="chip"><span class="sw sq p1"></span><b>Sam</b><span class="sc">28/52</span></span><span class="chip"><span class="sw sq p2"></span><b>Jo</b><span class="sc">34/52</span></span></div>
+<main><div class="boardwrap"><div class="board"><div data-pic="sailboat" data-mode="board" data-cell="20" data-progress=".6" data-seats="0"></div></div><p class="hint">Your copy. Everyone gets the same offers.</p></div></main>
+<footer><div class="offers"><button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns:repeat(3,14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns:repeat(2,14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">6 squares</span></button><button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">2 + 2 squares</span></button></div></footer>
+</div></div></div>
+<div class="note prov" style="position:absolute;left:1960px;top:10540px">
+<span class="n">Annotation 19 · new · provisional</span><h3>Presence, turn, and a rollback nobody else sees</h3><p>Whose turn it is rides on the player chip — an accent ring plus the board hint naming them (“Sam is placing”). Turn is never colour alone, and never only in a corner of the header.</p><p>An optimistic fill is <b>local until the referee answers</b>: other clients receive the move only after it is accepted, so a rejected fill never appears on anyone else’s board. That is why the ghost state exists as a distinct cell state from filled — the ghost is the un-broadcast one.</p><p>A player who drops keeps their squares and their score. 12c states it on the board rather than in a dialog, and the pill reads <code>connecting</code> in warning tone, never red.</p><p>In own-board mode, other players’ chips carry a fraction, not a board. Showing their cells would leak solutions in a mode whose whole premise is parallel play.</p>
+</div>
+<div class="rowhead" style="left:80px;top:11460px"><em>Surface 13 · provisional</em>Results, own board<p><span class="provtag">Provisional</span></p></div>
+<div class="frame" style="left:80px;top:11640px">
+<p class="cap"><b>13a</b><span>ranked · pictures side by side</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2"><span class="eyebrow">Session over · Sailboat</span><h1 class="t-2xl">Jo wins</h1></div>
+<div class="compare"><div class="mini win"><div data-pic="sailboat" data-mode="target" data-cell="13"></div><span class="nm"><span class="sw sq p2" style="width:14px;height:14px"></span>Jo</span><span class="sc">3</span></div><div class="mini"><div data-pic="sailboat" data-mode="board" data-cell="13" data-progress=".9" data-seats="0"></div><span class="nm"><span class="sw sq p0" style="width:14px;height:14px"></span>You</span><span class="sc">2</span></div></div>
+<div class="stack gap2"><div class="rank"><span class="pos">3</span><span class="sw sq p1"></span><b style="font-weight:500">Sam</b><span class="sc">1</span></div></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Rematch</button><button class="btn secondary full">Back to the room</button></div>
+</div></div></div>
+<div class="frame" style="left:550px;top:11640px">
+<p class="cap"><b>13b</b><span>tie · someone left mid-game</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2"><span class="eyebrow">Session over · Transportation</span><h1 class="t-2xl">It’s a tie</h1></div>
+<div class="compare"><div class="mini win"><div data-pic="tram" data-mode="target" data-cell="13"></div><span class="nm"><span class="sw sq p0" style="width:14px;height:14px"></span>You</span><span class="pill accent">Tied · 2</span></div><div class="mini win"><div data-pic="tram" data-mode="target" data-cell="13"></div><span class="nm"><span class="sw sq p2" style="width:14px;height:14px"></span>Jo</span><span class="pill accent">Tied · 2</span></div></div>
+<div class="rank left"><span class="pos">3</span><span class="sw sq p1"></span><b style="font-weight:500">Sam</b><span class="t-xs muted">left · score kept</span><span class="sc">1</span></div>
+<div class="spacer"></div>
+<div class="stack gap3"><button class="btn lg full">Rematch</button><button class="btn ghost full">Leave room</button></div>
+</div></div></div>
+<div class="frame" style="left:1020px;top:11640px">
+<p class="cap"><b>13c</b><span>rematch · same players, fresh seed</span></p>
+<div class="phone"><div class="status"><span>9:41</span><span>▮▮▮</span></div><div class="screen">
+<div class="stack gap2" style="align-items:center;padding-top:8px"><span class="eyebrow">Room code</span><p class="bigcode">PIXW</p></div>
+<div class="panel sunken stack gap3"><span class="ph">Rematch · 2 of 3 ready</span><div class="wrap"><span class="chip active"><span class="sw sq p0"></span><b>You</b><span class="sc">ready</span></span><span class="chip active"><span class="sw sq p2"></span><b>Jo</b><span class="sc">ready</span></span><span class="chip"><span class="sw sq p1"></span><b>Sam</b><span class="sc">…</span></span></div><p class="t-xs muted">Same players, same pack, new offers.</p></div>
+<div class="panel row" style="gap:14px"><div data-pic="balloon" data-mode="outline" data-cell="7"></div><div style="flex:1"><p class="t-sm" style="font-weight:500">Up next · Hot-air balloon</p><p class="t-xs muted">Fresh seed</p></div></div>
+<div class="spacer"></div>
+<div class="stack gap2"><button class="btn lg full disabled" disabled>Start rematch</button><p class="t-xs muted" style="text-align:center">Waiting for Sam</p></div>
+</div></div></div>
+<div class="note prov" style="position:absolute;left:1490px;top:11640px">
+<span class="n">Annotation 20 · new · provisional</span><h3>Two new components, proposed — not renamed</h3><p><b><code>BoardCompare</code></b> — the side-by-side finished-picture grid in 05c/13a/13b. Two up on a phone, more per row above 768px. It is not <code>PicturePreview</code> re-scoped: previews show one picture, this one ranks several and carries identity.</p><p><b><code>ConnectionPill</code></b> — today the connection chip is inline markup in <code>HudFrame</code>. It has three states, a warning tone that must never be red, and an offline variant Part B also needs on Home. Worth extracting; <code>HudFrame</code>’s <code>connection</code> prop stays exactly as it is.</p><p>Both are proposals. Nothing existing is renamed or re-scoped by this pass.</p>
+</div>
+<script src="render-pictures-02.js"></script>
+</body>
+</html>
