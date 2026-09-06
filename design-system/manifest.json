@@ -152,6 +152,16 @@
       }
     },
     {
+      "name": "PlacementEditor",
+      "path": "components/placement-editor/index.html",
+      "group": "Components",
+      "subtitle": "The composition sheet: chosen-offer bar, piece/blob radiogroup, Turn/Flip/Take back, commit",
+      "viewport": {
+        "width": 900,
+        "height": 640
+      }
+    },
+    {
       "name": "PicturePreview",
       "path": "components/picture-preview/index.html",
       "group": "Board",

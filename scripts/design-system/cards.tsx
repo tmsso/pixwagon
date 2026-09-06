@@ -11,12 +11,14 @@
  */
 
 import type { ReactNode } from 'react';
+import type { Roll } from '@pixwagon/game-core';
 import { BoardCell } from '../../apps/web/src/components/game/BoardCell.tsx';
 import { DiceFace } from '../../apps/web/src/components/game/DiceFace.tsx';
 import { HudFrame } from '../../apps/web/src/components/game/HudFrame.tsx';
 import { PackCard } from '../../apps/web/src/components/game/PackCard.tsx';
 import { PicturePreview } from '../../apps/web/src/components/game/PicturePreview.tsx';
 import { PieceGlyph } from '../../apps/web/src/components/game/PieceGlyph.tsx';
+import { PlacementEditor } from '../../apps/web/src/components/game/PlacementEditor.tsx';
 import { PlayerChip } from '../../apps/web/src/components/game/PlayerChip.tsx';
 import { RollControl } from '../../apps/web/src/components/game/RollControl.tsx';
 import { Button } from '../../apps/web/src/components/ui/Button.tsx';
@@ -35,6 +37,13 @@ import {
   semanticLight,
   spacing,
 } from '../../apps/web/src/design/tokens.ts';
+import {
+  placeActiveOrigin,
+  setActive,
+  startFallback,
+  startPair,
+  toggleBlobCell,
+} from '../../apps/web/src/state/placement.ts';
 import { transportation } from '../../packages/packs/src/index.ts';
 
 // Sample polyomino footprints for preview purposes only — the real shape
@@ -606,6 +615,84 @@ export const cards: Card[] = [
                 fallbackFace={[1, 2]}
                 selectedChoice="pair"
                 awaitingServer
+              />
+            </div>
+          </Variant>
+        </div>
+      );
+    },
+  },
+
+  {
+    path: 'components/placement-editor/index.html',
+    name: 'PlacementEditor',
+    group: 'Components',
+    subtitle: 'The composition sheet: chosen-offer bar, piece/blob radiogroup, Turn/Flip/Take back, commit',
+    viewport: { width: 900, height: 640 },
+    render: () => {
+      // Fixtures built through the real placement helpers, so the states are
+      // exactly what the store would hold mid-turn.
+      const demoRoll: Roll = {
+        round: 1,
+        seed: 's',
+        pair: ['domino', 'monomino'],
+        fallback: '1+2',
+      };
+      const pairFresh = startPair(demoRoll);
+      const pairOneDown = placeActiveOrigin(pairFresh, { x: 3, y: 3 });
+      const pairBothDown = placeActiveOrigin(pairOneDown, { x: 6, y: 6 });
+      let singleMidway = toggleBlobCell(startFallback(demoRoll), { x: 2, y: 2 });
+      singleMidway = toggleBlobCell(setActive(singleMidway, 1), { x: 5, y: 5 });
+
+      const noop = () => {};
+      const common = {
+        onSetActive: noop,
+        onRotate: noop,
+        onMirror: noop,
+        onTakeBack: noop,
+        onCancel: noop,
+        onCommit: noop,
+      };
+
+      return (
+        <div className="flex flex-wrap gap-6">
+          <Variant label="pair — nothing placed">
+            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
+              <PlacementEditor
+                pending={pairFresh}
+                commitLabel="Place 3 squares"
+                commitDisabled
+                {...common}
+              />
+            </div>
+          </Variant>
+          <Variant label="pair — one down, one to go">
+            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
+              <PlacementEditor
+                pending={pairOneDown}
+                commitLabel="Place 3 squares"
+                commitDisabled
+                {...common}
+              />
+            </div>
+          </Variant>
+          <Variant label="pair — ready to commit">
+            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
+              <PlacementEditor
+                pending={pairBothDown}
+                commitLabel="Place 3 squares"
+                commitDisabled={false}
+                {...common}
+              />
+            </div>
+          </Variant>
+          <Variant label="single — one blob done, one short">
+            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
+              <PlacementEditor
+                pending={singleMidway}
+                commitLabel="Place 3 squares"
+                commitDisabled
+                {...common}
               />
             </div>
           </Variant>

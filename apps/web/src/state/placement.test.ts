@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Roll } from '@pixwagon/game-core';
 import {
+  activeCandidateCells,
   candidateCells,
   clearActive,
   isPendingComplete,
@@ -77,6 +78,28 @@ describe('pair placement', () => {
     const choice = startPair(pairRoll);
     expect(() => toMoveChoice(choice)).toThrow();
   });
+
+  it('activeCandidateCells is only the active piece, and is a subset of candidateCells', () => {
+    let choice = startPair(pairRoll); // pair: domino (2 cells) + monomino (1 cell)
+    choice = placeActiveOrigin(choice, { x: 2, y: 3 }); // places piece 0, active -> 1
+    choice = placeActiveOrigin(choice, { x: 7, y: 7 }); // places piece 1, still active 1
+
+    const all = candidateCells(choice);
+    const active = activeCandidateCells(choice);
+    expect(all.length).toBe(3);
+    expect(active).toEqual([{ x: 7, y: 7 }]); // the monomino, piece 1
+    for (const cell of active) {
+      expect(all).toContainEqual(cell);
+    }
+
+    choice = setActive(choice, 0);
+    expect(activeCandidateCells(choice)).toHaveLength(2); // now the domino
+  });
+
+  it('activeCandidateCells is empty while the active piece has no origin', () => {
+    const choice = startPair(pairRoll);
+    expect(activeCandidateCells(choice)).toEqual([]);
+  });
 });
 
 describe('fallback blob placement', () => {
@@ -112,6 +135,19 @@ describe('fallback blob placement', () => {
     choice = toggleBlobCell(choice, { x: 5, y: 5 });
     choice = toggleBlobCell(choice, { x: 5, y: 6 });
     expect(isPendingComplete(choice)).toBe(true);
+  });
+
+  it('activeCandidateCells follows the active blob', () => {
+    let choice = startFallback(pairRoll); // blobs [1, 2]
+    choice = toggleBlobCell(choice, { x: 0, y: 0 }); // fills blob 0 (size 1)
+    choice = setActive(choice, 1);
+    choice = toggleBlobCell(choice, { x: 5, y: 5 });
+
+    expect(activeCandidateCells(choice)).toEqual([{ x: 5, y: 5 }]);
+    expect(candidateCells(choice)).toHaveLength(2);
+
+    choice = setActive(choice, 0);
+    expect(activeCandidateCells(choice)).toEqual([{ x: 0, y: 0 }]);
   });
 
   it('builds a fallback MoveChoice with one cell array per blob', () => {

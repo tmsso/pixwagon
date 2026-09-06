@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { applyMove, createBoard, isComplete, issueRoll } from '@pixwagon/game-core';
 import type { Board, CellRef, Move, MoveRejection, Roll, Seed } from '@pixwagon/game-core';
 import {
+  activeCandidateCells,
   candidateCells,
   clearActive as clearActivePending,
   isPendingComplete,
@@ -172,7 +173,10 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
     };
     const result = applyMove(state.board, state.roll, move);
     if (!result.ok) {
-      set({ lastRejection: result.reason });
+      // Dismiss the sheet and bring the offers back (design pass 02, 03g). The
+      // rejected cells flash `invalid` on the board and `lastRejection` drives
+      // the non-scolding line under the offers.
+      set({ lastRejection: result.reason, pending: null });
       return;
     }
 
@@ -198,4 +202,4 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
   },
 }));
 
-export { candidateCells, isPendingComplete, pendingCellCount };
+export { activeCandidateCells, candidateCells, isPendingComplete, pendingCellCount };
