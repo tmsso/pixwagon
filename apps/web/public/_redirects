@@ -1,0 +1,6 @@
+# Cloudflare Pages SPA fallback. `BrowserRouter` owns paths like /r/solo and
+# /results; without this a direct load or refresh of one 404s on a plain static
+# host (found in Phase 2's static-build verification, fixed here per ROADMAP.md
+# Phase 3.5). Real files under /assets, /icon.svg, /manifest.webmanifest etc.
+# are served first; everything else falls through to the app shell.
+/*  /index.html  200
