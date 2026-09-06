@@ -462,7 +462,7 @@ export const cards: Card[] = [
     path: 'components/dice-face/index.html',
     name: 'DiceFace',
     group: 'Components',
-    subtitle: 'The fallback-die faces: 1 / 2 / 3 / 1+2 / 2+2 / 1+3, three sizes, rolling state',
+    subtitle: "The single die's faces: 1 / 2 / 3 / 1+2 / 2+2 / 1+3, three sizes, rolling state",
     viewport: { width: 800, height: 340 },
     render: () => (
       <div className="flex flex-col gap-6">
@@ -580,7 +580,7 @@ export const cards: Card[] = [
     path: 'components/roll-control/index.html',
     name: 'RollControl',
     group: 'Components',
-    subtitle: 'Pair vs. fallback, both revealed up front; awaiting the referee',
+    subtitle: 'The pair vs. the single, both revealed up front; awaiting the referee',
     viewport: { width: 800, height: 420 },
     render: () => {
       const pair = [
@@ -594,7 +594,7 @@ export const cards: Card[] = [
               <RollControl pair={pair} fallbackFace={[1, 2]} selectedChoice="pair" />
             </div>
           </Variant>
-          <Variant label="fallback selected">
+          <Variant label="single selected">
             <div className="w-96">
               <RollControl pair={pair} fallbackFace={[1, 2]} selectedChoice="fallback" />
             </div>

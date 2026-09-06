@@ -52,7 +52,7 @@ export function RollControl({
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
       <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Round offer">
         <OfferCard
-          label="Pair"
+          label="The pair"
           selected={selectedChoice === 'pair'}
           disabled={awaitingServer}
           onSelect={() => onChoose?.('pair')}
@@ -65,7 +65,7 @@ export function RollControl({
         </OfferCard>
 
         <OfferCard
-          label="Fallback"
+          label="The single"
           selected={selectedChoice === 'fallback'}
           disabled={awaitingServer}
           onSelect={() => onChoose?.('fallback')}

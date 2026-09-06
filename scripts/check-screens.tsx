@@ -50,7 +50,7 @@ const screens: ScreenCase[] = [
     routePath: '/r/:code',
     element: <GameScreen />,
     // Uppercasing a lowercase URL code is real behaviour worth asserting.
-    expect: ['PIXW', 'Round 1', 'Pair', 'Fallback'],
+    expect: ['PIXW', 'Round 1', 'The pair', 'The single'],
   },
   {
     name: 'Results',

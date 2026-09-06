@@ -36,7 +36,7 @@ export function DiceFace({ face, rolling = false, size = 'md' }: DiceFaceProps) 
   return (
     <div
       role="img"
-      aria-label={rolling ? 'Rolling' : `Fallback: ${faceLabel(face)}`}
+      aria-label={rolling ? 'Rolling' : `The single, ${faceLabel(face)}`}
       className={[
         'grid place-items-center rounded-lg border-2 border-border bg-surface text-ink shadow-sm',
         rolling ? 'animate-pulse' : '',
