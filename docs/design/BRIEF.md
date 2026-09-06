@@ -1,5 +1,16 @@
 # Claude Design brief — Pixwagon
 
+> **Superseded — read `BRIEF-02.md` first.** Design pass 02 (`BRIEF-02.md`,
+> landed at `docs/design/handoff-02/`) is the current brief. It corrects the
+> core mechanic this document still describes wrongly: there is **no
+> "dice/combo"** — each round issues a polyomino **pair** (take both or decline)
+> and an independent **single** die value, chosen freely, and the placement
+> affordance is the sheet-based `PlacementEditor` on surface 07. Wherever the two
+> briefs disagree, `BRIEF-02.md` wins (`docs/design/README.md`'s
+> corrections-live-beside-it convention). This file is kept for the record of
+> pass 01 and for the parts pass 02 left unchanged (the six-surface inventory,
+> the no-accounts and original-art constraints).
+
 Hand this to Claude Design after `/design-sync` has uploaded `design-system/`. Everything below assumes Design is binding to that card index, not inventing components.
 
 ## The product in a paragraph

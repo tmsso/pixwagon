@@ -18,7 +18,8 @@ export function HomeScreen() {
         <h1 className="font-mono text-3xl font-bold tracking-tight text-ink">Pixwagon</h1>
         {/* "Roll the dice" was the pre-mechanics-correction tagline
             (docs/mechanics-correction.md) — there's no dice anymore, only
-            pieces and an independent fallback die. */}
+            pieces and an independent single die (the "fallback" offer in
+            wire terms; "the single" to players — design pass 02, Annotation 10). */}
         <p className="mt-2 text-ink-muted">Place pieces. Fill the picture.</p>
       </header>
 

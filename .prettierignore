@@ -2,6 +2,14 @@
 # source design document.
 docs/architecture.md
 
+# Claude Design pass-02 deliverables (brief + handoff bundle), committed verbatim
+# for the same reason: prettier rewraps the prose and mis-parses the reference
+# HTML/CSS export (a "+ " conjunction became a list bullet, splitting a
+# sentence). Pass 01's equivalents under docs/design/handoff/ and
+# docs/design/surfaces/ happened to already match prettier so never needed this.
+docs/design/BRIEF-02.md
+docs/design/handoff-02/
+
 # Generated. Their formatting is the generator's business.
 design-system/
 apps/web/src/design/tokens.css

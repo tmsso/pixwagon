@@ -16,6 +16,10 @@ export default tseslint.config(
       // via a plain <script> tag, not part of the app bundle. Same treatment
       // as design-system/** above.
       'docs/design/surfaces/**',
+      // Pass-02's equivalent bundle (BRIEF-02 handoff). The pass that landed it
+      // added the files but not this ignore entry, so `render-pictures-02.js`'s
+      // browser `document` use has been red-lighting CI since.
+      'docs/design/handoff-02/**',
     ],
   },
 
