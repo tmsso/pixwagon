@@ -2,9 +2,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Phase 0 tests are all pure (RNG, schema, protocol decoding), so no DOM
-    // environment is needed. Component tests arrive with Phase 2.
+    // Still no DOM environment: the component tests we do have render through
+    // `react-dom/server` (`renderToStaticMarkup`) and assert on the HTML string,
+    // the same technique `scripts/check-screens.tsx` uses — enough to lock copy
+    // and structural states without pulling in jsdom + a testing-library.
     environment: 'node',
-    include: ['packages/*/src/**/*.test.ts', 'apps/*/src/**/*.test.ts'],
+    include: ['packages/*/src/**/*.test.ts', 'apps/*/src/**/*.test.{ts,tsx}'],
   },
 });

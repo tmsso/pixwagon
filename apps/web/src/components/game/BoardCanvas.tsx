@@ -12,8 +12,13 @@ export interface BoardCanvasProps {
    *  and `CellState` deliberately doesn't carry a player id (game-core/types.ts). */
   colorIndex?: number;
   /** Cells staged in the pending choice but not yet committed — the
-   *  `candidate` state (`docs/design/surfaces/` Annotation 01). */
+   *  `candidate` state (`docs/design/surfaces/` Annotation 01). Drawn as the
+   *  weak ghost: accent at 20%, dashed border. */
   candidateCells?: readonly CellRef[];
+  /** The subset of `candidateCells` belonging to the active piece/blob — the
+   *  strong ghost: accent at 35%, solid border (design pass 02, "Ghost vs.
+   *  candidate"). Pass a subset of `candidateCells`, not disjoint cells. */
+  activeCandidateCells?: readonly CellRef[];
   /** True while briefly showing `applyMove`'s rejection on the candidate
    *  cells before they clear — the `invalid` state. */
   invalid?: boolean;
@@ -36,6 +41,7 @@ export function BoardCanvas({
   cellSize = 20,
   colorIndex = 0,
   candidateCells = [],
+  activeCandidateCells = [],
   invalid = false,
   onCellPress,
 }: BoardCanvasProps) {
@@ -111,18 +117,35 @@ export function BoardCanvas({
       ctx.stroke();
     }
 
-    // Candidate/invalid overlay last, so the dashed outline sits above the
-    // grid lines rather than under them.
+    // Candidate/invalid overlay last, so it sits above the grid lines rather
+    // than under them. Two layers: every candidate cell as the weak ghost
+    // (fill + dashed outline), then the active piece/blob's cells again as the
+    // strong ghost (heavier fill + solid outline). A rejected move drops the
+    // strong/weak split and paints the whole thing in `danger`.
+    const strokeColor = invalid ? danger : accent;
+    const fillColor = invalid ? danger : accent;
+    const activeKeys = new Set(activeCandidateCells.map((cell) => `${cell.x},${cell.y}`));
+
     if (candidateCells.length > 0) {
-      ctx.strokeStyle = invalid ? danger : accent;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = strokeColor;
+      ctx.fillStyle = fillColor;
+      ctx.lineWidth = 1;
       for (const cell of candidateCells) {
-        ctx.strokeRect(cell.x * cellSize + 1, cell.y * cellSize + 1, cellSize - 2, cellSize - 2);
+        const strong = !invalid && activeKeys.has(`${cell.x},${cell.y}`);
+        ctx.globalAlpha = strong ? 0.35 : 0.2;
+        ctx.fillRect(cell.x * cellSize, cell.y * cellSize, cellSize, cellSize);
+        ctx.globalAlpha = 1;
+        ctx.setLineDash(strong ? [] : [4, 3]);
+        ctx.strokeRect(
+          cell.x * cellSize + 0.5,
+          cell.y * cellSize + 0.5,
+          cellSize - 1,
+          cellSize - 1,
+        );
       }
       ctx.setLineDash([]);
     }
-  }, [board, width, height, cellSize, colorIndex, candidateCells, invalid]);
+  }, [board, width, height, cellSize, colorIndex, candidateCells, activeCandidateCells, invalid]);
 
   return (
     <canvas

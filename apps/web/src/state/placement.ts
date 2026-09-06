@@ -136,6 +136,19 @@ export function candidateCells(choice: PendingChoice): CellRef[] {
   return choice.blobs.flatMap((blob) => blob.cells);
 }
 
+/** Just the *active* piece/blob's staged cells. The board renders these as the
+ *  strong ghost (accent at 35%, solid border) and everything else in
+ *  `candidateCells` as the weak ghost (20%, dashed) — design pass 02's
+ *  "Ghost vs. candidate" note, so the player can see which piece Turn/Flip and
+ *  the next board tap will act on. */
+export function activeCandidateCells(choice: PendingChoice): CellRef[] {
+  if (choice.kind === 'pair') {
+    const piece = choice.pieces[choice.active];
+    return piece.origin ? absolutePieceCells(piece.pieceId, piece.orientation, piece.origin) : [];
+  }
+  return [...(choice.blobs[choice.active]?.cells ?? [])];
+}
+
 /** True once every piece/blob has its full complement of cells staged —
  *  legality (fit, overlap, contiguity) is still `applyMove`'s call at
  *  commit time, this only says "there's a complete choice to submit". */

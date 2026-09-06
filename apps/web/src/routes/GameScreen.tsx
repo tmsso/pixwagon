@@ -7,10 +7,12 @@ import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
 import { PlayerChip } from '../components/game/PlayerChip.tsx';
 import { RollControl } from '../components/game/RollControl.tsx';
 import { Button } from '../components/ui/Button.tsx';
+import { useBoardCellSize } from '../design/boardScale.ts';
 import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
 import { fallbackFaceView, pieceOfferView } from '../state/offerView.ts';
 import {
   SOLO_PLAYER_ID,
+  activeCandidateCells,
   candidateCells,
   isPendingComplete,
   pendingCellCount,
@@ -22,6 +24,10 @@ import {
  * this route in Phase 5/6 via `RoomState`, replacing `useSoloGameStore` with
  * server-pushed state. No `connection` pill: this route runs with no network
  * at all until then (docs/design/surfaces/ Annotation 08).
+ *
+ * Turn flow (design pass 02, Surface 03): the footer shows both offers →
+ * picking one opens the `PlacementEditor` sheet over the board (offers collapse
+ * into the sheet's chosen-offer bar) → compose → commit from inside the sheet.
  */
 export function GameScreen() {
   const { code } = useParams();
@@ -42,6 +48,8 @@ export function GameScreen() {
   const commit = useSoloGameStore((state) => state.commit);
   const passRound = useSoloGameStore((state) => state.passRound);
 
+  // Three integer steps, never a fraction (design pass 02, Annotation 11).
+  const cellSize = useBoardCellSize(board.size.width);
   const score = scoreBoard(SOLO_PLAYER_ID, board);
 
   const canPass =
@@ -56,28 +64,27 @@ export function GameScreen() {
     else toggleBlobCell(cell);
   }
 
-  // `exactOptionalPropertyTypes` means RollControl's optional props can't be
-  // handed an explicit `undefined` — they must be omitted, not set to it.
-  const rollControlExtra = pending
-    ? {
-        selectedChoice: pending.kind,
-        commit: {
-          label: `Place ${pendingCellCount(pending)} square${pendingCellCount(pending) === 1 ? '' : 's'}`,
-          disabled: !isPendingComplete(pending),
-          onCommit: commit,
-          onCancel: cancelChoice,
-        },
-      }
-    : { onChoose: choose };
+  const pendingCount = pending ? pendingCellCount(pending) : 0;
 
   return (
     <HudFrame
       roomCode={code?.toUpperCase() ?? 'SOLO'}
       round={round + 1}
-      players={
-        <>
-          <PlayerChip name="You" colorIndex={0} score={score.points} active />
-        </>
+      players={<PlayerChip name="You" colorIndex={0} score={score.points} active />}
+      sheet={
+        pending ? (
+          <PlacementEditor
+            pending={pending}
+            commitLabel={`Place ${pendingCount} square${pendingCount === 1 ? '' : 's'}`}
+            commitDisabled={!isPendingComplete(pending)}
+            onSetActive={setActive}
+            onRotate={rotateActive}
+            onMirror={mirrorActive}
+            onTakeBack={clearActive}
+            onCancel={cancelChoice}
+            onCommit={commit}
+          />
+        ) : undefined
       }
       controls={
         status === 'complete' ? (
@@ -96,25 +103,18 @@ export function GameScreen() {
             <RollControl
               pair={[pieceOfferView(roll.pair[0]), pieceOfferView(roll.pair[1])]}
               fallbackFace={fallbackFaceView(roll.fallback)}
-              {...rollControlExtra}
+              onChoose={choose}
             />
-            {pending ? (
-              <PlacementEditor
-                pending={pending}
-                onSetActive={setActive}
-                onRotate={rotateActive}
-                onMirror={mirrorActive}
-                onClearActive={clearActive}
-              />
-            ) : null}
             {canPass ? (
               <Button variant="secondary" size="lg" onClick={passRound}>
                 Pass the round
               </Button>
             ) : null}
             {lastRejection ? (
-              <p className="text-center text-sm text-danger" role="alert">
-                Rejected: {lastRejection}
+              // Never scolding, never "invalid move" (design pass 02, 03g). Solo
+              // has no other player to name, so this is the whole message.
+              <p className="text-center text-sm text-ink-muted" role="alert">
+                That didn&rsquo;t fit — those squares went back. Try another spot.
               </p>
             ) : null}
           </div>
@@ -123,8 +123,9 @@ export function GameScreen() {
     >
       <BoardCanvas
         board={board}
-        cellSize={20}
+        cellSize={cellSize}
         candidateCells={pending ? candidateCells(pending) : []}
+        activeCandidateCells={pending ? activeCandidateCells(pending) : []}
         invalid={lastRejection !== null}
         onCellPress={handleCellPress}
       />
