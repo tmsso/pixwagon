@@ -26,6 +26,7 @@
     "@vitejs/plugin-react": "catalog:",
     "tailwindcss": "catalog:",
     "vite": "catalog:",
+    "vite-plugin-pwa": "catalog:",
     "wrangler": "catalog:"
   }
 }
