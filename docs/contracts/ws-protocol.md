@@ -66,7 +66,7 @@ Per-connection state lives in the socket **attachment** (`serializeAttachment`),
 ## Decided in Phase 4 (2026-09-09)
 
 - **`state` payload is typed**: `RoomSnapshot` — `{ code, mode, round, currentRoll:
-  Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
+Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   is the round in play (`null` before the host starts); a late joiner reads it
   here rather than replaying earlier rounds. `PlayerPresence` is
   `{ id, name, seatIndex, isHost }` — this replaces the Phase 0 `presence` shape
