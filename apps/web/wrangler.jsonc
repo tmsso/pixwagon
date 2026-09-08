@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Cloudflare Pages project for the web app (Phase 3.5). The project name is a
+  // bare "pixwagon" on purpose: the public URL is then `pixwagon.pages.dev`,
+  // with no account-name segment (the account's auto-generated identifiers carry
+  // the owner's real name — a public-repo leak this repo already guards against;
+  // see ROADMAP.md Phase 3.5 and the workers.dev subdomain rename).
+  //
+  // This is a static-asset deploy, not a Worker: `pages_build_output_dir` points
+  // at Vite's build output and there is no `main`. Deploy with:
+  //   pnpm --filter @pixwagon/web build && pnpm --filter @pixwagon/web deploy
+  "name": "pixwagon",
+  "pages_build_output_dir": "./dist",
+}

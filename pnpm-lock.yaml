@@ -157,6 +157,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1)
+      wrangler:
+        specifier: 'catalog:'
+        version: 4.116.0(@cloudflare/workers-types@5.20260730.1)
 
   packages/game-core:
     dependencies:

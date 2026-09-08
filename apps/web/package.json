@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "deploy": "wrangler pages deploy",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "tailwindcss": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "wrangler": "catalog:"
   }
 }
