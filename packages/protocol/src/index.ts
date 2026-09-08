@@ -21,6 +21,18 @@ import { z } from 'zod';
  */
 export const PROTOCOL_VERSION = 1;
 
+/**
+ * The most players a room seats — one per visually distinguishable identity
+ * (hue **and** hatch; the Okabe–Ito-derived `playerColors` in
+ * apps/web/src/design/tokens.ts). This is the single definition both sides read:
+ * apps/server imports it here (it cannot import the web palette), and apps/web
+ * re-exports it from tokens.ts with a test pinning `playerColors.length` to it.
+ * Lives in `protocol`, not `game-core`, because "how many seats" is a room fact,
+ * not a rule (ROADMAP.md Phase 4; handoff-02 engineering note 5, whose literal
+ * "use playerColors.length" can't work server-side).
+ */
+export const MAX_PLAYERS = 6;
+
 // ---------------------------------------------------------------------------
 // Shared fragments
 // ---------------------------------------------------------------------------
@@ -37,6 +49,70 @@ export const cellRefSchema = z.object({
 });
 
 export const gameModeSchema = z.enum(['same-board', 'own-board', 'solo', 'daily']);
+
+export type GameMode = z.infer<typeof gameModeSchema>;
+
+/**
+ * The fallback die's six faces. game-core owns the canonical list
+ * (`FALLBACK_FACE_IDS`, frozen by docs/mechanics-correction.md); this is a
+ * hand-kept mirror so `protocol` stays free of a `game-core` dependency — the
+ * wire format is meant to be reasoned about without the rules. `apps/server`
+ * depends on both packages and carries a test asserting the two stay identical.
+ */
+export const fallbackFaceSchema = z.enum(['1', '2', '3', '1+2', '2+2', '1+3']);
+
+/**
+ * A round's issued offer, mirroring game-core's `Roll`. Piece ids are validated
+ * as non-empty strings only — whether one names a real `SHAPE_LIBRARY` piece is
+ * game-core's question, the same split `pieceId` already uses on `fill`.
+ */
+export const rollSchema = z.object({
+  round: z.number().int().nonnegative(),
+  seed: z.string().min(1),
+  // `.readonly()` so game-core's `Roll` (whose `pair` is a `readonly` tuple of
+  // branded `PieceId`s) assigns straight into this without a cast.
+  pair: z.tuple([z.string().min(1), z.string().min(1)]).readonly(),
+  fallback: fallbackFaceSchema,
+});
+
+/**
+ * One seated player, as it appears in `presence` and in a room snapshot's
+ * `players`. `seatIndex` is both the seat and the colour/hatch index
+ * (`playerColor(seatIndex)`); `isHost` marks the one connection allowed to
+ * issue rolls. A `connected` flag is deliberately absent until the
+ * reconnect/resync half of Phase 4 lands — every entry here is a live socket.
+ */
+export const playerPresenceSchema = z.object({
+  id: z.string().min(1),
+  name: displayNameSchema,
+  seatIndex: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_PLAYERS - 1),
+  isHost: z.boolean(),
+});
+
+export type PlayerPresence = z.infer<typeof playerPresenceSchema>;
+
+/**
+ * The full room state a client gets on `join` and after any resync — typed here
+ * now that Phase 4 has settled what a room holds (the ws-protocol contract left
+ * this `z.unknown()` in Phase 0 deliberately, "typing it now would be
+ * guessing"). `currentRoll` is the round currently in play, or `null` before
+ * the host has started — a late joiner reads it straight from here without
+ * replaying earlier rounds (docs/contracts/rng.md).
+ */
+export const roomSnapshotSchema = z.object({
+  code: roomCodeSchema,
+  mode: gameModeSchema,
+  round: z.number().int().nonnegative(),
+  currentRoll: rollSchema.nullable(),
+  hostId: z.string().nullable(),
+  players: z.array(playerPresenceSchema),
+});
+
+export type RoomSnapshot = z.infer<typeof roomSnapshotSchema>;
 
 /**
  * A piece's orientation at placement time (docs/mechanics-correction.md):
@@ -113,6 +189,10 @@ export const serverErrorCodeSchema = z.enum([
   'room-full',
   'bad-message',
   'not-joined',
+  // `request-roll` is host-only (decided Phase 4): the host connection is the
+  // single writer that advances the round, so every client sees the same roll
+  // and issuance can't race between peers.
+  'not-host',
   'move-rejected',
   'internal',
 ]);
@@ -131,11 +211,16 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     code: roomCodeSchema,
   }),
   /** Full snapshot. Sent on join and after any resync. */
-  z.object({ type: z.literal('state'), state: z.unknown() }),
-  /** Incremental truth. The common case once a room is running. */
+  z.object({ type: z.literal('state'), state: roomSnapshotSchema }),
+  /**
+   * Incremental truth. Still `z.unknown()`: a delta is a change to board state,
+   * which fills produce — and fills arrive in Phase 5. Typing it here would be
+   * guessing at a shape the next phase defines. Presence and roll changes have
+   * their own messages already.
+   */
   z.object({ type: z.literal('delta'), delta: z.unknown() }),
-  z.object({ type: z.literal('presence'), players: z.array(z.unknown()) }),
-  z.object({ type: z.literal('roll'), roll: z.unknown() }),
+  z.object({ type: z.literal('presence'), players: z.array(playerPresenceSchema) }),
+  z.object({ type: z.literal('roll'), roll: rollSchema }),
   z.object({
     type: z.literal('fill-accepted'),
     playerId: z.string(),
