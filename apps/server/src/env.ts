@@ -2,16 +2,9 @@ export interface Env {
   ROOM: DurableObjectNamespace;
 }
 
-/**
- * A room seats as many players as we have visually distinguishable identities —
- * `playerColors.length` in apps/web/src/design/tokens.ts, which the server
- * cannot import because it lives in the web app.
- *
- * Duplicated here on purpose rather than guessed at each call site. Phase 4
- * should move the seat count into a package both sides can read; until then this
- * is the single server-side definition. See ROADMAP.md Phase 4.
- */
-export const MAX_SEATS = 6;
+// The seat count moved to `@pixwagon/protocol` as `MAX_PLAYERS` (Phase 4) — one
+// definition both the server and the web app read, instead of a copy here and
+// `playerColors.length` there.
 
 /**
  * Room-code alphabet with I, O, 0 and 1 removed.

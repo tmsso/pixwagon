@@ -63,7 +63,32 @@ Per-connection state lives in the socket **attachment** (`serializeAttachment`),
   piece is game-core's job (`unknown-piece`), the same split `comboId` already
   had. `index.test.ts` locks the new shape.
 
+## Decided in Phase 4 (2026-09-09)
+
+- **`state` payload is typed**: `RoomSnapshot` — `{ code, mode, round, currentRoll:
+  Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
+  is the round in play (`null` before the host starts); a late joiner reads it
+  here rather than replaying earlier rounds. `PlayerPresence` is
+  `{ id, name, seatIndex, isHost }` — this replaces the Phase 0 `presence` shape
+  `{ id, name, colorIndex }` (`seatIndex` is the same value, renamed to the
+  design's term; `colorIndex` had no consumer yet).
+- **`request-roll` is host-only.** The host is the lowest-seat joined player,
+  re-elected on every join/leave. A non-host gets `error: not-host`. One writer
+  advancing the round means every client sees the same roll and issuance never
+  races between peers.
+- **The seat maximum is `MAX_PLAYERS` in `@pixwagon/protocol`** (was `MAX_SEATS`
+  in `apps/server/src/env.ts`). The server imports it; the web app pins
+  `playerColors.length` to it with a test. `protocol`, not `game-core` — a seat
+  count is a room fact, not a rule.
+- **Room-wide state lives in Durable Object storage**, never an instance field:
+  `{ code, mode, roomSeed, round, hostId }` under one `room` key. Reads and
+  writes are ordered read → compute → write with no intervening non-storage
+  `await`, so the DO input gate keeps a second message from interleaving.
+
 ## Not yet decided
 
-- `state` and `delta` payloads are `z.unknown()` in Phase 0. Phase 4 types them once the room state settles — typing them now would be guessing.
-- Whether `request-roll` is host-only or anyone-can. Phase 4.
+- **`delta` payload stays `z.unknown()`.** A delta is a change to board state,
+  and fills — which produce those changes — arrive in Phase 5. Presence and roll
+  changes already have their own messages.
+- The client WebSocket layer, reconnect and resync-on-reconnect — the other half
+  of Phase 4, deferred to its own batch.

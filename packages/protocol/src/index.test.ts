@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { decodeClientMessage, encode, PROTOCOL_VERSION, roomCodeSchema } from './index.js';
+import {
+  decodeClientMessage,
+  encode,
+  MAX_PLAYERS,
+  playerPresenceSchema,
+  PROTOCOL_VERSION,
+  rollSchema,
+  roomCodeSchema,
+  roomSnapshotSchema,
+  serverErrorCodeSchema,
+  serverMessageSchema,
+} from './index.js';
 
 describe('decodeClientMessage', () => {
   it('accepts a well-formed join', () => {
@@ -142,5 +153,68 @@ describe('encode', () => {
     const message = { type: 'ping', t: 42 } as const;
     const result = decodeClientMessage(encode(message));
     expect(result).toEqual({ ok: true, message });
+  });
+});
+
+describe('room state shapes (Phase 4)', () => {
+  it('MAX_PLAYERS is the seat count both sides read', () => {
+    expect(MAX_PLAYERS).toBe(6);
+  });
+
+  const roll = {
+    round: 0,
+    seed: 'room-abc',
+    pair: ['domino', 'tromino-l'],
+    fallback: '1+2',
+  };
+
+  it('accepts a well-formed roll and rejects an unknown fallback face', () => {
+    expect(rollSchema.safeParse(roll).success).toBe(true);
+    expect(rollSchema.safeParse({ ...roll, fallback: '4' }).success).toBe(false);
+    expect(rollSchema.safeParse({ ...roll, pair: ['only-one'] }).success).toBe(false);
+  });
+
+  const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true };
+
+  it('accepts a player presence entry and bounds the seat index', () => {
+    expect(playerPresenceSchema.safeParse(player).success).toBe(true);
+    expect(playerPresenceSchema.safeParse({ ...player, seatIndex: MAX_PLAYERS }).success).toBe(
+      false,
+    );
+    expect(playerPresenceSchema.safeParse({ ...player, seatIndex: -1 }).success).toBe(false);
+  });
+
+  it('accepts a room snapshot with a null roll before the host starts', () => {
+    const snapshot = {
+      code: 'PIXW',
+      mode: 'same-board',
+      round: 0,
+      currentRoll: null,
+      hostId: 'p1',
+      players: [player],
+    };
+    expect(roomSnapshotSchema.safeParse(snapshot).success).toBe(true);
+    expect(roomSnapshotSchema.safeParse({ ...snapshot, currentRoll: roll }).success).toBe(true);
+    expect(roomSnapshotSchema.safeParse({ ...snapshot, mode: 'battle-royale' }).success).toBe(
+      false,
+    );
+  });
+
+  it('types the state / presence / roll server messages', () => {
+    const state = {
+      type: 'state',
+      state: { code: 'PIXW', mode: 'solo', round: 2, currentRoll: roll, hostId: null, players: [] },
+    };
+    expect(serverMessageSchema.safeParse(state).success).toBe(true);
+    expect(serverMessageSchema.safeParse({ type: 'roll', roll }).success).toBe(true);
+    expect(serverMessageSchema.safeParse({ type: 'presence', players: [player] }).success).toBe(
+      true,
+    );
+    // A bare `state` with no snapshot no longer passes — it's typed now.
+    expect(serverMessageSchema.safeParse({ type: 'state', state: {} }).success).toBe(false);
+  });
+
+  it('carries a not-host error code for host-only request-roll', () => {
+    expect(serverErrorCodeSchema.safeParse('not-host').success).toBe(true);
   });
 });

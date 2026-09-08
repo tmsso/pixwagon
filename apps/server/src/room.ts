@@ -1,30 +1,51 @@
 import { decodeClientMessage, encode, PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type { ServerMessage } from '@pixwagon/protocol';
-import { MAX_SEATS, type Env } from './env.ts';
+import type { Env } from './env.ts';
+import {
+  buildSnapshot,
+  ensureSeed,
+  initialRoomState,
+  issueNextRoll,
+  nextFreeSeat,
+  presenceList,
+  resolveHost,
+  roomIsFull,
+  type RoomState,
+  type SeatedConn,
+} from './roomState.ts';
 
 interface Attachment {
   playerId: string;
   name: string;
-  colorIndex: number;
+  /** Seat 0..MAX_PLAYERS-1 — also the colour + hatch index (`playerColor`). */
+  seatIndex: number;
+  /** Set once the connection completes the `join` handshake. Sockets that have
+   *  only been accepted hold a provisional seat but are not players yet. */
+  joined: boolean;
   /**
-   * The room code this connection joined through. Carried per-connection rather
-   * than in an instance field because hibernation may evict the instance while
-   * sockets stay open — anything that must survive that lives in the attachment.
+   * The room code this connection joined through. Per-connection, not an
+   * instance field: hibernation may evict the instance while sockets stay open,
+   * and a Durable Object cannot recover the name it was addressed by — the
+   * Worker passes it in `X-Room-Code`.
    */
   code: string;
 }
 
+const ROOM_KEY = 'room';
+
 /**
  * One Durable Object instance per room code — the architectural bet in §4C.
  *
- * Phase 0 scope: connections, presence and the protocol handshake. Rolls, fills
- * and scoring are Phase 4/5; what is proven here is that the primitive works —
- * a single addressable stateful object that terminates its own WebSockets.
+ * Phase 4 (this slice): the real protocol handshake, presence, host election,
+ * and host-issued seeded rolls. Room-wide state (seed, round, mode, host) lives
+ * in `state.storage`; per-connection state lives in the socket attachment;
+ * nothing lives in an instance field, because the runtime may evict this object
+ * between messages while its sockets stay open. Fills and scoring are Phase 5.
+ * The client WebSocket layer and reconnect/resync are the deferred other half
+ * of Phase 4.
  *
- * Written in the classic `constructor(state, env)` form rather than extending
- * the `DurableObject` base class. Both are supported; this one makes the two
- * things a DO actually depends on explicit, which suits a file that is mostly
- * going to be read as a reference for the next few phases.
+ * The room-state *decisions* are in `roomState.ts` (pure, unit-tested); this
+ * class is the Cloudflare glue — sockets in, storage read/modify/write, fan-out.
  */
 export class Room {
   #state: DurableObjectState;
@@ -33,27 +54,35 @@ export class Room {
     this.#state = state;
   }
 
-  /**
-   * Lowest seat not currently occupied, derived from the live sockets.
-   *
-   * Deliberately *not* an incrementing instance field: hibernation may evict
-   * this object while sockets stay open, and a counter would restart at 0 on
-   * the next wake. The joiner would then be handed a seat someone is still
-   * sitting in — same colour *and* same hatch as an existing player, which is
-   * exactly the collision the colour-vision rules exist to prevent.
-   */
-  #nextFreeSeat(): number {
-    const taken = new Set(
-      this.#state
-        .getWebSockets()
-        .map((socket) => (socket.deserializeAttachment() as Attachment | null)?.colorIndex)
-        .filter((index): index is number => index !== undefined),
-    );
-    for (let seat = 0; seat < MAX_SEATS; seat += 1) {
-      if (!taken.has(seat)) return seat;
-    }
-    return taken.size % MAX_SEATS;
+  // --- socket → data helpers ------------------------------------------------
+
+  #attachmentOf(socket: WebSocket): Attachment | null {
+    return socket.deserializeAttachment() as Attachment | null;
   }
+
+  /** Every accepted socket's seat, joined or not — feeds `nextFreeSeat` so two
+   *  simultaneous joiners never land on the same seat. */
+  #takenSeats(): number[] {
+    return this.#state
+      .getWebSockets()
+      .map((socket) => this.#attachmentOf(socket)?.seatIndex)
+      .filter((seat): seat is number => seat !== undefined);
+  }
+
+  /** Joined connections only, as the pure layer wants them. */
+  #seatedConns(): SeatedConn[] {
+    return this.#state
+      .getWebSockets()
+      .map((socket) => this.#attachmentOf(socket))
+      .filter((a): a is Attachment => a !== null && a.joined)
+      .map(({ playerId, name, seatIndex }) => ({ id: playerId, name, seatIndex }));
+  }
+
+  async #loadRoom(code: string): Promise<RoomState> {
+    return (await this.#state.storage.get<RoomState>(ROOM_KEY)) ?? initialRoomState(code);
+  }
+
+  // --- lifecycle ----------------------------------------------------------
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') {
@@ -64,20 +93,18 @@ export class Room {
     const [client, server] = [pair[0], pair[1]];
 
     /**
-     * `acceptWebSocket` (not `server.accept()`) opts into the **Hibernation
-     * API**. The difference is not cosmetic: with hibernation the runtime may
-     * evict this object from memory while sockets stay open, and stops billing
-     * duration while it is idle. A room where nobody has rolled for a minute
-     * would otherwise burn the free tier's 13,000 GB-s/day just sitting there.
-     * The cost is that per-connection state must live in the attachment or in
-     * storage, never in a plain instance field — the instance may not survive.
+     * `acceptWebSocket` (not `server.accept()`) opts into the Hibernation API:
+     * the runtime may evict this object while sockets stay open and stops
+     * billing wall-clock while it is idle. The price is that per-connection
+     * state must be in the attachment (below), never a plain field.
      */
     this.#state.acceptWebSocket(server);
 
     const attachment: Attachment = {
       playerId: crypto.randomUUID(),
       name: 'guest',
-      colorIndex: this.#nextFreeSeat(),
+      seatIndex: nextFreeSeat(this.#takenSeats()),
+      joined: false,
       code: request.headers.get('X-Room-Code') ?? '',
     };
     server.serializeAttachment(attachment);
@@ -92,34 +119,23 @@ export class Room {
       return;
     }
 
-    const attachment = ws.deserializeAttachment() as Attachment | null;
+    const attachment = this.#attachmentOf(ws);
     if (!attachment) {
       this.#send(ws, { type: 'error', code: 'internal', message: 'connection has no attachment' });
       return;
     }
 
     switch (decoded.message.type) {
-      case 'join': {
-        if (decoded.message.protocolVersion !== PROTOCOL_VERSION) {
-          this.#send(ws, {
-            type: 'error',
-            code: 'protocol-version-mismatch',
-            message: `server speaks protocol ${PROTOCOL_VERSION}, client sent ${decoded.message.protocolVersion}`,
-          });
-          ws.close(1002, 'protocol version mismatch');
-          return;
-        }
-        const updated: Attachment = { ...attachment, name: decoded.message.name };
-        ws.serializeAttachment(updated);
-        this.#send(ws, {
-          type: 'welcome',
-          protocolVersion: PROTOCOL_VERSION,
-          playerId: updated.playerId,
-          code: updated.code,
-        });
-        this.#broadcastPresence();
-        return;
-      }
+      case 'join':
+        return this.#handleJoin(
+          ws,
+          attachment,
+          decoded.message.protocolVersion,
+          decoded.message.name,
+        );
+
+      case 'request-roll':
+        return this.#handleRequestRoll(ws, attachment);
 
       case 'ping':
         this.#send(ws, { type: 'pong', t: decoded.message.t });
@@ -127,43 +143,137 @@ export class Room {
 
       case 'leave':
         ws.close(1000, 'left');
-        this.#broadcastPresence();
+        // webSocketClose fires and reconciles presence + host.
         return;
 
-      // Phase 4 issues real rolls; Phase 5 validates fills through game-core.
-      case 'request-roll':
+      // Phase 5 validates fills through game-core and scores rounds.
       case 'fill':
       case 'rematch':
         this.#send(ws, {
           type: 'error',
           code: 'internal',
-          message: `"${decoded.message.type}" is not implemented yet — see Phase 4/5 in ROADMAP.md`,
+          message: `"${decoded.message.type}" is not implemented yet — see Phase 5 in ROADMAP.md`,
         });
         return;
     }
   }
 
-  async webSocketClose(_ws: WebSocket, _code: number, _reason: string, _clean: boolean) {
-    this.#broadcastPresence();
+  async webSocketClose(
+    _ws: WebSocket,
+    _code: number,
+    _reason: string,
+    _clean: boolean,
+  ): Promise<void> {
+    await this.#reconcile();
   }
 
-  async webSocketError(_ws: WebSocket, _error: unknown) {
-    this.#broadcastPresence();
+  async webSocketError(_ws: WebSocket, _error: unknown): Promise<void> {
+    await this.#reconcile();
   }
+
+  // --- handlers ---------------------------------------------------------
+
+  async #handleJoin(
+    ws: WebSocket,
+    attachment: Attachment,
+    clientVersion: number,
+    name: string,
+  ): Promise<void> {
+    if (clientVersion !== PROTOCOL_VERSION) {
+      this.#send(ws, {
+        type: 'error',
+        code: 'protocol-version-mismatch',
+        message: `server speaks protocol ${PROTOCOL_VERSION}, client sent ${clientVersion}`,
+      });
+      ws.close(1002, 'protocol version mismatch');
+      return;
+    }
+
+    // Full-room check is here, not at accept: a seat is only provisional until
+    // the handshake completes. A re-`join` on an already-joined socket (e.g. a
+    // name change) skips it.
+    if (!attachment.joined) {
+      const otherJoined = this.#seatedConns().filter((c) => c.id !== attachment.playerId).length;
+      if (roomIsFull(otherJoined + 1)) {
+        this.#send(ws, { type: 'error', code: 'room-full', message: 'this room is full' });
+        ws.close(1013, 'room full');
+        return;
+      }
+    }
+
+    const updated: Attachment = { ...attachment, name, joined: true };
+    ws.serializeAttachment(updated);
+
+    // Read → modify → write with no non-storage await between: while a storage
+    // op is outstanding the DO input gate holds the next message, so this stays
+    // atomic even against a fast second join. Broadcasts happen after the put.
+    const stored = await this.#loadRoom(updated.code);
+    const conns = this.#seatedConns();
+    const seeded = ensureSeed(stored, crypto.randomUUID());
+    const next = resolveHost(seeded, conns);
+    await this.#state.storage.put(ROOM_KEY, next);
+
+    this.#send(ws, {
+      type: 'welcome',
+      protocolVersion: PROTOCOL_VERSION,
+      playerId: updated.playerId,
+      code: updated.code,
+    });
+    this.#send(ws, { type: 'state', state: buildSnapshot(next, conns) });
+    this.#broadcast(encode({ type: 'presence', players: presenceList(next, conns) }));
+  }
+
+  async #handleRequestRoll(ws: WebSocket, attachment: Attachment): Promise<void> {
+    if (!attachment.joined) {
+      this.#send(ws, {
+        type: 'error',
+        code: 'not-joined',
+        message: 'join before requesting a roll',
+      });
+      return;
+    }
+
+    const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
+    if (!stored || stored.roomSeed === null) {
+      this.#send(ws, { type: 'error', code: 'internal', message: 'room is not initialised' });
+      return;
+    }
+    if (stored.hostId !== attachment.playerId) {
+      this.#send(ws, {
+        type: 'error',
+        code: 'not-host',
+        message: 'only the host can start the next round',
+      });
+      return;
+    }
+
+    // Same read → modify → write discipline as join.
+    const { roll, state: next } = issueNextRoll(stored);
+    await this.#state.storage.put(ROOM_KEY, next);
+    this.#broadcast(encode({ type: 'roll', roll }));
+  }
+
+  /** Recompute presence and host after a disconnect, persist a host change,
+   *  and tell everyone. Presence carries `isHost`, so a client learns a host
+   *  handoff from this alone. */
+  async #reconcile(): Promise<void> {
+    const conns = this.#seatedConns();
+    const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
+    const next = stored ? resolveHost(stored, conns) : null;
+    if (stored && next && next !== stored) {
+      await this.#state.storage.put(ROOM_KEY, next);
+    }
+    const state = next ?? initialRoomState('');
+    this.#broadcast(encode({ type: 'presence', players: presenceList(state, conns) }));
+  }
+
+  // --- fan-out ---------------------------------------------------------
 
   #send(ws: WebSocket, message: ServerMessage): void {
     ws.send(encode(message));
   }
 
-  /** Presence is derived from the live sockets, so it cannot drift from reality. */
-  #broadcastPresence(): void {
-    const sockets = this.#state.getWebSockets();
-    const players = sockets
-      .map((socket) => socket.deserializeAttachment() as Attachment | null)
-      .filter((attachment): attachment is Attachment => attachment !== null)
-      .map(({ playerId, name, colorIndex }) => ({ id: playerId, name, colorIndex }));
-
-    const payload = encode({ type: 'presence', players });
-    for (const socket of sockets) socket.send(payload);
+  #broadcast(payload: string): void {
+    for (const socket of this.#state.getWebSockets()) socket.send(payload);
   }
 }
