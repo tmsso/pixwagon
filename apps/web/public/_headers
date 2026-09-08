@@ -1,0 +1,7 @@
+# Cloudflare Pages custom headers.
+#
+# The service worker must never be served stale: the browser re-fetches sw.js on
+# every navigation to detect a new build, and a cached copy would stall the
+# update-available banner (Annotation 17) behind the CDN TTL.
+/sw.js
+  Cache-Control: no-cache

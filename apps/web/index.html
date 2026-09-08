@@ -7,9 +7,98 @@
     <meta name="description" content="A real-time roll-and-fill pixel game." />
     <meta name="theme-color" content="#2a9d8a" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <style>
+      /* Splash / first paint (design pass 02, surface 11 / Annotation 17). This
+         is the cached shell: it paints from HTML alone, before the JS bundle
+         parses, so a warm-cache launch shows the mark instantly instead of a
+         white flash. Background is --bg, the same as Home, so the handoff to
+         the real app is invisible. main.tsx removes #splash once React mounts. */
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #f6f7f9;
+        color: #171c21;
+        font:
+          500 1.375rem/1.2 system-ui,
+          sans-serif;
+        transition: opacity 360ms ease;
+      }
+      #splash.is-leaving {
+        opacity: 0;
+      }
+      #splash img {
+        width: 72px;
+        height: 72px;
+      }
+      #splash-progress {
+        width: 140px;
+        height: 4px;
+        border-radius: 999px;
+        background: #eaedf1;
+        overflow: hidden;
+        /* Hidden until boot passes 400ms — below that it only flashes. */
+        opacity: 0;
+        transition: opacity 120ms ease;
+      }
+      #splash-progress.is-shown {
+        opacity: 1;
+      }
+      #splash-progress > i {
+        display: block;
+        height: 100%;
+        width: 15%;
+        border-radius: inherit;
+        background: #2a9d8a;
+        animation: splash-fill 1s ease-out forwards;
+      }
+      #splash-progress-label {
+        font-size: 0.75rem;
+        color: #5a6673;
+      }
+      @keyframes splash-fill {
+        to {
+          width: 95%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        /* No slide-out, no growing bar — a plain static label instead. */
+        #splash {
+          transition: none;
+        }
+        #splash-progress {
+          display: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="splash">
+      <img src="/icon.svg" alt="" />
+      <span>Pixwagon</span>
+      <div id="splash-progress" aria-hidden="true"><i></i></div>
+      <span id="splash-progress-label" hidden>Loading…</span>
+    </div>
+    <script>
+      // Reveal the progress bar only if the shell is still booting after 400ms.
+      setTimeout(function () {
+        var bar = document.getElementById('splash-progress');
+        var label = document.getElementById('splash-progress-label');
+        if (!bar) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          if (label) label.hidden = false;
+        } else {
+          bar.classList.add('is-shown');
+        }
+      }, 400);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,4 +1,5 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router';
+import { UpdateBanner } from './pwa/UpdateBanner.tsx';
 import { GameScreen } from './routes/GameScreen.tsx';
 import { HomeScreen } from './routes/HomeScreen.tsx';
 import { LobbyScreen } from './routes/LobbyScreen.tsx';
@@ -18,6 +19,9 @@ import { ResultsScreen } from './routes/ResultsScreen.tsx';
 export function App() {
   return (
     <BrowserRouter>
+      {/* A service-worker update banner, above every route. It gates itself to
+          stay out of an in-progress round (Annotation 17). */}
+      <UpdateBanner />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/lobby" element={<LobbyScreen />} />

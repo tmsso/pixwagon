@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { scoreBoard } from '@pixwagon/game-core';
 import { getPack } from '@pixwagon/packs';
@@ -5,6 +6,8 @@ import { PicturePreview } from '../components/game/PicturePreview.tsx';
 import { PlayerChip } from '../components/game/PlayerChip.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
+import { InstallPrompt } from '../pwa/InstallPrompt.tsx';
+import { usePwaStore } from '../pwa/usePwaStore.ts';
 import { SOLO_PLAYER_ID, freshSoloConfig, useSoloGameStore } from '../state/soloGame.ts';
 
 /**
@@ -24,6 +27,14 @@ export function ResultsScreen() {
   const round = useSoloGameStore((state) => state.round);
   const status = useSoloGameStore((state) => state.status);
   const start = useSoloGameStore((state) => state.start);
+  const onPictureCompleted = usePwaStore((state) => state.onPictureCompleted);
+
+  // Finishing a picture is the one moment the app has earned an install prompt
+  // (Annotation 16). This only flips the prompt to `eligible`; the card itself
+  // renders below and on the next Home visit.
+  useEffect(() => {
+    if (status === 'complete') onPictureCompleted();
+  }, [status, onPictureCompleted]);
 
   const picture = getPack(packId)?.pictures.find((candidate) => candidate.id === pictureId);
   const score = scoreBoard(SOLO_PLAYER_ID, board);
@@ -69,6 +80,8 @@ export function ResultsScreen() {
       <Button size="lg" onClick={handleRematch}>
         Rematch
       </Button>
+
+      <InstallPrompt />
     </main>
   );
 }
