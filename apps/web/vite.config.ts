@@ -14,6 +14,10 @@ export default defineConfig({
     // the update banner can hold until the results screen (Annotation 17).
     VitePWA({
       registerType: 'prompt',
+      // We call `registerSW` ourselves from pwa/register.ts (via the
+      // `virtual:pwa-register` module) so the update hooks can reach the store —
+      // so don't also inject a registration script or emit registerSW.js.
+      injectRegister: null,
       // The static manifest at public/manifest.webmanifest is hand-maintained
       // and already linked from index.html — don't let the plugin generate a
       // second one.
