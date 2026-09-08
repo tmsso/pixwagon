@@ -24,6 +24,12 @@ catalog:
   tailwindcss: ^4.3.3
   vite: ^8.2.0
   vite-plugin-pwa: ^1.3.0
+  # Peer dep of vite-plugin-pwa: the `virtual:pwa-register` module imports it at
+  # runtime, so it must resolve from apps/web's own node_modules (Vite 8's
+  # Rolldown resolver won't reach into the plugin's nested deps the way Rollup
+  # did — a `--frozen-lockfile` CI build fails without this even when a loose
+  # local install happens to hoist it).
+  workbox-window: ^7.4.1
   wrangler: ^4.116.0
   zod: ^4.4.3
   zustand: ^5.0.15
