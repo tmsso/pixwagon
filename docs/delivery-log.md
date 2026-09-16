@@ -232,3 +232,7 @@ Accounts and auth, matchmaking beyond room codes, native app-store builds, monet
 ### 2026-09-16 — repo review and documentation restructure
 
 Fable-grade review of the whole repo (`docs/review-2026-09-16.md`). No phase status changed. `ROADMAP.md` rewritten as plan-only with a status table, an owner-run device verification checklist, four decisions needed before Phase 5 (same-board semantics, turn model, session shape, origins), and per-deliverable done-criteria for the Phase 4 client half and Phase 5. Trivial fixes in the same PR: README status and mechanic wording, stale `App.tsx` comment, unused `NotImplementedError` removed from `game-core`, `Room.#reconcile` now excludes the closing socket explicitly.
+
+### 2026-09-16 — decisions D1–D4 agreed
+
+The owner agreed to all four recommendations in `ROADMAP.md` the same day: **D1** same-board = per-player copies of the identical picture (no contested shared board; pass-02 `12a`/`03g` are reinterpreted, not built); **D2** simultaneous rounds, auto-advance when every connected player has acted, no timer in v1; **D3** Phase 5 ships one picture per session with a round budget, picture cycling moves to Phase 6; **D4** two origins stay, worker address via `VITE_ROOM_ORIGIN`. Phase 5 is unblocked once the Phase 4 client half ships.

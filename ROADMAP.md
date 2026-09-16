@@ -9,7 +9,7 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 - A phase is **Delivered** when its code is merged and CI-green, **Accepted** when its bold **Accept:** line has actually been observed. Delivered-but-not-Accepted is a normal state here because several Accept lines need a real phone; they are batched into the device session below rather than blocking the next phase.
 - Sessions run as batches of one to three deliverables (`/next-batch`). Each deliverable lands as one PR with `pnpm verify` green locally and CI green on GitHub. A deliverable's "Done means" list below is the PR's acceptance check; do not reinterpret it mid-batch.
 - When a batch makes a decision, write it in **two places**: a one-line entry under the phase in this file, and a comment at the site of the decision. Long narrative goes in `docs/delivery-log.md`, not here.
-- Decisions listed under **Decisions needed** are the project owner's call. A batch may proceed on the recommended option only if the owner has said so in that session; otherwise ask up front, once, with the others.
+- Decisions D1–D4 below were the project owner's call and are decided (2026-09-16). New forks of the same weight go in a fresh "Decisions needed" section here and are asked up front, once, at the start of a batch.
 
 ## Status at a glance (2026-09-16)
 
@@ -22,7 +22,7 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 | 3     | PWA shell                             | delivered | ⏳ device   | real-phone install + aeroplane-mode solo              |
 | 3.5   | Cloudflare account and free-tier gate | delivered | ⏳ device   | phone on mobile data joins a room over WebSocket      |
 | 4     | Realtime skeleton                     | half      | ⏳ device   | client WebSocket layer + reconnect/resync (next work) |
-| 5     | Same-board multiplayer                | —         | —           | blocked on decisions D1–D3 below                      |
+| 5     | Same-board multiplayer                | —         | —           | unblocked — D1–D3 decided 2026-09-16                  |
 | 6     | Own-board mode, results, rematch      | —         | —           |                                                       |
 | 7     | Daily puzzle + persistence            | —         | —           | daily seed needs no storage; see split below          |
 | 8     | Second shape pack                     | —         | —           | can run any time after Phase 2                        |
@@ -34,7 +34,7 @@ Live: web app `https://pixwagon.pages.dev` (Pages, deploys PR #18 build) · room
 
 1. **Device verification session** (owner, ~20 min, no code) — flips 3, 3.5 and half of 4's Accept lines in one go. Checklist below.
 2. **Phase 4 client half** — the next code batch. Unblocked now.
-3. **Decisions D1–D3** — needed before Phase 5 starts; ask at the start of the Phase 4 client batch so Phase 5 can follow without a stop.
+3. ~~Decisions D1–D3~~ — decided 2026-09-16; Phase 5 can follow Phase 4 without a stop.
 4. **Phase 5**, then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
 
 ---
@@ -50,9 +50,9 @@ Everything below needs a real phone and cannot be done by Claude. Run it once an
 
 ---
 
-## Decisions needed (owner's call, before Phase 5)
+## Decisions D1–D4 — **decided 2026-09-16** (owner agreed to all four recommendations)
 
-Each has a recommended option; the recommendation is what the plan below assumes. Choosing differently changes Phase 5's scope, so decide before it starts, not during.
+Kept in full so the reasoning stays findable. Each "Recommended" below is now the decision; Phases 4–6 assume them. Reopening any of them is an owner-level change, not a batch-level one.
 
 **D1 — What "same board" means.** Two readings exist in the repo. (a) _Per-player copies of the identical picture_, everyone plays the same offers simultaneously on their own copy, ranked at the end — `docs/architecture.md` §1 ("all players fill the identical picture"), `game-core`'s `Board` (no per-cell owner) and the all-or-nothing scoring all assume this. (b) _One shared board, cells contested first-come_ — design pass 02's provisional surfaces `12a` ("your turn") and `03g` ("Sam reached them first") depict this. **Recommended: (a).** It keeps `Board`, `applyMove` and scoring unchanged, needs no per-cell ownership, and avoids exactly the reaction-speed unfairness `docs/mechanics-correction.md` rejected for the fallback reveal. Under (a), same-board and own-board differ only in which picture each player gets, so Phase 5 and 6 share one server model. The `03g` toast copy becomes "Those squares didn't fit — try another spot" (the solo copy), and `12a` is reinterpreted as "waiting for others to place".
 
@@ -97,7 +97,7 @@ Known server caveat to verify in the two-device test: `Room.#reconcile` reads `g
 
 ---
 
-## Phase 5 — Same-board multiplayer (assumes D1(a), D2, D3 as recommended)
+## Phase 5 — Same-board multiplayer (per D1(a), D2, D3 — decided 2026-09-16)
 
 The core competitive loop: fills go through the referee.
 
