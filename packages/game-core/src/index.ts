@@ -8,7 +8,6 @@
  */
 
 export * from './types.js';
-export { NotImplementedError } from './not-implemented.js';
 export { createRng, deriveSeed, type Rng } from './rng.js';
 export {
   ALL_ORIENTATIONS,

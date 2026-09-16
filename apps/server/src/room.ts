@@ -69,10 +69,15 @@ export class Room {
       .filter((seat): seat is number => seat !== undefined);
   }
 
-  /** Joined connections only, as the pure layer wants them. */
-  #seatedConns(): SeatedConn[] {
+  /** Joined connections only, as the pure layer wants them. `exclude` is the
+   *  socket whose close/error handler is running: Cloudflare says disconnected
+   *  sockets are not returned by `getWebSockets()`, but does not promise the
+   *  closing one is already gone while its handler runs — so drop it
+   *  explicitly rather than let a leaver linger in presence and host election. */
+  #seatedConns(exclude?: WebSocket): SeatedConn[] {
     return this.#state
       .getWebSockets()
+      .filter((socket) => socket !== exclude)
       .map((socket) => this.#attachmentOf(socket))
       .filter((a): a is Attachment => a !== null && a.joined)
       .map(({ playerId, name, seatIndex }) => ({ id: playerId, name, seatIndex }));
@@ -159,16 +164,16 @@ export class Room {
   }
 
   async webSocketClose(
-    _ws: WebSocket,
+    ws: WebSocket,
     _code: number,
     _reason: string,
     _clean: boolean,
   ): Promise<void> {
-    await this.#reconcile();
+    await this.#reconcile(ws);
   }
 
-  async webSocketError(_ws: WebSocket, _error: unknown): Promise<void> {
-    await this.#reconcile();
+  async webSocketError(ws: WebSocket, _error: unknown): Promise<void> {
+    await this.#reconcile(ws);
   }
 
   // --- handlers ---------------------------------------------------------
@@ -256,8 +261,8 @@ export class Room {
   /** Recompute presence and host after a disconnect, persist a host change,
    *  and tell everyone. Presence carries `isHost`, so a client learns a host
    *  handoff from this alone. */
-  async #reconcile(): Promise<void> {
-    const conns = this.#seatedConns();
+  async #reconcile(leaving?: WebSocket): Promise<void> {
+    const conns = this.#seatedConns(leaving);
     const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
     const next = stored ? resolveHost(stored, conns) : null;
     if (stored && next && next !== stored) {

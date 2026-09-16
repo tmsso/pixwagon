@@ -1,6 +1,6 @@
 # CLAUDE.md — Pixwagon
 
-Project brief for Claude Code. Read this fully before writing code. `ROADMAP.md` defines build order; `docs/architecture.md` is the source design document (committed verbatim — do not edit it, record corrections beside it); `IDEAS.md` holds loose future ideas.
+Project brief for Claude Code. Read this fully before writing code. `ROADMAP.md` is the plan (status table, decisions needed, per-phase done-criteria — plan only, keep it short); `docs/delivery-log.md` is the record of what shipped when (append dated entries there, not to the roadmap); `docs/architecture.md` is the source design document (committed verbatim — do not edit it, record corrections beside it); `IDEAS.md` holds loose future ideas. `docs/review-2026-09-16.md` is a point-in-time review with the reasoning behind the current plan.
 
 ## Communicating with the admin
 
@@ -65,5 +65,5 @@ Never hand-edit either. CI regenerates both and fails if the working tree comes 
 ## 8. Working conventions
 
 - `pnpm verify` before declaring anything done — it runs format, lint, typecheck, test, build, screen render, generated-file drift and design-card render. The real CI on GitHub is the authority, not a local pass.
-- Do not start a roadmap phase before its predecessor's **Accept:** line is actually met.
-- Record decisions where they will be found later: the phase entry in `ROADMAP.md`, or a comment at the site of the decision. Phase 2 and Phase 7 both have explicit "decide here and write it down" items.
+- Do not start a roadmap phase before its predecessor's **Accept:** line is actually met — with one exception, decided 2026-09-16: when the only gap is a real-device check listed under the roadmap's "Device verification session", the next phase may start; the status table must then say "accept pending" honestly, never "accepted".
+- Record decisions where they will be found later: a one-line "Decided" entry under the phase in `ROADMAP.md` plus a comment at the site of the decision; narrative goes in `docs/delivery-log.md`. The roadmap's "Decisions needed" list (D1–D4) is the admin's call — ask them up front, once, at the start of a batch.

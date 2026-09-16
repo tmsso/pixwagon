@@ -8,13 +8,13 @@ import { ResultsScreen } from './routes/ResultsScreen.tsx';
 
 /**
  * Five routes for the six design surfaces in architecture.md §4B — the sixth,
- * the roll/combo control, is a component rather than a navigable screen, since a
- * routed URL for a dice widget would not make sense. It appears inside the game
- * screen and is designed as its own surface.
+ * the round-offer control (`RollControl`), is a component rather than a
+ * navigable screen; it appears inside the game screen and is designed as its
+ * own surface.
  *
- * Phase 0: every screen is a placeholder built from the real component shells,
- * so the routing, tokens and components are all provably wired before any
- * gameplay exists.
+ * Home, Game (solo), Results and PackPicker are real (Phase 2). Lobby is still
+ * a placeholder until the Phase 4 client half wires a room; `/r/:code` is
+ * solo-only until Phase 5 feeds it server state.
  */
 export function App() {
   return (

@@ -6,7 +6,7 @@ Loose backlog. Nothing here is scheduled; `ROADMAP.md` is the plan. Pick things 
 
 - **Spectator mode.** Join a room by code without a seat — useful when a room is full at 6.
 - **Asynchronous rooms.** A room that persists between sessions so a game can be resumed the next day. Depends on Phase 7 persistence.
-- **Handicap.** Extra combo options or a head start, for playing with kids.
+- **Handicap.** An extra offer per round or a head start, for playing with kids.
 - **Puzzle chains.** A picture that unlocks the next one, giving solo a shape beyond one-off boards.
 - **Roll history / replay.** Seeded rooms are reproducible by construction, so a replay is mostly a UI. Would make "that was unfair" arguments settleable.
 
