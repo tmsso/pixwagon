@@ -4,10 +4,13 @@ import type { Env } from './env.ts';
 import {
   buildSnapshot,
   ensureSeed,
+  findStaleConnection,
   initialRoomState,
   issueNextRoll,
   nextFreeSeat,
   presenceList,
+  reclaimIdentity,
+  registerIdentity,
   resolveHost,
   roomIsFull,
   type RoomState,
@@ -29,6 +32,13 @@ interface Attachment {
    * Worker passes it in `X-Room-Code`.
    */
   code: string;
+  /**
+   * Set once the join handshake completes; `undefined` for a provisional,
+   * not-yet-joined socket. Lets a same-connection re-join (e.g. a display
+   * name change with no fresh `rejoinToken` from the client) reuse the token
+   * already registered for this identity instead of minting a redundant one.
+   */
+  rejoinToken?: string;
 }
 
 const ROOM_KEY = 'room';
@@ -67,6 +77,19 @@ export class Room {
       .getWebSockets()
       .map((socket) => this.#attachmentOf(socket)?.seatIndex)
       .filter((seat): seat is number => seat !== undefined);
+  }
+
+  /** The live, joined socket currently holding `playerId`, if any. Used to
+   *  evict a stale connection (e.g. an old tab that never cleanly closed)
+   *  when a rejoin reclaims its identity on a new socket. */
+  #findLiveSocket(playerId: string, exclude?: WebSocket): WebSocket | null {
+    return (
+      this.#state.getWebSockets().find((socket) => {
+        if (socket === exclude) return false;
+        const a = this.#attachmentOf(socket);
+        return a !== null && a.joined && a.playerId === playerId;
+      }) ?? null
+    );
   }
 
   /** Joined connections only, as the pure layer wants them. `exclude` is the
@@ -137,6 +160,7 @@ export class Room {
           attachment,
           decoded.message.protocolVersion,
           decoded.message.name,
+          decoded.message.rejoinToken,
         );
 
       case 'request-roll':
@@ -183,6 +207,7 @@ export class Room {
     attachment: Attachment,
     clientVersion: number,
     name: string,
+    rejoinToken: string | undefined,
   ): Promise<void> {
     if (clientVersion !== PROTOCOL_VERSION) {
       this.#send(ws, {
@@ -194,11 +219,42 @@ export class Room {
       return;
     }
 
-    // Full-room check is here, not at accept: a seat is only provisional until
-    // the handshake completes. A re-`join` on an already-joined socket (e.g. a
-    // name change) skips it.
+    const stored = await this.#loadRoom(attachment.code);
+
+    let playerId = attachment.playerId;
+    let seatIndex = attachment.seatIndex;
+    let token = attachment.rejoinToken;
+    let stale: WebSocket | null = null;
+
+    // Full-room check and identity reclaim are here, not at accept: a seat is
+    // only provisional until the handshake completes. A re-`join` on an
+    // already-joined socket (e.g. a name change) skips both — its identity is
+    // already settled.
     if (!attachment.joined) {
-      const otherJoined = this.#seatedConns().filter((c) => c.id !== attachment.playerId).length;
+      const reclaimed = reclaimIdentity(stored, rejoinToken);
+      if (reclaimed) {
+        playerId = reclaimed.playerId;
+        seatIndex = reclaimed.seatIndex;
+        token = rejoinToken;
+        // The old connection for this identity (a tab that never cleanly
+        // closed) loses the seat to this new one rather than duplicating it.
+        // `findStaleConnection` is the pure yes/no decision (unit-tested);
+        // `#findLiveSocket` is the glue lookup of the actual socket to close.
+        if (findStaleConnection(this.#seatedConns(ws), playerId)) {
+          stale = this.#findLiveSocket(playerId, ws);
+          stale?.close(4000, 'reconnected elsewhere');
+        }
+      } else {
+        token = crypto.randomUUID();
+      }
+
+      // Exclude `stale` too: Cloudflare doesn't promise it's gone from
+      // `getWebSockets()` just because `close()` was called (same reasoning
+      // as `#reconcile`'s `exclude` param) — left uncounted here it would
+      // make a reclaim look like room-full and double the seat in presence.
+      const otherJoined = this.#seatedConns(stale ?? undefined).filter(
+        (c) => c.id !== playerId,
+      ).length;
       if (roomIsFull(otherJoined + 1)) {
         this.#send(ws, { type: 'error', code: 'room-full', message: 'this room is full' });
         ws.close(1013, 'room full');
@@ -206,16 +262,29 @@ export class Room {
       }
     }
 
-    const updated: Attachment = { ...attachment, name, joined: true };
+    // `token` is always set by this point: the `!attachment.joined` branch
+    // above assigns it in every path (reclaimed or fresh), and an
+    // already-joined socket only reaches here because an earlier `join` call
+    // already went through that branch and persisted one onto the
+    // attachment. The `!`s below (and the one on `updated.rejoinToken`)
+    // encode that invariant.
+    const updated: Attachment = {
+      ...attachment,
+      playerId,
+      seatIndex,
+      name,
+      joined: true,
+      rejoinToken: token!,
+    };
     ws.serializeAttachment(updated);
 
     // Read → modify → write with no non-storage await between: while a storage
     // op is outstanding the DO input gate holds the next message, so this stays
     // atomic even against a fast second join. Broadcasts happen after the put.
-    const stored = await this.#loadRoom(updated.code);
-    const conns = this.#seatedConns();
+    const conns = this.#seatedConns(stale ?? undefined);
     const seeded = ensureSeed(stored, crypto.randomUUID());
-    const next = resolveHost(seeded, conns);
+    const withHost = resolveHost(seeded, conns);
+    const next = registerIdentity(withHost, token!, { playerId, seatIndex, name });
     await this.#state.storage.put(ROOM_KEY, next);
 
     this.#send(ws, {
@@ -223,6 +292,7 @@ export class Room {
       protocolVersion: PROTOCOL_VERSION,
       playerId: updated.playerId,
       code: updated.code,
+      rejoinToken: token!,
     });
     this.#send(ws, { type: 'state', state: buildSnapshot(next, conns) });
     this.#broadcast(encode({ type: 'presence', players: presenceList(next, conns) }));
