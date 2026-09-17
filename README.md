@@ -1,19 +1,19 @@
 # Pixwagon
 
-A browser-based, installable-PWA, real-time **roll-and-fill pixel game**. Players share a room code, a fair dice/combo is issued each round, and everyone fills grid squares to complete a pixel picture.
+A browser-based, installable-PWA, real-time **roll-and-fill pixel game**. Players share a room code; each round the referee issues a polyomino-piece pair plus an independent fallback-die offer, and players place pieces to complete a pixel picture. Full mechanic in [`docs/mechanics-correction.md`](docs/mechanics-correction.md).
 
 Inspired by roll-and-write pixel games. All art, shape data, palettes and copy in this repository are original.
 
-**Status: Phase 0 — scaffold.** The repo structure, design tokens and contracts are in place; the rules engine and gameplay are not built yet. See [`ROADMAP.md`](ROADMAP.md).
+**Status (2026-09-16): solo is playable and installable at [pixwagon.pages.dev](https://pixwagon.pages.dev); the multiplayer room server is deployed but not yet wired to the client.** Phases 0–3 are delivered, Phase 4 is half done. See [`ROADMAP.md`](ROADMAP.md) for the plan and [`docs/delivery-log.md`](docs/delivery-log.md) for what shipped when.
 
 ## Modes
 
-| Mode       | Network             | Description                                             |
-| ---------- | ------------------- | ------------------------------------------------------- |
-| Same board | required            | Everyone fills the identical picture from the same dice |
-| Own board  | required            | Parallel boards, own picture, compared at the end       |
-| Solo       | offline             | Single player, no room, no referee                      |
-| Daily      | offline after fetch | One shared seed per day                                 |
+| Mode       | Network             | Description                                               |
+| ---------- | ------------------- | --------------------------------------------------------- |
+| Same board | required            | Everyone fills the identical picture from the same offers |
+| Own board  | required            | Parallel boards, own picture, compared at the end         |
+| Solo       | offline             | Single player, no room, no referee                        |
+| Daily      | offline after fetch | One shared seed per day                                   |
 
 No accounts at launch — identity is a display name plus a room code.
 
