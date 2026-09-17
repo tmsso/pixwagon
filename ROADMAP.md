@@ -11,29 +11,29 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 - When a batch makes a decision, write it in **two places**: a one-line entry under the phase in this file, and a comment at the site of the decision. Long narrative goes in `docs/delivery-log.md`, not here.
 - Decisions D1–D4 below were the project owner's call and are decided (2026-09-16). New forks of the same weight go in a fresh "Decisions needed" section here and are asked up front, once, at the start of a batch.
 
-## Status at a glance (2026-09-16)
+## Status at a glance (refreshed 2026-09-17)
 
-| Phase | Name                                  | Code      | Accept line | Gap to Accept                                         |
-| ----- | ------------------------------------- | --------- | ----------- | ----------------------------------------------------- |
-| 0     | Repo and sync-ready scaffold          | delivered | ✅ met      | —                                                     |
-| 0.5   | Design interlude (owner-driven)       | n/a       | ✅ met      | —                                                     |
-| 1     | `game-core` rules engine              | delivered | ✅ met      | —                                                     |
-| 2     | Local solo playable                   | delivered | ✅ met      | —                                                     |
-| 3     | PWA shell                             | delivered | ⏳ device   | real-phone install + aeroplane-mode solo              |
-| 3.5   | Cloudflare account and free-tier gate | delivered | ⏳ device   | phone on mobile data joins a room over WebSocket      |
-| 4     | Realtime skeleton                     | half      | ⏳ device   | client WebSocket layer + reconnect/resync (next work) |
-| 5     | Same-board multiplayer                | —         | —           | unblocked — D1–D3 decided 2026-09-16                  |
-| 6     | Own-board mode, results, rematch      | —         | —           |                                                       |
-| 7     | Daily puzzle + persistence            | —         | —           | daily seed needs no storage; see split below          |
-| 8     | Second shape pack                     | —         | —           | can run any time after Phase 2                        |
-| 9     | Polish                                | —         | —           |                                                       |
+| Phase | Name                                  | Code       | Accept line | Gap to Accept                                               |
+| ----- | ------------------------------------- | ---------- | ----------- | ----------------------------------------------------------- |
+| 0     | Repo and sync-ready scaffold          | delivered  | ✅ met      | —                                                           |
+| 0.5   | Design interlude (owner-driven)       | n/a        | ✅ met      | —                                                           |
+| 1     | `game-core` rules engine              | delivered  | ✅ met      | —                                                           |
+| 2     | Local solo playable                   | delivered  | ✅ met      | —                                                           |
+| 3     | PWA shell                             | delivered  | ⏳ device   | real-phone install + aeroplane-mode solo                    |
+| 3.5   | Cloudflare account and free-tier gate | delivered  | ⏳ device   | phone on mobile data joins a room over WebSocket            |
+| 4     | Realtime skeleton                     | half (3/5) | ⏳ device   | items 4–5 (Lobby/Game screens, origin config) + device test |
+| 5     | Same-board multiplayer                | —          | —           | unblocked — D1–D3 decided 2026-09-16                        |
+| 6     | Own-board mode, results, rematch      | —          | —           |                                                             |
+| 7     | Daily puzzle + persistence            | —          | —           | daily seed needs no storage; see split below                |
+| 8     | Second shape pack                     | —          | —           | can run any time after Phase 2                              |
+| 9     | Polish                                | —          | —           |                                                             |
 
 Live: web app `https://pixwagon.pages.dev` (Pages, deploys PR #18 build) · room worker `https://pixwagon-app.tmsso.workers.dev` — **redeployed 2026-09-17** (`wrangler deploy`, version `10099feb`), now running PR #19 + #22's protocol/room-state and rejoin-identity code. Live-verified: `/api/config` → `{maxPlayers:6}`; a real WebSocket `join` returns `welcome.rejoinToken`; a second `join` resending that token on a fresh connection reclaims the same `playerId` and `seatIndex` (name updates, as designed).
 
 ## Execution order from here
 
-1. **Device verification session** (owner, ~20 min, no code) — flips 3, 3.5 and half of 4's Accept lines in one go. Checklist below.
-2. **Phase 4 client half** — the next code batch. Unblocked now.
+1. **Phase 4 client half, items 4–5** (Lobby + networked Game screens, origin config + `pnpm dev:server`) — the next code batch. Items 1–3 (transport, rejoin identity, room store) delivered 2026-09-17; unblocked now, no dependency on the device session below.
+2. **Device verification session** (owner, ~20 min, no code) — step 1 (worker redeploy) is done; steps 2–4 flip 3, 3.5 and Phase 4's Accept lines, and step 4 needs items 4–5 above to exist first.
 3. ~~Decisions D1–D3~~ — decided 2026-09-16; Phase 5 can follow Phase 4 without a stop.
 4. **Phase 5**, then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
 
@@ -79,9 +79,9 @@ Summaries only; the full record, including every dated correction, is in `docs/d
 
 ## Phase 4 — Realtime skeleton
 
-**Server half delivered 2026-09-09 (PR #19), not yet deployed.** Protocol typed (`RoomSnapshot`, `PlayerPresence`, `rollSchema`), room state in DO storage (`{ code, mode, roomSeed, round, hostId }`), host-only `request-roll`, `MAX_PLAYERS` in `protocol`. Details in `docs/delivery-log.md` Phase 4.
+**Server half delivered 2026-09-09 (PR #19), deployed 2026-09-17** alongside item 2 below. Protocol typed (`RoomSnapshot`, `PlayerPresence`, `rollSchema`), room state in DO storage (`{ code, mode, roomSeed, round, hostId }`), host-only `request-roll`, `MAX_PLAYERS` in `protocol`. Details in `docs/delivery-log.md` Phase 4.
 
-**Client half — next batch.** Deliverables, in PR order:
+**Client half — items 1–3 delivered 2026-09-17, items 4–5 next.** Deliverables, in PR order:
 
 1. ✅ **`apps/web/src/net/roomConnection.ts` — a transport class with no React.** Delivered 2026-09-17. Owns one `WebSocket`, encodes via `@pixwagon/protocol`'s `encode()`, exposes `send()`, `close()` and a single `onEvent` callback emitting `{status} | {message} | {decode-error}` — one callback rather than the `onMessage` this bullet originally specified, so connection-status transitions and decode failures are typed events too, not a second/third callback. Reconnect with capped exponential backoff (0.5 s → 8 s, jittered, backoff resets on a successful open) on any close that was not a deliberate `leave`. Constructed with a `WebSocket`-like factory (assignable `onopen`/`onclose`/`onmessage`/`onerror`, not `addEventListener`) so tests inject a fake with no real socket or DOM. `send()` while not open is a silent no-op — queuing across a reconnect is the rejoin layer's job (item 2), not transport's. **Done means:** ✅ unit tests for backoff timing (including the reset-on-open case), message decode errors surfacing as a typed event, and "deliberate close does not reconnect" — 7 tests, `pnpm verify` green.
 2. ✅ **Rejoin identity.** Delivered 2026-09-17 (server side; the client's `sessionStorage` half is item 3/4, not yet built). Added `rejoinToken?: string` to `join`, `rejoinToken: string` to `welcome`. Room storage gains `players: Record<rejoinToken, { playerId, seatIndex, name }>`, never pruned in v1. `roomState.ts` pure helpers: `reclaimIdentity` (token → identity or `null`, unknown/absent both treated as a fresh join, never an error), `registerIdentity` (same-reference no-op convention), `findStaleConnection` (is the reclaimed identity already live elsewhere). `room.ts` glue keys the actual eviction off `playerId` rather than the token itself (`#findLiveSocket`) — equivalent given tokens are minted 1:1 per identity, and it's what a real socket lookup has on hand. **Done means:** ✅ `roomState.ts` tests for reclaim / evict / seat retention (11 new tests) — `docs/contracts/ws-protocol.md` "Decided in Phase 4" updated.
