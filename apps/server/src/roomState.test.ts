@@ -6,10 +6,13 @@ import {
   buildSnapshot,
   currentRoll,
   ensureSeed,
+  findStaleConnection,
   initialRoomState,
   issueNextRoll,
   nextFreeSeat,
   presenceList,
+  reclaimIdentity,
+  registerIdentity,
   resolveHost,
   roomIsFull,
   type SeatedConn,
@@ -126,5 +129,59 @@ describe('protocol / game-core fallback-face drift guard', () => {
     // protocol mirrors these six by hand to avoid depending on game-core;
     // this test — at the one layer that sees both — is what keeps them equal.
     expect([...fallbackFaceSchema.options].sort()).toEqual([...FALLBACK_FACE_IDS].sort());
+  });
+});
+
+describe('reclaimIdentity', () => {
+  it('resolves a known rejoin token to its stored identity', () => {
+    const identity = { playerId: 'p1', seatIndex: 2, name: 'Alex' };
+    const state = { ...initialRoomState('PIXW'), players: { 'token-1': identity } };
+    expect(reclaimIdentity(state, 'token-1')).toEqual(identity);
+  });
+
+  it('returns null for an unsent token', () => {
+    const state = initialRoomState('PIXW');
+    expect(reclaimIdentity(state, undefined)).toBeNull();
+  });
+
+  it('returns null for a token the server does not recognise — never an error', () => {
+    const state = initialRoomState('PIXW');
+    expect(reclaimIdentity(state, 'nonexistent-token')).toBeNull();
+  });
+});
+
+describe('registerIdentity', () => {
+  it('records a new token → identity mapping', () => {
+    const state = initialRoomState('PIXW');
+    const identity = { playerId: 'p1', seatIndex: 0, name: 'Alex' };
+    const next = registerIdentity(state, 'token-1', identity);
+    expect(next.players).toEqual({ 'token-1': identity });
+  });
+
+  it('refreshes an existing mapping, e.g. after a display-name change', () => {
+    const state = {
+      ...initialRoomState('PIXW'),
+      players: { 'token-1': { playerId: 'p1', seatIndex: 0, name: 'Alex' } },
+    };
+    const next = registerIdentity(state, 'token-1', { playerId: 'p1', seatIndex: 0, name: 'Al' });
+    expect(next.players['token-1']).toMatchObject({ name: 'Al' });
+  });
+
+  it('is a same-reference no-op when the identity is unchanged — seat retention', () => {
+    const identity = { playerId: 'p1', seatIndex: 3, name: 'Alex' };
+    const state = { ...initialRoomState('PIXW'), players: { 'token-1': identity } };
+    expect(registerIdentity(state, 'token-1', { ...identity })).toBe(state);
+  });
+});
+
+describe('findStaleConnection', () => {
+  it('finds a live connection already holding the reclaimed playerId', () => {
+    const conns = [conn('p1', 0, 'Alex'), conn('p2', 1, 'Bella')];
+    expect(findStaleConnection(conns, 'p1')).toEqual(conn('p1', 0, 'Alex'));
+  });
+
+  it('returns null when the reclaimed identity is not currently live', () => {
+    const conns = [conn('p2', 1, 'Bella')];
+    expect(findStaleConnection(conns, 'p1')).toBeNull();
   });
 });

@@ -160,6 +160,16 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('join'),
     protocolVersion: z.number().int().positive(),
     name: displayNameSchema,
+    /**
+     * Reconnect identity (ROADMAP.md Phase 4 item 2). If this matches a
+     * token the server issued earlier in `welcome`, the join reclaims that
+     * player's `playerId` and seat instead of minting a new one — a plain
+     * reconnect would otherwise look identical to a brand-new player, which
+     * breaks Phase 5's per-player board ownership. Absent, or present but
+     * unknown to the server (room storage reset, wrong room, expired), is
+     * treated as a fresh join — never an error.
+     */
+    rejoinToken: z.string().min(1).optional(),
   }),
   z.object({ type: z.literal('leave') }),
   /** Ask the referee to issue the next round's roll. */
@@ -209,6 +219,9 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     protocolVersion: z.number().int().positive(),
     playerId: z.string(),
     code: roomCodeSchema,
+    /** Persist this (`sessionStorage`, per room code) and resend it as
+     *  `join`'s `rejoinToken` to reclaim the same identity on reconnect. */
+    rejoinToken: z.string().min(1),
   }),
   /** Full snapshot. Sent on join and after any resync. */
   z.object({ type: z.literal('state'), state: roomSnapshotSchema }),

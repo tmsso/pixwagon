@@ -23,6 +23,26 @@ describe('decodeClientMessage', () => {
     });
   });
 
+  it('accepts a join with a rejoinToken, for a reconnect reclaiming its identity', () => {
+    const result = decodeClientMessage(
+      JSON.stringify({
+        type: 'join',
+        protocolVersion: PROTOCOL_VERSION,
+        name: 'Alex',
+        rejoinToken: 'a-token',
+      }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      message: {
+        type: 'join',
+        protocolVersion: PROTOCOL_VERSION,
+        name: 'Alex',
+        rejoinToken: 'a-token',
+      },
+    });
+  });
+
   it('accepts a binary frame', () => {
     const bytes = new TextEncoder().encode(JSON.stringify({ type: 'ping', t: 1 }));
     expect(decodeClientMessage(bytes.buffer as ArrayBuffer).ok).toBe(true);

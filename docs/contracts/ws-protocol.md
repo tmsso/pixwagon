@@ -22,26 +22,26 @@ Bounds are part of the contract, not an implementation detail: display names are
 
 ## Messages
 
-| Client → server | Meaning                                            |
-| --------------- | -------------------------------------------------- |
-| `join`          | `{ protocolVersion, name }` — the handshake        |
-| `leave`         | Voluntary exit                                     |
-| `request-roll`  | Ask the referee to issue the round's roll          |
-| `fill`          | **Intent**: `{ round, choice }` — see below        |
-| `rematch`       | Same players, fresh seed                           |
-| `ping`          | Liveness; kept explicit so hibernation is testable |
+| Client → server | Meaning                                                   |
+| --------------- | --------------------------------------------------------- |
+| `join`          | `{ protocolVersion, name, rejoinToken? }` — the handshake |
+| `leave`         | Voluntary exit                                            |
+| `request-roll`  | Ask the referee to issue the round's roll                 |
+| `fill`          | **Intent**: `{ round, choice }` — see below               |
+| `rematch`       | Same players, fresh seed                                  |
+| `ping`          | Liveness; kept explicit so hibernation is testable        |
 
-| Server → client  | Meaning                                  |
-| ---------------- | ---------------------------------------- |
-| `welcome`        | `{ protocolVersion, playerId, code }`    |
-| `state`          | Full snapshot — on join and after resync |
-| `delta`          | Incremental truth; the common case       |
-| `presence`       | Player list, derived from live sockets   |
-| `roll`           | The issued roll                          |
-| `fill-accepted`  | Confirms an optimistic fill              |
-| `fill-rejected`  | Triggers client rollback                 |
-| `round-result`   | Scores                                   |
-| `pong` / `error` | Liveness / typed failure                 |
+| Server → client  | Meaning                                            |
+| ---------------- | -------------------------------------------------- |
+| `welcome`        | `{ protocolVersion, playerId, code, rejoinToken }` |
+| `state`          | Full snapshot — on join and after resync           |
+| `delta`          | Incremental truth; the common case                 |
+| `presence`       | Player list, derived from live sockets             |
+| `roll`           | The issued roll                                    |
+| `fill-accepted`  | Confirms an optimistic fill                        |
+| `fill-rejected`  | Triggers client rollback                           |
+| `round-result`   | Scores                                             |
+| `pong` / `error` | Liveness / typed failure                           |
 
 ## The rule underneath it all
 
@@ -84,11 +84,21 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   `{ code, mode, roomSeed, round, hostId }` under one `room` key. Reads and
   writes are ordered read → compute → write with no intervening non-storage
   `await`, so the DO input gate keeps a second message from interleaving.
+- **Rejoin identity (2026-09-17, client half item 2).** `join` gains an
+  optional `rejoinToken`; `welcome` always returns one. Room storage gains
+  `players: Record<rejoinToken, { playerId, seatIndex, name }>` — never
+  pruned in v1 (a room's storage is small and short-lived; an expiry policy
+  is future work). A `join` with a token the server recognises reclaims that
+  `playerId` and seat instead of allocating a new one, and evicts any
+  connection still live under that identity (`Room.#findLiveSocket`) rather
+  than creating a duplicate seat. A token that's absent or unrecognised
+  (storage reset, wrong room, a typo) is treated as a fresh join, never an
+  error. `PROTOCOL_VERSION` stays `1` — nothing has shipped to real users.
 
 ## Not yet decided
 
 - **`delta` payload stays `z.unknown()`.** A delta is a change to board state,
   and fills — which produce those changes — arrive in Phase 5. Presence and roll
   changes already have their own messages.
-- The client WebSocket layer, reconnect and resync-on-reconnect — the other half
-  of Phase 4, deferred to its own batch.
+- The room `zustand` store and networked screens (Phase 4 client half items
+  3–5) — this seam (transport + rejoin) is what they build on.

@@ -35,6 +35,22 @@ export interface RoomState {
   /** The one connection allowed to issue rolls — the lowest-seat joined player,
    *  recomputed on every join/leave. `null` when the room is empty. */
   hostId: string | null;
+  /**
+   * `rejoinToken -> identity`, so a reconnect keeps the same `playerId` and
+   * seat instead of looking like a brand-new player (Phase 4 item 2). A
+   * token is minted on first join and returned in `welcome`; the client
+   * resends it on reconnect. Never pruned in v1 — a room's storage is small
+   * and a room's lifetime is short, so an expiry policy is future work, not
+   * a blocker here.
+   */
+  players: Record<string, StoredPlayer>;
+}
+
+/** The identity a rejoin token resolves to. */
+export interface StoredPlayer {
+  playerId: string;
+  seatIndex: number;
+  name: string;
 }
 
 /** A joined connection, reduced to what room-state decisions need. */
@@ -45,7 +61,7 @@ export interface SeatedConn {
 }
 
 export function initialRoomState(code: string): RoomState {
-  return { code, mode: 'same-board', roomSeed: null, round: 0, hostId: null };
+  return { code, mode: 'same-board', roomSeed: null, round: 0, hostId: null, players: {} };
 }
 
 /**
@@ -68,6 +84,53 @@ export function roomIsFull(joinedCount: number): boolean {
 /** Fills `roomSeed` on the first join; a no-op (same reference) afterwards. */
 export function ensureSeed(state: RoomState, seed: string): RoomState {
   return state.roomSeed === null ? { ...state, roomSeed: seed } : state;
+}
+
+/**
+ * Resolve a `join`'s `rejoinToken` against stored identities. `undefined`
+ * (no token sent) or a token the server doesn't recognise (room storage
+ * reset, wrong room, a typo) both resolve to `null` — the caller treats
+ * either the same as a fresh join, never an error.
+ */
+export function reclaimIdentity(state: RoomState, token: string | undefined): StoredPlayer | null {
+  if (token === undefined) return null;
+  return state.players[token] ?? null;
+}
+
+/**
+ * Record (or refresh) a token's identity, e.g. after a display-name change.
+ * Same-reference no-op when nothing changed, matching `ensureSeed` /
+ * `resolveHost`'s convention.
+ */
+export function registerIdentity(
+  state: RoomState,
+  token: string,
+  identity: StoredPlayer,
+): RoomState {
+  const existing = state.players[token];
+  if (
+    existing &&
+    existing.playerId === identity.playerId &&
+    existing.seatIndex === identity.seatIndex &&
+    existing.name === identity.name
+  ) {
+    return state;
+  }
+  return { ...state, players: { ...state.players, [token]: identity } };
+}
+
+/**
+ * The already-live connection holding `playerId`, if any — a rejoin that
+ * reclaims an identity still connected elsewhere (e.g. a tab that never
+ * cleanly closed) needs to evict it rather than create a duplicate seat.
+ * Pure over the connection list so it's testable without a real socket;
+ * `room.ts` is the one that actually closes it.
+ */
+export function findStaleConnection(
+  conns: readonly SeatedConn[],
+  playerId: string,
+): SeatedConn | null {
+  return conns.find((c) => c.id === playerId) ?? null;
 }
 
 /**
