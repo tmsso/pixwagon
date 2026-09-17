@@ -28,7 +28,7 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 | 8     | Second shape pack                     | —         | —           | can run any time after Phase 2                        |
 | 9     | Polish                                | —         | —           |                                                       |
 
-Live: web app `https://pixwagon.pages.dev` (Pages, deploys PR #18 build) · room worker `https://pixwagon-app.tmsso.workers.dev` (**still running PR #16 code; PR #19's protocol/room-state changes are merged but not deployed** — a `wrangler deploy` the owner runs).
+Live: web app `https://pixwagon.pages.dev` (Pages, deploys PR #18 build) · room worker `https://pixwagon-app.tmsso.workers.dev` — **redeployed 2026-09-17** (`wrangler deploy`, version `10099feb`), now running PR #19 + #22's protocol/room-state and rejoin-identity code. Live-verified: `/api/config` → `{maxPlayers:6}`; a real WebSocket `join` returns `welcome.rejoinToken`; a second `join` resending that token on a fresh connection reclaims the same `playerId` and `seatIndex` (name updates, as designed).
 
 ## Execution order from here
 
@@ -43,7 +43,7 @@ Live: web app `https://pixwagon.pages.dev` (Pages, deploys PR #18 build) · room
 
 Everything below needs a real phone and cannot be done by Claude. Run it once and paste results back; the session that receives them flips the Accept lines here.
 
-1. Redeploy the worker so the live room server matches `main`: from `apps/server/`, `pnpm exec wrangler deploy`; then `curl https://pixwagon-app.tmsso.workers.dev/api/config` should return `{"protocolVersion":1,"maxPlayers":6}`.
+1. ✅ **Done 2026-09-17** (during the item-2 batch, owner authorized Claude to run the deploy itself rather than requiring an owner-run step here). Redeployed the worker so the live room server matches `main`: `pnpm exec wrangler deploy` from `apps/server/`; `curl https://pixwagon-app.tmsso.workers.dev/api/config` → `{"protocolVersion":1,"maxPlayers":6}`.
 2. **Phase 3:** on a phone, open `https://pixwagon.pages.dev`, finish one solo picture, accept the install card ("Add to home screen"). Enable aeroplane mode, launch from the home screen, play a few rounds of solo. _Accept if it boots and plays offline._
 3. **Phase 3.5:** on the phone with Wi-Fi off (mobile data), open the browser console-free check: visit `https://pixwagon-app.tmsso.workers.dev/health`. A WebSocket join from a phone is only observable once the Phase 4 client half exists — so this item is _formally_ closed by step 4.
 4. **Phase 4 (after the client half ships):** two devices join the same room code, both see both names, the host presses "Start round" and both see the same pair + single. Toggle aeroplane mode on one for ten seconds and back; it should show "Reconnecting…" then resync with no reload.
