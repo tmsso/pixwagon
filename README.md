@@ -48,8 +48,11 @@ Requires Node 22 LTS (see `.nvmrc`) and pnpm.
 ```bash
 pnpm install
 pnpm dev            # web app on :5173
+pnpm dev:server     # room worker on :8787 (wrangler dev) — `pnpm dev` connects here
 pnpm verify         # lint + typecheck + test + build + drift check
 ```
+
+A local multiplayer test needs both `pnpm dev` and `pnpm dev:server` running; open two tabs on `http://localhost:5173/lobby`. The web app finds the worker through `VITE_ROOM_ORIGIN` (see `apps/web/.env.example`): unset, it is `http://localhost:8787` under `pnpm dev` and the live worker in a production build.
 
 Generated files — `apps/web/src/design/tokens.css` and everything under `design-system/` — are produced by `pnpm tokens:build` and `pnpm design:build`, and are **committed**. CI regenerates them and fails if the working tree comes back dirty, so they can never silently drift from `tokens.ts`.
 
