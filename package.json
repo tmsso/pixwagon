@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @pixwagon/web dev",
+    "dev:server": "pnpm --filter @pixwagon/server dev",
     "build": "pnpm -r build",
     "lint": "eslint .",
     "format": "prettier --write .",

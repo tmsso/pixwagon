@@ -236,3 +236,11 @@ Fable-grade review of the whole repo (`docs/review-2026-09-16.md`). No phase sta
 ### 2026-09-16 — decisions D1–D4 agreed
 
 The owner agreed to all four recommendations in `ROADMAP.md` the same day: **D1** same-board = per-player copies of the identical picture (no contested shared board; pass-02 `12a`/`03g` are reinterpreted, not built); **D2** simultaneous rounds, auto-advance when every connected player has acted, no timer in v1; **D3** Phase 5 ships one picture per session with a round budget, picture cycling moves to Phase 6; **D4** two origins stay, worker address via `VITE_ROOM_ORIGIN`. Phase 5 is unblocked once the Phase 4 client half ships.
+
+### 2026-09-17 — Phase 4 client half, items 1–3 (PRs #21–#23)
+
+`roomConnection.ts` WebSocket transport with capped jittered backoff (#21); rejoin identity on the server — `join.rejoinToken`, `welcome.rejoinToken`, `players` map in room storage, worker redeployed and live-verified (#22); `roomGame.ts` zustand room store with the pure `applyServerMessage` transition function and a `sessionStorage`-persisted rejoin token (#23). Gotcha: Tailwind v4's content scan picks up bare utility-name words (`table`, `grid`, …) inside comments, which shows up as unrelated `design-system/**` drift. (Entry added 2026-09-24; the batch itself recorded this only in `ROADMAP.md`.)
+
+### 2026-09-24 — Phase 4 client half, item 5: origin config and `pnpm dev:server`
+
+Shipped before item 4, which needs it to connect anywhere. `apps/web/src/net/roomOrigin.ts` owns the worker origin (D4) and the `ws(s)` socket URL; `pnpm dev:server` runs `wrangler dev` on :8787; `apps/web/.env.example` documents the override. The review of D4 had said cross-origin needs no CORS; true for the WebSocket, not for `POST /api/room`, which the browser would have sent and then hidden the response of. Confirmed against the live worker (no `Access-Control-Allow-Origin` in the response), fixed with an allowlist in `apps/server/src/cors.ts`. The owner authorized the worker redeploy for this batch; its result is recorded in a follow-up entry, not here, so this line never claims a deploy before it ran.

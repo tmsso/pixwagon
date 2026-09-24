@@ -1,4 +1,5 @@
 import { MAX_PLAYERS, PROTOCOL_VERSION, roomCodeSchema } from '@pixwagon/protocol';
+import { corsHeaders } from './cors.ts';
 import { generateRoomCode, type Env } from './env.ts';
 
 export { Room } from './room.ts';
@@ -14,29 +15,39 @@ export { Room } from './room.ts';
  * by Cloudflare's design. They stay separate modules so the responsibilities
  * described in §4C/§4D remain separable in the code.
  */
-const json = (body: unknown, status = 200): Response =>
+const json = (body: unknown, status = 200, extra: Record<string, string> = {}): Response =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...extra },
   });
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+    // The web app is on another origin (D4); see cors.ts for why plain-HTTP
+    // responses need this and the WebSocket upgrade below does not.
+    const cors = corsHeaders(request.headers.get('Origin'));
+
+    // A CORS preflight. The Lobby's bodiless `POST /api/room` is a "simple"
+    // request that browsers send without one, but answering it keeps a future
+    // JSON-bodied call from failing with an opaque network error.
+    if (request.method === 'OPTIONS' && path.startsWith('/api/')) {
+      return new Response(null, { status: 204, headers: cors });
+    }
 
     if (path === '/health') {
-      return json({ ok: true, protocolVersion: PROTOCOL_VERSION });
+      return json({ ok: true, protocolVersion: PROTOCOL_VERSION }, 200, cors);
     }
 
     if (path === '/api/config') {
-      return json({ protocolVersion: PROTOCOL_VERSION, maxPlayers: MAX_PLAYERS });
+      return json({ protocolVersion: PROTOCOL_VERSION, maxPlayers: MAX_PLAYERS }, 200, cors);
     }
 
     // Create a room. The code is just a name for a Durable Object — no storage
     // is involved, which is why the early phases need no database at all (§4F).
     if (path === '/api/room' && request.method === 'POST') {
-      return json({ code: generateRoomCode() }, 201);
+      return json({ code: generateRoomCode() }, 201, cors);
     }
 
     // Join: upgrade the socket and hand it to the room's own object.
@@ -62,6 +73,6 @@ export default {
       return env.ROOM.get(id).fetch(forwarded);
     }
 
-    return json({ error: 'not found' }, 404);
+    return json({ error: 'not found' }, 404, cors);
   },
 } satisfies ExportedHandler<Env>;
