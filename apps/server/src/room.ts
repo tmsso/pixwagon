@@ -1,19 +1,24 @@
 import { decodeClientMessage, encode, PROTOCOL_VERSION } from '@pixwagon/protocol';
-import type { ServerMessage } from '@pixwagon/protocol';
+import type { ServerMessage, WireMoveChoice } from '@pixwagon/protocol';
 import type { Env } from './env.ts';
 import { sendToAll } from './fanout.ts';
 import {
   buildSnapshot,
+  closeRoundIfDone,
+  ensureBoard,
   ensureSeed,
   findStaleConnection,
   initialRoomState,
-  issueNextRoll,
   nextFreeSeat,
+  normaliseRoom,
   presenceList,
   reclaimIdentity,
   registerIdentity,
   resolveHost,
   roomIsFull,
+  startGame,
+  submitFill,
+  submitPass,
   type RoomState,
   type SeatedConn,
 } from './roomState.ts';
@@ -107,8 +112,17 @@ export class Room {
       .map(({ playerId, name, seatIndex }) => ({ id: playerId, name, seatIndex }));
   }
 
+  /** Always goes through `normaliseRoom`: storage written before Phase 5
+   *  lacks the game fields, and a DO's storage outlives deploys. */
   async #loadRoom(code: string): Promise<RoomState> {
-    return (await this.#state.storage.get<RoomState>(ROOM_KEY)) ?? initialRoomState(code);
+    const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
+    return stored ? normaliseRoom(stored) : initialRoomState(code);
+  }
+
+  /** Like `#loadRoom`, but `null` for a room nobody has joined yet. */
+  async #loadExistingRoom(): Promise<RoomState | null> {
+    const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
+    return stored ? normaliseRoom(stored) : null;
   }
 
   // --- lifecycle ----------------------------------------------------------
@@ -167,6 +181,12 @@ export class Room {
       case 'request-roll':
         return this.#handleRequestRoll(ws, attachment);
 
+      case 'fill':
+        return this.#handleFill(ws, attachment, decoded.message.round, decoded.message.choice);
+
+      case 'pass':
+        return this.#handlePass(ws, attachment, decoded.message.round);
+
       case 'ping':
         this.#send(ws, { type: 'pong', t: decoded.message.t });
         return;
@@ -176,13 +196,12 @@ export class Room {
         // webSocketClose fires and reconciles presence + host.
         return;
 
-      // Phase 5 validates fills through game-core and scores rounds.
-      case 'fill':
+      // Rematch is Phase 6.
       case 'rematch':
         this.#send(ws, {
           type: 'error',
           code: 'internal',
-          message: `"${decoded.message.type}" is not implemented yet — see Phase 5 in ROADMAP.md`,
+          message: `"${decoded.message.type}" is not implemented yet — see Phase 6 in ROADMAP.md`,
         });
         return;
     }
@@ -296,7 +315,9 @@ export class Room {
     const conns = this.#seatedConns(stale ?? undefined);
     const seeded = ensureSeed(stored, crypto.randomUUID());
     const withHost = resolveHost(seeded, conns);
-    const next = registerIdentity(withHost, token!, { playerId, seatIndex, name });
+    const registered = registerIdentity(withHost, token!, { playerId, seatIndex, name });
+    // A joiner mid-game gets a fresh board; a rejoiner keeps the one they had.
+    const next = ensureBoard(registered, playerId);
     await this.#state.storage.put(ROOM_KEY, next);
 
     this.#send(ws, {
@@ -310,6 +331,12 @@ export class Room {
     this.#broadcast(encode({ type: 'presence', players: presenceList(next, conns) }));
   }
 
+  /**
+   * The host starts the game (Phase 5, D2). Kept on the `request-roll`
+   * message rather than a new one so the Phase 4 client's "Start round"
+   * button still starts a room unchanged; once running, rounds advance on
+   * their own and a second request is refused with `game-in-progress`.
+   */
   async #handleRequestRoll(ws: WebSocket, attachment: Attachment): Promise<void> {
     if (!attachment.joined) {
       this.#send(ws, {
@@ -320,7 +347,7 @@ export class Room {
       return;
     }
 
-    const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
+    const stored = await this.#loadExistingRoom();
     if (!stored || stored.roomSeed === null) {
       this.#send(ws, { type: 'error', code: 'internal', message: 'room is not initialised' });
       return;
@@ -329,15 +356,138 @@ export class Room {
       this.#send(ws, {
         type: 'error',
         code: 'not-host',
-        message: 'only the host can start the next round',
+        message: 'only the host can start the game',
       });
       return;
     }
 
     // Same read → modify → write discipline as join.
-    const { roll, state: next } = issueNextRoll(stored);
-    await this.#state.storage.put(ROOM_KEY, next);
-    this.#broadcast(encode({ type: 'roll', roll }));
+    const conns = this.#seatedConns();
+    const started = startGame(
+      stored,
+      conns.map((c) => c.id),
+    );
+    if (!started.ok) {
+      this.#send(ws, {
+        type: 'error',
+        code: 'game-in-progress',
+        message: 'the game is running — rounds advance once everyone has played',
+      });
+      return;
+    }
+    await this.#state.storage.put(ROOM_KEY, started.state);
+    // A full snapshot, not just the roll: every client needs its new board and
+    // the picture, and `state` is what a client already treats as the truth.
+    this.#broadcast(encode({ type: 'state', state: buildSnapshot(started.state, conns) }));
+  }
+
+  async #handleFill(
+    ws: WebSocket,
+    attachment: Attachment,
+    round: number,
+    choice: WireMoveChoice,
+  ): Promise<void> {
+    if (!attachment.joined) {
+      this.#send(ws, { type: 'error', code: 'not-joined', message: 'join before filling' });
+      return;
+    }
+    const stored = await this.#loadExistingRoom();
+    if (!stored) {
+      this.#send(ws, { type: 'error', code: 'not-playing', message: 'no game is running' });
+      return;
+    }
+
+    const ruling = submitFill(stored, attachment.playerId, round, choice);
+    if (!ruling.ok) {
+      if ('rejection' in ruling) {
+        this.#send(ws, { type: 'fill-rejected', round, reason: ruling.rejection });
+      } else {
+        this.#sendActionError(ws, ruling.error);
+      }
+      return;
+    }
+
+    const conns = this.#seatedConns();
+    const closing = closeRoundIfDone(
+      ruling.state,
+      conns.map((c) => c.id),
+    );
+    await this.#state.storage.put(ROOM_KEY, closing.state);
+
+    this.#send(ws, {
+      type: 'fill-accepted',
+      playerId: attachment.playerId,
+      round,
+      cells: ruling.cells,
+    });
+    // Broadcast only after acceptance: a rejected fill never reaches anyone
+    // else (pass 02 Annotation 19).
+    this.#broadcast(
+      encode({
+        type: 'delta',
+        delta: { playerId: attachment.playerId, round, cells: ruling.cells },
+      }),
+    );
+    this.#announceClose(closing);
+  }
+
+  async #handlePass(ws: WebSocket, attachment: Attachment, round: number): Promise<void> {
+    if (!attachment.joined) {
+      this.#send(ws, { type: 'error', code: 'not-joined', message: 'join before passing' });
+      return;
+    }
+    const stored = await this.#loadExistingRoom();
+    if (!stored) {
+      this.#send(ws, { type: 'error', code: 'not-playing', message: 'no game is running' });
+      return;
+    }
+
+    const ruling = submitPass(stored, attachment.playerId, round);
+    if (!ruling.ok) {
+      if (ruling.error === 'wrong-round') {
+        this.#send(ws, {
+          type: 'error',
+          code: 'bad-message',
+          message: `that pass was for round ${round}, which has already closed`,
+        });
+      } else {
+        this.#sendActionError(ws, ruling.error);
+      }
+      return;
+    }
+
+    const conns = this.#seatedConns();
+    const closing = closeRoundIfDone(
+      ruling.state,
+      conns.map((c) => c.id),
+    );
+    await this.#state.storage.put(ROOM_KEY, closing.state);
+    this.#announceClose(closing);
+  }
+
+  #sendActionError(ws: WebSocket, error: 'not-playing' | 'already-acted'): void {
+    this.#send(ws, {
+      type: 'error',
+      code: error,
+      message:
+        error === 'already-acted'
+          ? 'you have already played this round'
+          : 'no game is running in this room',
+    });
+  }
+
+  /** After a round closes: everyone gets the scores, then either the next
+   *  roll or nothing more (the session ended). */
+  #announceClose(closing: ReturnType<typeof closeRoundIfDone>): void {
+    if (!closing.closed) return;
+    this.#broadcast(
+      encode({
+        type: 'round-result',
+        result: closing.result,
+        sessionEnded: closing.sessionEnded,
+      }),
+    );
+    if (closing.roll) this.#broadcast(encode({ type: 'roll', roll: closing.roll }));
   }
 
   /** Recompute presence and host after a disconnect, persist a host change,
@@ -345,13 +495,23 @@ export class Room {
    *  handoff from this alone. */
   async #reconcile(leaving?: WebSocket): Promise<void> {
     const conns = this.#seatedConns(leaving);
-    const stored = await this.#state.storage.get<RoomState>(ROOM_KEY);
-    const next = stored ? resolveHost(stored, conns) : null;
+    const stored = await this.#loadExistingRoom();
+    const withHost = stored ? resolveHost(stored, conns) : null;
+    // D2: a player who drops is skipped for the round — if they were the last
+    // one it was waiting on, the round closes now rather than stalling.
+    const closing = withHost
+      ? closeRoundIfDone(
+          withHost,
+          conns.map((c) => c.id),
+        )
+      : null;
+    const next = closing?.state ?? null;
     if (stored && next && next !== stored) {
       await this.#state.storage.put(ROOM_KEY, next);
     }
     const state = next ?? initialRoomState('');
     this.#broadcast(encode({ type: 'presence', players: presenceList(state, conns) }));
+    if (closing) this.#announceClose(closing);
   }
 
   // --- fan-out ---------------------------------------------------------

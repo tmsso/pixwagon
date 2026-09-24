@@ -233,6 +233,11 @@ describe('room state shapes (Phase 4)', () => {
       currentRoll: null,
       hostId: 'p1',
       players: [player],
+      status: 'lobby',
+      pictureId: null,
+      roundBudget: null,
+      boards: {},
+      acted: [],
     };
     expect(roomSnapshotSchema.safeParse(snapshot).success).toBe(true);
     expect(roomSnapshotSchema.safeParse({ ...snapshot, currentRoll: roll }).success).toBe(true);
@@ -244,7 +249,19 @@ describe('room state shapes (Phase 4)', () => {
   it('types the state / presence / roll server messages', () => {
     const state = {
       type: 'state',
-      state: { code: 'PIXW', mode: 'solo', round: 2, currentRoll: roll, hostId: null, players: [] },
+      state: {
+        code: 'PIXW',
+        mode: 'solo',
+        round: 2,
+        currentRoll: roll,
+        hostId: null,
+        players: [],
+        status: 'lobby',
+        pictureId: null,
+        roundBudget: null,
+        boards: {},
+        acted: [],
+      },
     };
     expect(serverMessageSchema.safeParse(state).success).toBe(true);
     expect(serverMessageSchema.safeParse({ type: 'roll', roll }).success).toBe(true);
@@ -257,5 +274,79 @@ describe('room state shapes (Phase 4)', () => {
 
   it('carries a not-host error code for host-only request-roll', () => {
     expect(serverErrorCodeSchema.safeParse('not-host').success).toBe(true);
+  });
+});
+
+describe('Phase 5 messages', () => {
+  const roll = { round: 0, seed: 's', pair: ['domino', 'monomino'], fallback: '1' };
+  const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true };
+  const board = {
+    size: { width: 2, height: 1 },
+    packId: 'transportation',
+    pictureId: 'tram',
+    cells: ['fillable', 'filled'],
+  };
+
+  it('a playing snapshot carries boards, acted, picture and budget', () => {
+    const snapshot = {
+      code: 'TRAM',
+      mode: 'same-board',
+      round: 1,
+      currentRoll: roll,
+      hostId: 'p1',
+      players: [player],
+      status: 'playing',
+      pictureId: 'tram',
+      roundBudget: 22,
+      boards: { p1: board },
+      acted: ['p1'],
+    };
+    expect(roomSnapshotSchema.safeParse(snapshot).success).toBe(true);
+    expect(
+      roomSnapshotSchema.safeParse({ ...snapshot, boards: { p1: { ...board, cells: ['wet'] } } })
+        .success,
+    ).toBe(false);
+    expect(roomSnapshotSchema.safeParse({ ...snapshot, status: 'paused' }).success).toBe(false);
+  });
+
+  it('decodes a pass with its round', () => {
+    expect(decodeClientMessage(JSON.stringify({ type: 'pass', round: 3 })).ok).toBe(true);
+    expect(decodeClientMessage(JSON.stringify({ type: 'pass' })).ok).toBe(false);
+  });
+
+  it('types delta, fill-rejected (a MoveRejection, no cells) and round-result', () => {
+    expect(
+      serverMessageSchema.safeParse({
+        type: 'delta',
+        delta: { playerId: 'p1', round: 0, cells: [{ x: 1, y: 0 }] },
+      }).success,
+    ).toBe(true);
+    expect(
+      serverMessageSchema.safeParse({ type: 'delta', delta: { anything: true } }).success,
+    ).toBe(false);
+    expect(
+      serverMessageSchema.safeParse({ type: 'fill-rejected', round: 0, reason: 'not-offered' })
+        .success,
+    ).toBe(true);
+    expect(
+      serverMessageSchema.safeParse({ type: 'fill-rejected', round: 0, reason: 'nope' }).success,
+    ).toBe(false);
+    expect(
+      serverMessageSchema.safeParse({
+        type: 'round-result',
+        result: {
+          round: 0,
+          scores: [{ playerId: 'p1', filled: 1, total: 2, completion: 0.5, points: 0 }],
+          complete: false,
+        },
+        sessionEnded: false,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('carries the Phase 5 error codes', () => {
+    for (const code of ['already-acted', 'game-in-progress', 'not-playing']) {
+      expect(serverErrorCodeSchema.safeParse(code).success).toBe(true);
+    }
   });
 });

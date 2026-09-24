@@ -17,6 +17,11 @@ const state0: RoomSnapshot = {
   currentRoll: null,
   hostId: 'p1',
   players: [alex],
+  status: 'lobby',
+  pictureId: null,
+  roundBudget: null,
+  boards: {},
+  acted: [],
 };
 
 describe('applyServerMessage', () => {
@@ -76,8 +81,11 @@ describe('applyServerMessage', () => {
     expect(patch).toEqual({ lastError: 'only the host can start the next round' });
   });
 
-  it('is a no-op for message types this phase has nothing to fold in yet (fills are Phase 5)', () => {
-    const message: ServerMessage = { type: 'delta', delta: { anything: true } };
+  it('is a no-op for message types it does not fold in yet (the client fill half is Phase 5 item 3)', () => {
+    const message: ServerMessage = {
+      type: 'delta',
+      delta: { playerId: 'p2', round: 0, cells: [{ x: 1, y: 1 }] },
+    };
     expect(applyServerMessage({ snapshot: state0, me: null }, message)).toEqual({});
   });
 });

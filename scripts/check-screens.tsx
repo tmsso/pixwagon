@@ -37,6 +37,11 @@ const waitingSnapshot: RoomSnapshot = {
     { id: 'p-alex', name: 'Alex', seatIndex: 0, isHost: true },
     { id: 'p-sam', name: 'Sam', seatIndex: 1, isHost: false },
   ],
+  status: 'lobby',
+  pictureId: null,
+  roundBudget: null,
+  boards: {},
+  acted: [],
 };
 
 // zustand hooks answer a server render from the store's *initial* state (the
@@ -110,6 +115,7 @@ const screens: ScreenCase[] = [
         ...waitingSnapshot,
         round: 3,
         currentRoll: { round: 2, seed: 'fixture', pair: ['domino', 'tromino-l'], fallback: '1+2' },
+        status: 'playing',
       }),
     expect: ['TRAM', 'Round 3', 'Connected', 'The pair', 'Placing pieces arrives', 'Next round'],
   },

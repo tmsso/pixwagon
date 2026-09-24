@@ -95,10 +95,31 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   (storage reset, wrong room, a typo) is treated as a fresh join, never an
   error. `PROTOCOL_VERSION` stays `1` — nothing has shipped to real users.
 
+## Decided in Phase 5 (2026-09-24, items 1–2)
+
+- **`pass { round }`** (client): nothing this round; counts as acting. A pass
+  for a round that already closed is refused (`error: bad-message`).
+- **`delta { playerId, round, cells }`** (server): the cells one accepted fill
+  turned `filled`. Broadcast only after acceptance, so a rejected fill never
+  reaches another client. `fillCells(board, delta.cells)` (game-core) rebuilds
+  the stored board exactly — a drift test in `apps/server` holds this.
+- **`fill-rejected { round, reason }`**: `reason` is a `MoveRejection`
+  (mirrored as `moveRejectionSchema`, drift-tested); the dice-era `cells`
+  field is gone — the client knows what it sent.
+- **`round-result { result: RoundResult, sessionEnded }`**: sent when a round
+  closes (every connected player acted, or the last straggler dropped). The
+  last one has `sessionEnded: true` — every board complete, the round budget
+  spent, or nobody connected has anything left to place.
+- **`RoomSnapshot`** gains `status` (`lobby | playing | ended`), `pictureId`,
+  `roundBudget`, `boards` (every seated player's `Board`, keyed by player id,
+  kept across disconnects) and `acted`.
+- **`request-roll` starts the game** (host only, from `lobby`); rounds then
+  advance on their own. Mid-game it is `error: game-in-progress`. New error
+  codes: `already-acted`, `game-in-progress`, `not-playing`.
+- `PROTOCOL_VERSION` stays `1`: every change is additive for the deployed
+  Phase 4 client except `fill-rejected.cells`, which no shipped client reads.
+
 ## Not yet decided
 
-- **`delta` payload stays `z.unknown()`.** A delta is a change to board state,
-  and fills — which produce those changes — arrive in Phase 5. Presence and roll
-  changes already have their own messages.
-- The room `zustand` store and networked screens (Phase 4 client half items
-  3–5) — this seam (transport + rejoin) is what they build on.
+- A `connected` flag on `PlayerPresence`, so a dropped player shows as "away"
+  (pass 02 `12c`) instead of vanishing — Phase 5 item 3.

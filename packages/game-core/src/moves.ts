@@ -53,6 +53,16 @@ function hasOverlap(groups: readonly (readonly CellRef[])[]): boolean {
   return false;
 }
 
+/**
+ * `board` with `cells` marked filled — no legality checks. Exported (Phase 5)
+ * because a `delta` on the wire is exactly this list of cells: a client folds
+ * one into its copy of another player's board with this, and the server's
+ * drift test proves it lands on the same board `applyMove` produced.
+ */
+export function fillCells(board: Board, cells: readonly CellRef[]): Board {
+  return withFilled(board, cells);
+}
+
 function withFilled(board: Board, cells: readonly CellRef[]): Board {
   const next = board.cells.slice();
   for (const cell of cells) {
