@@ -37,6 +37,29 @@ export const MAX_PLAYERS = 6;
 // Shared fragments
 // ---------------------------------------------------------------------------
 
+/**
+ * The alphabet the worker issues room codes from: A–Z and 2–9 with I, O, 0 and
+ * 1 removed. Codes get read aloud across a table and typed by someone squinting
+ * at a phone; "is that a one or an ell" is a real failure mode for a game whose
+ * whole entry flow is a four-character code. Lives here, not in apps/server,
+ * because the Lobby validates a typed code against the same alphabet (design
+ * pass 02 `02b`) — the `MAX_PLAYERS` precedent: one definition both sides read.
+ */
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/** Length of an issued room code. `roomCodeSchema` stays looser (4–8) so a
+ *  future longer code is a server change, not a protocol break. */
+export const ROOM_CODE_LENGTH = 4;
+
+/** Could the worker have issued this code? A client-side typo check only —
+ *  a well-formed code the worker never issued still opens a (new, empty) room,
+ *  because a room code is just a Durable Object name with no registry. */
+export function isIssuableRoomCode(code: string): boolean {
+  return (
+    code.length === ROOM_CODE_LENGTH && [...code].every((char) => ROOM_CODE_ALPHABET.includes(char))
+  );
+}
+
 export const roomCodeSchema = z
   .string()
   .regex(/^[A-Z0-9]{4,8}$/, 'room codes are 4-8 uppercase letters/digits');
@@ -206,6 +229,8 @@ export const serverErrorCodeSchema = z.enum([
   'move-rejected',
   'internal',
 ]);
+
+export type ServerErrorCode = z.infer<typeof serverErrorCodeSchema>;
 
 /**
  * Server messages are typed but not zod-validated on the client: the client

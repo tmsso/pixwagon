@@ -176,3 +176,48 @@ describe('useRoomGameStore.handleEvent', () => {
     expect(state.rejoinToken).toBe('tok-2');
   });
 });
+
+describe('terminal server errors', () => {
+  beforeEach(() => {
+    useRoomGameStore.getState().leave();
+  });
+
+  it('room-full stops reconnecting: the store closes its own socket and records why', () => {
+    const sockets: { closed: boolean; onopen: (() => void) | null }[] = [];
+    useRoomGameStore.getState().join('ws://test/api/room/ABCD/ws', 'ABCD', 'Alex', () => {
+      const socket = {
+        closed: false,
+        send: () => {},
+        close() {
+          socket.closed = true;
+        },
+        onopen: null as (() => void) | null,
+        onclose: null,
+        onmessage: null,
+        onerror: null,
+      };
+      sockets.push(socket);
+      return socket;
+    });
+
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: { type: 'error', code: 'room-full', message: 'this room is full' },
+    });
+
+    const state = useRoomGameStore.getState();
+    expect(state.fatalError).toBe('room-full');
+    expect(state.connection).toBe('idle');
+    expect(sockets).toHaveLength(1);
+    expect(sockets[0]?.closed).toBe(true);
+  });
+
+  it('an ordinary error (not-host) is not terminal', () => {
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: { type: 'error', code: 'not-host', message: 'only the host can start' },
+    });
+    expect(useRoomGameStore.getState().fatalError).toBeNull();
+    expect(useRoomGameStore.getState().lastError).toBe('only the host can start');
+  });
+});
