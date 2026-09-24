@@ -189,10 +189,21 @@ export class Room {
 
   async webSocketClose(
     ws: WebSocket,
-    _code: number,
-    _reason: string,
+    code: number,
+    reason: string,
     _clean: boolean,
   ): Promise<void> {
+    // Complete the close handshake. Under the Hibernation API the runtime does
+    // not answer a client's Close frame for us here, and without the echo the
+    // browser sits in CLOSING for ~10 s and then reports 1006 — observed live
+    // 2026-09-24. 1005/1006/1015 are "no status" markers that must never be
+    // sent on the wire, so those are answered with a plain 1000. Closing an
+    // already-closed socket throws, which is fine to ignore.
+    try {
+      ws.close(code === 1005 || code === 1006 || code === 1015 ? 1000 : code, reason);
+    } catch {
+      // Already closed.
+    }
     await this.#reconcile(ws);
   }
 
