@@ -99,6 +99,64 @@ export const rollSchema = z.object({
 });
 
 /**
+ * A board cell's state, mirroring game-core's `CellState` — hand-kept for the
+ * same reason as `fallbackFaceSchema`, with the same server-side drift test.
+ */
+export const cellStateSchema = z.enum(['blank', 'fillable', 'filled', 'locked']);
+
+/** One player's board, mirroring game-core's `Board` (row-major `cells`). */
+export const boardSchema = z.object({
+  size: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }),
+  packId: z.string().min(1),
+  pictureId: z.string().min(1),
+  // `.readonly()` so game-core's `Board` (whose `cells` is readonly) assigns
+  // straight into a snapshot, the same trick `rollSchema.pair` uses.
+  cells: z.array(cellStateSchema).readonly(),
+});
+
+/**
+ * Why the referee refused a fill, mirroring game-core's `MoveRejection` (the
+ * server carries a drift test). Typed rather than a bare string so the client
+ * can choose its words per reason without parsing prose.
+ */
+export const moveRejectionSchema = z.enum([
+  'wrong-round',
+  'unknown-piece',
+  'out-of-bounds',
+  'cell-not-fillable',
+  'cell-already-filled',
+  'overlapping-placement',
+  'not-offered',
+  'blob-size-mismatch',
+  'blob-not-contiguous',
+  'incomplete-compound-choice',
+]);
+
+/** One player's score, mirroring game-core's `PlayerScore`. */
+export const playerScoreSchema = z.object({
+  playerId: z.string(),
+  filled: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  completion: z.number().min(0).max(1),
+  points: z.number().int().nonnegative(),
+});
+
+/** A closed round's scores, mirroring game-core's `RoundResult`. */
+export const roundResultSchema = z.object({
+  round: z.number().int().nonnegative(),
+  scores: z.array(playerScoreSchema).readonly(),
+  /** Every board complete — one of the two ways a session ends (D3). */
+  complete: z.boolean(),
+});
+
+/**
+ * Where a room's game is (Phase 5, D2/D3): `lobby` until the host starts it,
+ * `playing` while rounds advance on their own, `ended` once every board is
+ * complete or the round budget runs out.
+ */
+export const gameStatusSchema = z.enum(['lobby', 'playing', 'ended']);
+
+/**
  * One seated player, as it appears in `presence` and in a room snapshot's
  * `players`. `seatIndex` is both the seat and the colour/hatch index
  * (`playerColor(seatIndex)`); `isHost` marks the one connection allowed to
@@ -133,6 +191,20 @@ export const roomSnapshotSchema = z.object({
   currentRoll: rollSchema.nullable(),
   hostId: z.string().nullable(),
   players: z.array(playerPresenceSchema),
+  /**
+   * Phase 5 (per D1(a): per-player copies of one picture). Every seated
+   * player's board, keyed by player id — including players currently
+   * disconnected, whose squares stay (pass 02 Annotation 19). A reconnecting
+   * client restores its own board from here; that is what keeps resync
+   * "apply the snapshot" and nothing cleverer.
+   */
+  status: gameStatusSchema,
+  pictureId: z.string().nullable(),
+  /** Rolls this picture gets before the session ends (D3), fixed at start. */
+  roundBudget: z.number().int().positive().nullable(),
+  boards: z.record(z.string(), boardSchema),
+  /** Players who have filled or passed in the round in play. */
+  acted: z.array(z.string()),
 });
 
 export type RoomSnapshot = z.infer<typeof roomSnapshotSchema>;
@@ -174,6 +246,9 @@ export const moveChoiceSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 
+/** A fill's `choice` as the wire carries it (`pieceId` an unbranded string). */
+export type WireMoveChoice = z.infer<typeof moveChoiceSchema>;
+
 // ---------------------------------------------------------------------------
 // Client → server
 // ---------------------------------------------------------------------------
@@ -206,6 +281,11 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
     round: z.number().int().nonnegative(),
     choice: moveChoiceSchema,
   }),
+  /**
+   * Nothing this round (Phase 5, D2) — replaces solo's local `passRound`.
+   * Counts as acting, so the round can close without this player.
+   */
+  z.object({ type: z.literal('pass'), round: z.number().int().nonnegative() }),
   z.object({ type: z.literal('rematch') }),
   /** Liveness. Kept explicit so hibernation behaviour is testable. */
   z.object({ type: z.literal('ping'), t: z.number() }),
@@ -227,6 +307,13 @@ export const serverErrorCodeSchema = z.enum([
   // and issuance can't race between peers.
   'not-host',
   'move-rejected',
+  // Phase 5: a second fill/pass in the same round (D2: one action per round).
+  'already-acted',
+  // Phase 5: `request-roll` once the game is running — rounds advance on their
+  // own now (D2); the host's privilege is starting the game, not each round.
+  'game-in-progress',
+  // Phase 5: `fill`/`pass` before the host started, or after the game ended.
+  'not-playing',
   'internal',
 ]);
 
@@ -251,12 +338,18 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   /** Full snapshot. Sent on join and after any resync. */
   z.object({ type: z.literal('state'), state: roomSnapshotSchema }),
   /**
-   * Incremental truth. Still `z.unknown()`: a delta is a change to board state,
-   * which fills produce — and fills arrive in Phase 5. Typing it here would be
-   * guessing at a shape the next phase defines. Presence and roll changes have
-   * their own messages already.
+   * Incremental truth (typed in Phase 5): the cells one accepted fill turned
+   * `filled` on `playerId`'s board. Broadcast only after the referee accepts,
+   * so a rejected fill never reaches another client (pass 02 Annotation 19).
    */
-  z.object({ type: z.literal('delta'), delta: z.unknown() }),
+  z.object({
+    type: z.literal('delta'),
+    delta: z.object({
+      playerId: z.string(),
+      round: z.number().int().nonnegative(),
+      cells: z.array(cellRefSchema),
+    }),
+  }),
   z.object({ type: z.literal('presence'), players: z.array(playerPresenceSchema) }),
   z.object({ type: z.literal('roll'), roll: rollSchema }),
   z.object({
@@ -265,14 +358,20 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     round: z.number().int().nonnegative(),
     cells: z.array(cellRefSchema),
   }),
-  /** Triggers the client's optimistic-fill rollback. */
+  /** Triggers the client's optimistic-fill rollback. No `cells` (dropped in
+   *  Phase 5): the client knows what it sent. */
   z.object({
     type: z.literal('fill-rejected'),
     round: z.number().int().nonnegative(),
-    reason: z.string(),
-    cells: z.array(cellRefSchema),
+    reason: moveRejectionSchema,
   }),
-  z.object({ type: z.literal('round-result'), result: z.unknown() }),
+  /** A round closed (every connected player acted). `sessionEnded` is the
+   *  last one: every board complete, or the round budget spent (D3). */
+  z.object({
+    type: z.literal('round-result'),
+    result: roundResultSchema,
+    sessionEnded: z.boolean(),
+  }),
   z.object({ type: z.literal('pong'), t: z.number() }),
   z.object({ type: z.literal('error'), code: serverErrorCodeSchema, message: z.string() }),
 ]);

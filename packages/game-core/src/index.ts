@@ -26,5 +26,5 @@ export {
 } from './shapes.js';
 export { areContiguous, cellAt, cellIndex, createBoard, inBounds, isComplete } from './board.js';
 export { issueRoll } from './roll.js';
-export { applyMove, legalCellsFor, type PieceOrigin } from './moves.js';
+export { applyMove, fillCells, legalCellsFor, type PieceOrigin } from './moves.js';
 export { POINTS_PER_COMPLETED_PICTURE, scoreBoard, scoreRound } from './scoring.js';

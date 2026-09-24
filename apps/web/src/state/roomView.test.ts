@@ -16,6 +16,11 @@ const waiting: RoomSnapshot = {
   currentRoll: null,
   hostId: 'p0',
   players: [seat(0)],
+  status: 'lobby',
+  pictureId: null,
+  roundBudget: null,
+  boards: {},
+  acted: [],
 };
 
 const host = { playerId: 'p0', isHost: true };
