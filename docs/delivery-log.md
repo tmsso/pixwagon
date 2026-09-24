@@ -244,3 +244,7 @@ The owner agreed to all four recommendations in `ROADMAP.md` the same day: **D1*
 ### 2026-09-24 — Phase 4 client half, item 5: origin config and `pnpm dev:server`
 
 Shipped before item 4, which needs it to connect anywhere. `apps/web/src/net/roomOrigin.ts` owns the worker origin (D4) and the `ws(s)` socket URL; `pnpm dev:server` runs `wrangler dev` on :8787; `apps/web/.env.example` documents the override. The review of D4 had said cross-origin needs no CORS; true for the WebSocket, not for `POST /api/room`, which the browser would have sent and then hidden the response of. Confirmed against the live worker (no `Access-Control-Allow-Origin` in the response), fixed with an allowlist in `apps/server/src/cors.ts`. The owner authorized the worker redeploy for this batch; its result is recorded in a follow-up entry, not here, so this line never claims a deploy before it ran.
+
+### 2026-09-24 — worker redeploy for item 5
+
+`wrangler deploy` from `apps/server/` after PR #24 merged → version `f90592b5`. Live check: `POST /api/room` with `Origin: https://pixwagon.pages.dev` returns 201 plus `access-control-allow-origin: https://pixwagon.pages.dev` and `vary: Origin`; with `Origin: https://evil.test` no CORS header; `/api/config` unchanged (`{"protocolVersion":1,"maxPlayers":6}`).
