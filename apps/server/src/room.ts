@@ -1,6 +1,7 @@
 import { decodeClientMessage, encode, PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type { ServerMessage } from '@pixwagon/protocol';
 import type { Env } from './env.ts';
+import { sendToAll } from './fanout.ts';
 import {
   buildSnapshot,
   ensureSeed,
@@ -360,6 +361,6 @@ export class Room {
   }
 
   #broadcast(payload: string): void {
-    for (const socket of this.#state.getWebSockets()) socket.send(payload);
+    sendToAll(this.#state.getWebSockets(), payload);
   }
 }
