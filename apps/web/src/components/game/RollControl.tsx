@@ -21,6 +21,10 @@ export interface RollControlProps {
   selectedChoice?: OfferChoice;
   /** True between submitting a fill and the referee's answer. */
   awaitingServer?: boolean;
+  /** Shows the offer but takes no choice — a networked room before placing
+   *  pieces exists (ROADMAP.md Phase 4 item 4). Unlike `awaitingServer`, says
+   *  nothing about a referee: there is no pending move to wait on. */
+  disabled?: boolean;
   onChoose?: (choice: OfferChoice) => void;
   /** The design surfaces' "pair selected" statecard shows a commit button
    *  ("Place 4 squares") inside the control itself, once a choice is fully
@@ -45,6 +49,7 @@ export function RollControl({
   fallbackFace,
   selectedChoice,
   awaitingServer = false,
+  disabled = false,
   onChoose,
   commit,
 }: RollControlProps) {
@@ -54,7 +59,7 @@ export function RollControl({
         <OfferCard
           label="The pair"
           selected={selectedChoice === 'pair'}
-          disabled={awaitingServer}
+          disabled={awaitingServer || disabled}
           onSelect={() => onChoose?.('pair')}
         >
           <div className="flex gap-2">
@@ -67,7 +72,7 @@ export function RollControl({
         <OfferCard
           label="The single"
           selected={selectedChoice === 'fallback'}
-          disabled={awaitingServer}
+          disabled={awaitingServer || disabled}
           onSelect={() => onChoose?.('fallback')}
         >
           <DiceFace face={fallbackFace} />

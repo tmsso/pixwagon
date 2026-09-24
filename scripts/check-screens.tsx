@@ -14,11 +14,49 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { GameScreen } from '../apps/web/src/routes/GameScreen.tsx';
+import type { RoomSnapshot } from '@pixwagon/protocol';
+import { GameRoute } from '../apps/web/src/routes/GameRoute.tsx';
 import { HomeScreen } from '../apps/web/src/routes/HomeScreen.tsx';
 import { LobbyScreen } from '../apps/web/src/routes/LobbyScreen.tsx';
 import { PackPickerScreen } from '../apps/web/src/routes/PackPickerScreen.tsx';
 import { ResultsScreen } from '../apps/web/src/routes/ResultsScreen.tsx';
+import { useRoomGameStore } from '../apps/web/src/state/roomGame.ts';
+
+/**
+ * A room as the server would describe it (Phase 4). The room screens read
+ * the `roomGame` store, and a server render runs no effects — so no socket
+ * ever opens here; each room case seeds the store with this instead.
+ */
+const waitingSnapshot: RoomSnapshot = {
+  code: 'TRAM',
+  mode: 'same-board',
+  round: 0,
+  currentRoll: null,
+  hostId: 'p-alex',
+  players: [
+    { id: 'p-alex', name: 'Alex', seatIndex: 0, isHost: true },
+    { id: 'p-sam', name: 'Sam', seatIndex: 1, isHost: false },
+  ],
+};
+
+// zustand hooks answer a server render from the store's *initial* state (the
+// `getServerSnapshot` side of React's `useSyncExternalStore`), never its
+// current one — so a `setState` seed is invisible to `renderToStaticMarkup`.
+// The hook closes over its store privately, so the one lever a script has is
+// the initial-state object itself: seed by writing into it. Fine for a
+// one-shot render check; never do this in app code.
+function seedRoom(snapshot: RoomSnapshot): void {
+  Object.assign(useRoomGameStore.getInitialState(), {
+    code: snapshot.code,
+    name: 'Alex',
+    connection: 'online',
+    snapshot,
+    me: { playerId: 'p-alex', isHost: true },
+    rejoinToken: 'fixture-token',
+    lastError: null,
+    fatalError: null,
+  });
+}
 
 interface ScreenCase {
   name: string;
@@ -27,6 +65,8 @@ interface ScreenCase {
   /** The route pattern to register, when it differs from the URL (`/r/:code`). */
   routePath?: string;
   element: ReactNode;
+  /** Runs before the render — seeds a store the screen reads. */
+  setup?: () => void;
   /** Strings that must appear — proof the screen rendered its own content. */
   expect: string[];
 }
@@ -42,15 +82,36 @@ const screens: ScreenCase[] = [
     name: 'Lobby',
     path: '/lobby',
     element: <LobbyScreen />,
-    expect: ['Join', 'Create room', 'Room code'],
+    expect: ['Join room', 'Create a room', 'Room code', 'Your name'],
   },
   {
-    name: 'Game',
-    path: '/r/pixw',
+    name: 'Game (solo)',
+    path: '/r/solo',
     routePath: '/r/:code',
-    element: <GameScreen />,
-    // Uppercasing a lowercase URL code is real behaviour worth asserting.
-    expect: ['PIXW', 'Round 1', 'The pair', 'The single'],
+    element: <GameRoute />,
+    expect: ['SOLO', 'Round 1', 'The pair', 'The single'],
+  },
+  {
+    name: 'Room (waiting)',
+    // Lowercase on purpose: uppercasing a typed URL code is real behaviour.
+    path: '/r/tram',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedRoom(waitingSnapshot),
+    expect: ['TRAM', 'Players · 2 of 6', 'Alex', 'Sam', 'host', 'Start round'],
+  },
+  {
+    name: 'Room (game)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom({
+        ...waitingSnapshot,
+        round: 3,
+        currentRoll: { round: 2, seed: 'fixture', pair: ['domino', 'tromino-l'], fallback: '1+2' },
+      }),
+    expect: ['TRAM', 'Round 3', 'Connected', 'The pair', 'Placing pieces arrives', 'Next round'],
   },
   {
     name: 'Results',
@@ -73,6 +134,7 @@ let failed = 0;
 for (const screen of screens) {
   let html: string;
   try {
+    screen.setup?.();
     html = renderToStaticMarkup(
       <MemoryRouter initialEntries={[screen.path]}>
         <Routes>

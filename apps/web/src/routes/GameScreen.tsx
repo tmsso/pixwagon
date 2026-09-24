@@ -20,10 +20,10 @@ import {
 } from '../state/soloGame.ts';
 
 /**
- * Solo-only for now (Phase 2) — same-board/own-board multiplayer wire into
- * this route in Phase 5/6 via `RoomState`, replacing `useSoloGameStore` with
- * server-pushed state. No `connection` pill: this route runs with no network
- * at all until then (docs/design/surfaces/ Annotation 08).
+ * The solo game, at `/r/solo` (Phase 2). Networked rooms at any other
+ * `/r/:code` render `RoomScreen` instead (`GameRoute`, Phase 4). No
+ * `connection` pill: solo runs with no network at all (docs/design/surfaces/
+ * Annotation 08).
  *
  * Turn flow (design pass 02, Surface 03): the footer shows both offers →
  * picking one opens the `PlacementEditor` sheet over the board (offers collapse

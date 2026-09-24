@@ -9,6 +9,9 @@ export interface PlayerChipProps {
   score?: number;
   /** Marks whose turn it is to fill. */
   active?: boolean;
+  /** The room's host (design pass 02, `02c`–`02e`) — a text label, not a
+   *  colour or icon alone. */
+  host?: boolean;
 }
 
 export function PlayerChip({
@@ -17,6 +20,7 @@ export function PlayerChip({
   connected = true,
   score,
   active = false,
+  host = false,
 }: PlayerChipProps) {
   const color = playerColor(colorIndex);
 
@@ -35,6 +39,7 @@ export function PlayerChip({
         style={patternStyle(color.pattern, color.hex)}
       />
       <span className="font-medium text-ink">{name}</span>
+      {host ? <span className="text-xs text-ink-muted">host</span> : null}
       {score !== undefined ? <span className="font-mono text-ink-muted">{score}</span> : null}
       {/* Connection state is never colour-only: absent players are also dimmed and labelled. */}
       {!connected ? <span className="text-xs text-ink-muted">away</span> : null}

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   decodeClientMessage,
   encode,
+  isIssuableRoomCode,
   MAX_PLAYERS,
+  ROOM_CODE_ALPHABET,
   playerPresenceSchema,
   PROTOCOL_VERSION,
   rollSchema,
@@ -165,6 +167,25 @@ describe('roomCodeSchema', () => {
     for (const bad of ['pixw', 'PIX', 'PIXWAGON9', 'PIX-W']) {
       expect(roomCodeSchema.safeParse(bad).success).toBe(false);
     }
+  });
+});
+
+describe('isIssuableRoomCode', () => {
+  it('accepts four characters from the issued alphabet', () => {
+    // Not the design's sample "PIXW": it has an I, which is never issued.
+    expect(isIssuableRoomCode('TRAM')).toBe(true);
+    expect(isIssuableRoomCode('Z29K')).toBe(true);
+  });
+
+  it('rejects the look-alike characters, lowercase and wrong lengths', () => {
+    for (const bad of ['PIX0', 'PIXO', 'PIX1', 'PIXI', 'pixw', 'PIX', 'PIXWA']) {
+      expect(isIssuableRoomCode(bad)).toBe(false);
+    }
+  });
+
+  it('issues only codes the looser wire schema also accepts', () => {
+    expect(roomCodeSchema.safeParse(ROOM_CODE_ALPHABET.slice(0, 4)).success).toBe(true);
+    expect(ROOM_CODE_ALPHABET).not.toMatch(/[IO01]/);
   });
 });
 

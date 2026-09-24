@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { PROTOCOL_VERSION } from '@pixwagon/protocol';
-import type { PlayerPresence, RoomSnapshot, ServerMessage } from '@pixwagon/protocol';
+import type {
+  PlayerPresence,
+  RoomSnapshot,
+  ServerErrorCode,
+  ServerMessage,
+} from '@pixwagon/protocol';
 import { RoomConnection } from '../net/roomConnection.ts';
 import type { RoomConnectionEvent, WebSocketFactory } from '../net/roomConnection.ts';
 
@@ -55,6 +60,16 @@ function persistRejoinToken(code: string, token: string): void {
     // Best effort — worst case, the next reconnect re-registers as new.
   }
 }
+
+/**
+ * Errors after which the server closes the socket and a retry can only fail
+ * the same way (Phase 4 item 4). Without this the transport would treat the
+ * server's close as a network drop and reconnect forever into a full room.
+ */
+const TERMINAL_ERRORS: ReadonlySet<ServerErrorCode> = new Set([
+  'room-full',
+  'protocol-version-mismatch',
+]);
 
 function isHostAmong(players: readonly PlayerPresence[], playerId: string): boolean {
   return players.some((p) => p.id === playerId && p.isHost);
@@ -127,6 +142,9 @@ interface RoomGameSlice {
   me: RoomPlayerIdentity | null;
   rejoinToken: string | null;
   lastError: string | null;
+  /** Set when the server refused this connection for good (`TERMINAL_ERRORS`);
+   *  the store has stopped reconnecting and the screen should say why. */
+  fatalError: ServerErrorCode | null;
 }
 
 export interface RoomGameState extends RoomGameSlice {
@@ -160,6 +178,7 @@ const initialSlice: RoomGameSlice = {
   me: null,
   rejoinToken: null,
   lastError: null,
+  fatalError: null,
 };
 
 export const useRoomGameStore = create<RoomGameState>((set, get) => ({
@@ -233,6 +252,14 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
       // preceding `join()` — real usage always has it by the time a `welcome`
       // arrives, but nothing here depends on that being true.
       if (state.code) persistRejoinToken(state.code, event.message.rejoinToken);
+      return;
+    }
+    if (event.message.type === 'error' && TERMINAL_ERRORS.has(event.message.code)) {
+      // Close deliberately *before* the server's own close lands, so the
+      // transport sees a leave rather than a drop and does not reconnect.
+      set({ ...patch, fatalError: event.message.code });
+      connection?.close();
+      connection = null;
       return;
     }
     set(patch);

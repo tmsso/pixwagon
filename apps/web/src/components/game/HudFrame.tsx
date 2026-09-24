@@ -6,7 +6,7 @@ export interface HudFrameProps {
   /** Live connection state. Omit entirely for solo/daily — the pill exists
    *  only inside a networked room (docs/design/surfaces/ Annotation 08); a
    *  connection state with no connection to report would be lying, not idle. */
-  connection?: 'online' | 'connecting' | 'offline';
+  connection?: 'online' | 'connecting' | 'reconnecting' | 'offline';
   players?: ReactNode;
   children: ReactNode;
   controls?: ReactNode;
@@ -25,6 +25,10 @@ const SHEET_HEIGHT = 284;
 const CONNECTION_LABEL = {
   online: 'Connected',
   connecting: 'Connecting…',
+  // A drop being retried, as distinct from a first connect — the wording the
+  // device checklist (ROADMAP.md step 4) looks for. Same warning tone, never
+  // red (design pass 02, Annotation 19).
+  reconnecting: 'Reconnecting…',
   offline: 'Offline',
 } as const;
 
@@ -55,6 +59,7 @@ export function HudFrame({
         </div>
         {connection ? (
           <span
+            role="status"
             className={[
               'rounded-full px-2 py-0.5 text-xs',
               connection === 'online' ? 'text-ink-muted' : 'bg-warning/20 text-ink',

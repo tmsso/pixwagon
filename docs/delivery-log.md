@@ -248,3 +248,11 @@ Shipped before item 4, which needs it to connect anywhere. `apps/web/src/net/roo
 ### 2026-09-24 — worker redeploy for item 5
 
 `wrangler deploy` from `apps/server/` after PR #24 merged → version `f90592b5`. Live check: `POST /api/room` with `Origin: https://pixwagon.pages.dev` returns 201 plus `access-control-allow-origin: https://pixwagon.pages.dev` and `vary: Origin`; with `Origin: https://evil.test` no CORS header; `/api/config` unchanged (`{"protocolVersion":1,"maxPlayers":6}`).
+
+### 2026-09-24 — Phase 4 client half, item 4: Lobby and networked Game screens
+
+`/lobby` takes a name and a code, or creates a room through `POST /api/room`; `/r/CODE` (via `GameRoute`, which keeps `/r/solo` on the solo store) joins in an effect and shows the waiting room until the first roll, then the networked game: server roll in a disabled `RollControl`, "Placing pieces arrives with the next update", the host's "Next round", a `connection` pill that now has a `reconnecting` state. Pure view decisions in `state/roomView.ts`; terminal server errors (`room-full`, `protocol-version-mismatch`) stop the reconnect loop. `scripts/check-screens.tsx` covers the Lobby, the waiting room and the networked game from a fixture snapshot.
+
+Observed locally with `pnpm dev` + `pnpm dev:server` in two headless Chromium contexts: create → join by lowercase code → both show "Players · 2 of 6", the guest sees "Only the host can start" → "Start round" gives byte-identical offers on both → "Next round" gives an identical, different round 2 → the local worker process tree killed: both show "Reconnecting…" → worker restarted: both resync to round 2 with the same offer, seats, names and host, and no page reload.
+
+Gotchas found: (1) Chromium's offline emulation does not close an already-open WebSocket, so a drop test has to kill the server; and `wrangler dev` respawns a killed `workerd`, so the parent has to go too — a first "resync works" run was vacuous for exactly this reason and was discarded. (2) zustand answers a server render from the store's _initial_ state, so `check-screens` seeds room fixtures by writing into `getInitialState()` rather than `setState`. (3) React StrictMode's dev-only mount → unmount → mount opens and drops a first socket, so under `pnpm dev` the host can land in seat 1; production builds do not double-mount.

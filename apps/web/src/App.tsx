@@ -1,6 +1,6 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router';
 import { UpdateBanner } from './pwa/UpdateBanner.tsx';
-import { GameScreen } from './routes/GameScreen.tsx';
+import { GameRoute } from './routes/GameRoute.tsx';
 import { HomeScreen } from './routes/HomeScreen.tsx';
 import { LobbyScreen } from './routes/LobbyScreen.tsx';
 import { PackPickerScreen } from './routes/PackPickerScreen.tsx';
@@ -12,9 +12,9 @@ import { ResultsScreen } from './routes/ResultsScreen.tsx';
  * navigable screen; it appears inside the game screen and is designed as its
  * own surface.
  *
- * Home, Game (solo), Results and PackPicker are real (Phase 2). Lobby is still
- * a placeholder until the Phase 4 client half wires a room; `/r/:code` is
- * solo-only until Phase 5 feeds it server state.
+ * Home, Game (solo), Results and PackPicker are real (Phase 2). Lobby and the
+ * networked room are real from Phase 4: `/r/solo` stays on the solo store,
+ * any other `/r/:code` is a room on the worker (`GameRoute`).
  */
 export function App() {
   return (
@@ -25,7 +25,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/lobby" element={<LobbyScreen />} />
-        <Route path="/r/:code" element={<GameScreen />} />
+        <Route path="/r/:code" element={<GameRoute />} />
         <Route path="/results" element={<ResultsScreen />} />
         <Route path="/packs" element={<PackPickerScreen />} />
         <Route
