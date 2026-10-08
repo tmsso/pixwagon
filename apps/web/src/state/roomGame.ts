@@ -213,16 +213,26 @@ export function applyServerMessage(
       return patch;
     }
 
-    case 'fill-accepted':
-      if (!state.snapshot) return { prediction: null };
+    case 'fill-accepted': {
+      // Only settles the prediction it answers: the cells are truth either
+      // way, but a ruling for an older round must not clear a newer one.
+      const settles = state.prediction?.round === message.round;
+      if (!state.snapshot) return settles ? { prediction: null } : {};
       return {
         snapshot: withFilled(state.snapshot, message.playerId, message.cells),
-        prediction: null,
+        ...(settles ? { prediction: null } : {}),
       };
+    }
 
     case 'fill-rejected':
       // The rollback: drop the overlay, so the board shows exactly what the
-      // server holds — which never included those cells.
+      // server holds — which never included those cells. A rejection for a
+      // fill we are no longer waiting on is stale and ignored: if the host
+      // skipped us (or the round closed on a disconnect) while our fill was
+      // in flight, the new round's `roll` has already cleared the overlay,
+      // and the server's "wrong-round" for the old fill must not then flash
+      // "didn't fit" across the fresh round.
+      if (state.prediction?.round !== message.round) return {};
       return { prediction: null, lastRejection: message.reason };
 
     case 'passed': {
