@@ -21,6 +21,7 @@
     "design:build": "pnpm --filter @pixwagon/web build && tsx scripts/build-design-system.tsx",
     "design:check": "tsx scripts/check-design-system.ts",
     "check:screens": "tsx scripts/check-screens.tsx",
+    "tamper:check": "tsx scripts/tamper-check.ts",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:screens && pnpm generated:check && pnpm design:check",
     "generated:check": "pnpm tokens:build && pnpm design:build && node scripts/assert-clean.mjs apps/web/src/design/tokens.css design-system"
   },
