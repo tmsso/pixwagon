@@ -11,33 +11,40 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 - When a batch makes a decision, write it in **two places**: a one-line entry under the phase in this file, and a comment at the site of the decision. Long narrative goes in `docs/delivery-log.md`, not here.
 - Decisions D1–D4 below were the project owner's call and are decided (2026-09-16). New forks of the same weight go in a fresh "Decisions needed" section here and are asked up front, once, at the start of a batch.
 
-## Status at a glance (refreshed 2026-09-24)
+## Status at a glance (refreshed 2026-10-08)
 
-| Phase | Name                                  | Code       | Accept line | Gap to Accept                                             |
-| ----- | ------------------------------------- | ---------- | ----------- | --------------------------------------------------------- |
-| 0     | Repo and sync-ready scaffold          | delivered  | ✅ met      | —                                                         |
-| 0.5   | Design interlude (owner-driven)       | n/a        | ✅ met      | —                                                         |
-| 1     | `game-core` rules engine              | delivered  | ✅ met      | —                                                         |
-| 2     | Local solo playable                   | delivered  | ✅ met      | —                                                         |
-| 3     | PWA shell                             | delivered  | ⏳ device   | real-phone install + aeroplane-mode solo                  |
-| 3.5   | Cloudflare account and free-tier gate | delivered  | ⏳ device   | phone on mobile data joins a room over WebSocket          |
-| 4     | Realtime skeleton                     | delivered  | ⏳ device   | accept pending — device session step 4 (two real devices) |
-| 5     | Same-board multiplayer                | half (2/4) | —           | items 1–2 merged, **not deployed** (held); items 3–4 next |
-| 6     | Own-board mode, results, rematch      | —          | —           |                                                           |
-| 7     | Daily puzzle + persistence            | —          | —           | daily seed needs no storage; see split below              |
-| 8     | Second shape pack                     | —          | —           | can run any time after Phase 2                            |
-| 9     | Polish                                | —          | —           |                                                           |
+| Phase | Name                                  | Code      | Accept line | Gap to Accept                                             |
+| ----- | ------------------------------------- | --------- | ----------- | --------------------------------------------------------- |
+| 0     | Repo and sync-ready scaffold          | delivered | ✅ met      | —                                                         |
+| 0.5   | Design interlude (owner-driven)       | n/a       | ✅ met      | —                                                         |
+| 1     | `game-core` rules engine              | delivered | ✅ met      | —                                                         |
+| 2     | Local solo playable                   | delivered | ✅ met      | —                                                         |
+| 3     | PWA shell                             | delivered | ⏳ device   | real-phone install + aeroplane-mode solo                  |
+| 3.5   | Cloudflare account and free-tier gate | delivered | ⏳ device   | phone on mobile data joins a room over WebSocket          |
+| 4     | Realtime skeleton                     | delivered | ⏳ device   | accept pending — device session step 4 (two real devices) |
+| 5     | Same-board multiplayer                | in review | —           | items 3–4 in stacked PRs #30–#32; deploy after merge      |
+| 6     | Own-board mode, results, rematch      | —         | —           |                                                           |
+| 7     | Daily puzzle + persistence            | —         | —           | daily seed needs no storage; see split below              |
+| 8     | Second shape pack                     | in review | ✅ on merge | PR #33 touches only `packages/packs`                      |
+| 9     | Polish                                | —         | —           |                                                           |
 
 Live: web app `https://pixwagon.pages.dev` (Pages, deployed 2026-09-24 from `main` at PR #25 — Lobby + networked room) · room worker `https://pixwagon-app.tmsso.workers.dev` — **redeployed 2026-09-24** (`wrangler deploy`, version `f90592b5`), running `main` as of PR #24 (protocol/room-state, rejoin identity, CORS allowlist). Live-verified: `/api/config` → `{maxPlayers:6}`; a real WebSocket `join` returns `welcome.rejoinToken`; a second `join` resending that token on a fresh connection reclaims the same `playerId` and `seatIndex` (name updates, as designed).
 
-> ⚠️ **Do not `wrangler deploy` the worker from `main` until Phase 5 item 3 ships.** Since 2026-09-24 `main` carries the Phase 5 server (PR #28); deploying it would stall every live room after round 1 (the live client cannot fill or pass yet) and change the server the device session tests against. The live worker deliberately stays on PR #24's code.
+> ⚠️ **Do not `wrangler deploy` the worker from `main` until the 2026-10-08 stack (#29–#35) is merged** — then deploy the worker and Pages back to back (protocol 2 must reach both together). Until then `main` carries the Phase 5 server (PR #28) without the client that plays it; deploying it would stall every live room after round 1. The live worker deliberately stays on PR #24's code.
 
 ## Execution order from here
 
 1. ~~Phase 4 client half, items 4–5~~ — delivered 2026-09-24 (item 5 first, then item 4). Phase 4's only remaining gap is the device session's step 4, so Phase 5 may start under CLAUDE.md §8's exception; Phase 4 stays "accept pending", not accepted.
 2. **Device verification session** (owner, ~20 min, no code) — step 1 (worker redeploy) is done; steps 2–4 flip 3, 3.5 and Phase 4's Accept lines, and step 4 needs items 4–5 above to exist first.
 3. ~~Decisions D1–D3~~ — decided 2026-09-16; Phase 5 can follow Phase 4 without a stop.
-4. **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
+4. **2026-10-08 batch** — Phase 5 items 3–4, protocol 2, Phase 8 and first-contact polish are a stacked PR chain (#29–#35) awaiting the owner's merge, then one bundled worker + Pages deploy. After that: the device session (now also covering Phase 5), then **Phase 6**, then **7**, then **9**.
+5. _Superseded by 4:_ **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
+
+## Decisions needed (raised 2026-10-08)
+
+- **D5 — preview worker.** The batch verified its stack on a separate worker `pixwagon-app-preview` (own room storage, shares the account's free quota) and a Pages preview branch `phase5-preview`. Recommended: keep both as the standing pre-merge check; otherwise `wrangler delete --name pixwagon-app-preview` from `apps/server/` and delete the branch deployment in the Pages dashboard.
+- **D6 — ghost players.** The rejoin token lives in `sessionStorage`, so closing and reopening a tab (or relaunching an installed iOS app) rejoins as a _new_ player; since protocol 2 the old identity stays "away" holding a seat — duplicate names in the ranking, and a six-player room can lock itself out. Recommended: move the token to `localStorage` (per room code) in Phase 6.
+- **D7 — choosing a pack.** Garden ships but solo and rooms always play Transportation. Recommended: a pack choice in the waiting room and on the solo start, alongside Phase 6's own-board work.
 
 ---
 
@@ -50,7 +57,7 @@ Everything below needs a real phone and cannot be done by Claude. Run it once an
 
 2. **Phase 3:** on a phone, open `https://pixwagon.pages.dev`, finish one solo picture, accept the install card ("Add to home screen"). Enable aeroplane mode, launch from the home screen, play a few rounds of solo. _Accept if it boots and plays offline._
 3. **Phase 3.5:** on the phone with Wi-Fi off (mobile data), open the browser console-free check: visit `https://pixwagon-app.tmsso.workers.dev/health`. A WebSocket join from a phone is only observable once the Phase 4 client half exists — so this item is _formally_ closed by step 4.
-4. **Phase 4 (client half shipped 2026-09-24):** on device one open `https://pixwagon.pages.dev/lobby`, type a name, press "Create a room"; on device two open the same page, type the four-letter code and "Join room" (or open the copied `/r/CODE` link). Both see both names; the host presses "Start round" and both see the same pair + single. Toggle aeroplane mode on one for ten seconds and back; it should show "Reconnecting…" then resync with no reload, same seat and name. (Already observed locally in two headless browsers with the worker killed and restarted — the phone run is what flips the Accept line.)
+4. **Phase 4 and Phase 5** (after the protocol-2 deploy): if the phone shows "This room runs a newer version", go to Home and accept the update banner — a plain reload keeps the old service-worker build. Then: **Phase 4 (client half shipped 2026-09-24):** on device one open `https://pixwagon.pages.dev/lobby`, type a name, press "Create a room"; on device two open the same page, type the four-letter code and "Join room" (or open the copied `/r/CODE` link). Both see both names; the host presses "Start round" and both see the same pair + single. Toggle aeroplane mode on one for ten seconds and back; it should show "Reconnecting…" then resync with no reload, same seat and name. (Already observed locally in two headless browsers with the worker killed and restarted — the phone run is what flips the Accept line.) **Phase 5:** keep going on both phones until one finishes the picture; both must end on "Game over" with the same ranking, and a phone switched off mid-round must show as "away" on the other.
 
 ---
 
@@ -109,10 +116,12 @@ The core competitive loop: fills go through the referee.
 
 1. ✅ **Server: per-player boards and the round lifecycle.** Merged 2026-09-24, not deployed (see execution order). Beyond this bullet: the snapshot now carries `status`, `pictureId`, `roundBudget`, every player's `board` and `acted`, so a reconnect restores a player's board by "apply the snapshot"; the round also closes when its last straggler disconnects (D2), a player with a complete picture is never waited on, and a session also ends when nobody connected has anything left to place (otherwise an absent player's unfinished board would spin empty rounds). Original bullet: Room storage gains `boards: Record<playerId, Board>`, `acted: playerId[]` for the current round, `roundBudget`, `pictureId`. `fill` → `applyMove(board, currentRoll, move)`; accepted → store, reply `fill-accepted`, broadcast a typed `delta` (`{ playerId, round, cells }`); rejected → `fill-rejected` with the `MoveRejection` reason. A new `pass` client message replaces the solo store's local `passRound`. When every connected player has acted, the server issues the next roll itself (host no longer presses per round; the host starts the _game_). Session ends on picture complete for all, or budget exhausted; broadcast `round-result` typed as `RoundResult`. **Done means:** `roomState.ts` tests for accept/reject/advance/budget; a drift-guard test that `delta` and `game-core` `Board` agree.
 2. ✅ **Protocol.** Delivered inside item 1's PR — item 1 cannot ship without `pass`, a typed `delta`/`round-result` and the new error codes. Also added `game-in-progress` and `not-playing` errors, typed `fill-rejected.reason` as a `MoveRejection` mirror, and `round-result.sessionEnded`. Original bullet: Type `delta`, `round-result`, add `pass`; drop the dice-era `cells` field from `fill-rejected` (the client knows what it sent). Add `error: 'already-acted'`.
-3. **Client: optimistic fill and rollback.** `roomGame` reuses `placement.ts` (already pure) for composition; on commit, apply `applyMove` locally as the prediction, send `fill`, mark cells `candidate` until `fill-accepted`; on `fill-rejected` restore the board from the last snapshot and show the non-scolding line. `awaitingServer` dims the sheet (pass 02 `03f`). **Done means:** a store test where the server rejects a move the client predicted as legal, asserting the board rolls back to the pre-move state.
-4. **Tamper test.** A test client sends a `fill` for cells the roll cannot cover; the server rejects it, and a second client's store never sees a delta for it.
+3. ✅ **Client: optimistic fill and rollback.** In review 2026-10-08 (PR #30, fix #32). `roomGame` reuses `placement.ts` (already pure) for composition; on commit, apply `applyMove` locally as the prediction, send `fill`, mark cells `candidate` until `fill-accepted`; on `fill-rejected` restore the board from the last snapshot and show the non-scolding line. `awaitingServer` dims the sheet (pass 02 `03f`). **Done means:** a store test where the server rejects a move the client predicted as legal, asserting the board rolls back to the pre-move state.
+4. ✅ **Tamper test.** In review 2026-10-08 (PR #31; `pnpm tamper:check`). A test client sends a `fill` for cells the roll cannot cover; the server rejects it, and a second client's store never sees a delta for it.
 
 Decided 2026-09-24 (item 1): the host starts the game with the existing `request-roll` (not a new message) so the deployed Phase 4 client's "Start round" keeps working; a mid-game `request-roll` is `game-in-progress`. The picture is `pick(pack.pictures)` from `deriveSeed(roomSeed, 'pictures')`. `pass` is allowed with or without a legal move — declining only costs the decliner. A rejected fill does not count as acting. A mid-game joiner gets a fresh board and plays from the current round. Pre-Phase-5 room storage loads through `normaliseRoom` as a lobby.
+
+Decided 2026-10-08 (owner, up front): Phase 5 ends on a minimal ranking computed from the snapshot's boards — the full results screen stays Phase 6; a room player may pass only when no move is legal (as in solo); a dropped player shows as "away" and keeps their seat (`PlayerPresence.connected`, protocol 2); the host may skip players who have not acted after 30 s (`skip-waiting`; D2's no-timer stance stands). Protocol bumped to 2 so stale installed clients get "reload to update".
 
 **Accept:** an illegal fill submitted by a tampered client is rejected by the server and visibly rolls back on the client that attempted it, while other players never see it. Two phones play a full picture to the end and both see the same final ranking.
 
@@ -141,6 +150,8 @@ Split from the original single phase because the daily seed needs no storage at 
 ## Phase 8 — Second shape pack
 
 Independent of Phases 4–7; a good single-PR filler. Ship a non-transportation pack (garden is already "coming soon" in the design) purely as data, drawn for this project.
+
+Delivered 2026-10-08 (PR #33, Garden: tulip, watering can, mushroom). Findings: (1) a `data/index.json` manifest cannot remove the registration line — Vite, wrangler's esbuild and tsx each need a static import per pack, and JSON can't import JSON; the line stays as the accepted seam. (2) A pack lists on the picker but can't be played: solo and rooms hardcode `transportation` — choosing a pack is a feature for a later phase, not a seam leak.
 
 **Accept:** the pack ships with **zero** changes to `game-core`, `apps/web` or `apps/server` — only a new file under `packages/packs/data/` plus its registration in `packages/packs/src/index.ts`. If anything else had to change, the seam leaked and that is the finding. (The registration line is the one known leak: consider a `data/index.json` manifest so even that goes away.)
 
