@@ -118,10 +118,12 @@ function RoomRefused({ code, reason }: { code: string; reason: string }) {
       <p className="text-ink-muted">
         {reason === 'room-full'
           ? 'Room is full — six is the most we can tell apart on a board.'
-          : 'This room runs a newer version of Pixwagon. Reload the page to update.'}
+          : // `registerType: 'prompt'` (vite.config.ts): a reload alone keeps
+            // serving the old build until the update banner is accepted.
+            'This room runs a newer version of Pixwagon. Go back to the start and accept the update when it’s offered.'}
       </p>
-      <Link to="/lobby" className="text-accent underline">
-        Back to the lobby
+      <Link to={reason === 'room-full' ? '/lobby' : '/'} className="text-accent underline">
+        {reason === 'room-full' ? 'Back to the lobby' : 'Back to the start'}
       </Link>
     </main>
   );
