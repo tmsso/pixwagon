@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "id": "garden",
+  "name": "Garden",
+  "description": "Things that grow, and the tools that help them.",
+  "version": 1,
+  "pictures": [
+    {
+      "id": "tulip",
+      "name": "Tulip",
+      "difficulty": "easy",
+      "palette": [
+        {
+          "name": "Petal",
+          "hex": "#e0457b"
+        },
+        {
+          "name": "Stem",
+          "hex": "#3f8f3a"
+        },
+        {
+          "name": "Leaf",
+          "hex": "#6cbf4a"
+        }
+      ],
+      "rows": [
+        ".0.0.0.",
+        ".00000.",
+        "0000000",
+        "0000000",
+        ".00000.",
+        "..000..",
+        "...1...",
+        "22.1.22",
+        ".22122.",
+        "...1..."
+      ]
+    },
+    {
+      "id": "watering-can",
+      "name": "Watering can",
+      "difficulty": "easy",
+      "palette": [
+        {
+          "name": "Can",
+          "hex": "#4a90c2"
+        },
+        {
+          "name": "Base",
+          "hex": "#2f5f86"
+        },
+        {
+          "name": "Spout",
+          "hex": "#7fb6dd"
+        }
+      ],
+      "rows": [
+        "......000...",
+        ".....0...0..",
+        "2...0000000.",
+        "22.00000000.",
+        ".2200000000.",
+        "...00000000.",
+        "...00000000.",
+        "....111111.."
+      ]
+    },
+    {
+      "id": "mushroom",
+      "name": "Mushroom",
+      "difficulty": "medium",
+      "palette": [
+        {
+          "name": "Cap",
+          "hex": "#c8382f"
+        },
+        {
+          "name": "Spot",
+          "hex": "#f6efe3"
+        },
+        {
+          "name": "Stem",
+          "hex": "#efe2c7"
+        },
+        {
+          "name": "Grass",
+          "hex": "#5aa548"
+        }
+      ],
+      "rows": [
+        "...0000...",
+        ".00011000.",
+        "0000000110",
+        "0110000000",
+        "0000000000",
+        "..222222..",
+        "...2222...",
+        "...2222...",
+        "...2222...",
+        "..333333.."
+      ]
+    }
+  ]
+}
