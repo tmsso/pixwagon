@@ -40,11 +40,11 @@ Live (deployed 2026-10-08 from `main` at PR #36, protocol 2): web app `https://p
 4. ~~2026-10-08 batch~~ — Phase 5 items 3–4, protocol 2, Phase 8 and first-contact polish merged (#29–#36) and deployed 2026-10-08. Next: the device session (now also covering Phase 5), decisions D5–D7, then **Phase 6**, then **7**, then **9**.
 5. _Superseded by 4:_ **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
 
-## Decisions needed (raised 2026-10-08)
+## Decisions D5–D7 — **decided 2026-10-08** (owner: D5 keep, D6 and D7 agreed)
 
-- **D5 — preview worker.** The batch verified its stack on a separate worker `pixwagon-app-preview` (own room storage, shares the account's free quota) and a Pages preview branch `phase5-preview`. Recommended: keep both as the standing pre-merge check; otherwise `wrangler delete --name pixwagon-app-preview` from `apps/server/` and delete the branch deployment in the Pages dashboard.
-- **D6 — ghost players.** The rejoin token lives in `sessionStorage`, so closing and reopening a tab (or relaunching an installed iOS app) rejoins as a _new_ player; since protocol 2 the old identity stays "away" holding a seat — duplicate names in the ranking, and a six-player room can lock itself out. Recommended: move the token to `localStorage` (per room code) in Phase 6.
-- **D7 — choosing a pack.** Garden ships but solo and rooms always play Transportation. Recommended: a pack choice in the waiting room and on the solo start, alongside Phase 6's own-board work.
+- **D5 — preview worker. Decided: keep.** The batch verified its stack on a separate worker `pixwagon-app-preview` (own room storage, shares the account's free quota) and a Pages preview branch `phase5-preview`. Recommended: keep both as the standing pre-merge check; otherwise `wrangler delete --name pixwagon-app-preview` from `apps/server/` and delete the branch deployment in the Pages dashboard.
+- **D6 — ghost players. Decided: agreed — first item of the next batch.** The rejoin token lives in `sessionStorage`, so closing and reopening a tab (or relaunching an installed iOS app) rejoins as a _new_ player; since protocol 2 the old identity stays "away" holding a seat — duplicate names in the ranking, and a six-player room can lock itself out. Recommended: move the token to `localStorage` (per room code) in Phase 6.
+- **D7 — choosing a pack. Decided: agreed — lands with Phase 6.** Garden ships but solo and rooms always play Transportation. Recommended: a pack choice in the waiting room and on the solo start, alongside Phase 6's own-board work.
 
 ---
 
