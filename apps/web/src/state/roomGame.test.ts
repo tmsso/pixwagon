@@ -415,4 +415,26 @@ describe('optimistic fill (Phase 5 item 3)', () => {
     });
     expect(useRoomGameStore.getState().prediction).toBeNull();
   });
+
+  it('ignores a stale fill-rejected that lands after the round already moved on', () => {
+    useRoomGameStore.getState().commit();
+    const { handleEvent } = useRoomGameStore.getState();
+    // The host skipped us while our fill was in flight: the next roll lands
+    // first, then the server's ruling on the old round's fill.
+    handleEvent({ type: 'message', message: { type: 'roll', roll: issueRoll('seed-fill', 1) } });
+    handleEvent({
+      type: 'message',
+      message: { type: 'fill-rejected', round: 0, reason: 'wrong-round' },
+    });
+    const state = useRoomGameStore.getState();
+    expect(state.lastRejection).toBeNull();
+    expect(state.prediction).toBeNull();
+    // ...and a stale accept can't clear a newer round's prediction either.
+    useRoomGameStore.setState({ prediction: { round: 1, cells } });
+    handleEvent({
+      type: 'message',
+      message: { type: 'fill-accepted', playerId: 'p1', round: 0, cells: [] },
+    });
+    expect(useRoomGameStore.getState().prediction).toEqual({ round: 1, cells });
+  });
 });
