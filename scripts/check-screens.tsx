@@ -14,6 +14,9 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
+// Relative, not `@pixwagon/game-core`: the workspace root doesn't depend on
+// the package (the type-only protocol import below is erased at runtime).
+import { createBoard, fillCells } from '../packages/game-core/src/index.ts';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { GameRoute } from '../apps/web/src/routes/GameRoute.tsx';
 import { HomeScreen } from '../apps/web/src/routes/HomeScreen.tsx';
@@ -50,6 +53,29 @@ const waitingSnapshot: RoomSnapshot = {
 // The hook closes over its store privately, so the one lever a script has is
 // the initial-state object itself: seed by writing into it. Fine for a
 // one-shot render check; never do this in app code.
+const tram = createBoard('transportation', 'tram');
+const tramFillable = tram.cells.flatMap((cell, i) =>
+  cell === 'fillable' ? [{ x: i % tram.size.width, y: Math.floor(i / tram.size.width) }] : [],
+);
+const tramDone = fillCells(tram, tramFillable);
+const tramHalf = fillCells(tram, tramFillable.slice(0, Math.floor(tramFillable.length / 2)));
+
+/** A same-board game in round 3 (Phase 5): everyone holds a copy of `tram`. */
+const playingSnapshot: RoomSnapshot = {
+  ...waitingSnapshot,
+  round: 3,
+  currentRoll: { round: 2, seed: 'fixture', pair: ['domino', 'tromino-l'], fallback: '1+2' },
+  status: 'playing',
+  pictureId: 'tram',
+  roundBudget: 40,
+  players: [
+    ...waitingSnapshot.players,
+    { id: 'p-kim', name: 'Kim', seatIndex: 2, isHost: false, connected: false },
+  ],
+  boards: { 'p-alex': tramHalf, 'p-sam': tram, 'p-kim': tram },
+  acted: [],
+};
+
 function seedRoom(snapshot: RoomSnapshot): void {
   Object.assign(useRoomGameStore.getInitialState(), {
     code: snapshot.code,
@@ -110,14 +136,30 @@ const screens: ScreenCase[] = [
     path: '/r/TRAM',
     routePath: '/r/:code',
     element: <GameRoute />,
+    setup: () => seedRoom(playingSnapshot),
+    // Kim dropped mid-game: listed, dimmed, labelled "away" (pass 02 `12c`).
+    expect: ['TRAM', 'Round 3', 'Connected', 'The pair', 'The single', 'You', 'Kim', 'away'],
+  },
+  {
+    name: 'Room (acted, waiting for others)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedRoom({ ...playingSnapshot, acted: ['p-alex'] }),
+    expect: ['Done for this round.', 'Waiting for Sam'],
+  },
+  {
+    name: 'Room (ended)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
     setup: () =>
       seedRoom({
-        ...waitingSnapshot,
-        round: 3,
-        currentRoll: { round: 2, seed: 'fixture', pair: ['domino', 'tromino-l'], fallback: '1+2' },
-        status: 'playing',
+        ...playingSnapshot,
+        status: 'ended',
+        boards: { 'p-alex': tramHalf, 'p-sam': tramDone, 'p-kim': tram },
       }),
-    expect: ['TRAM', 'Round 3', 'Connected', 'The pair', 'Placing pieces arrives', 'Next round'],
+    expect: ['Game over', 'Final ranking', '1.', 'Sam', 'Complete', 'Alex (you)', 'squares'],
   },
   {
     name: 'Results',

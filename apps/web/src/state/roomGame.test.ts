@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { PlayerPresence, RoomSnapshot, ServerMessage } from '@pixwagon/protocol';
-import { applyServerMessage, useRoomGameStore } from './roomGame.ts';
+import { createBoard, issueRoll } from '@pixwagon/game-core';
+import type { Board, CellRef } from '@pixwagon/game-core';
+import type { ClientMessage, PlayerPresence, RoomSnapshot } from '@pixwagon/protocol';
+import { applyServerMessage, myBoard, useRoomGameStore } from './roomGame.ts';
 
 // No `Roll` type is exported from @pixwagon/protocol (only `rollSchema`) —
 // left untyped here and checked structurally wherever it's used as a
@@ -93,12 +95,12 @@ describe('applyServerMessage', () => {
     expect(patch).toEqual({ lastError: 'only the host can start the next round' });
   });
 
-  it('is a no-op for message types it does not fold in yet (the client fill half is Phase 5 item 3)', () => {
-    const message: ServerMessage = {
-      type: 'delta',
-      delta: { playerId: 'p2', round: 0, cells: [{ x: 1, y: 1 }] },
-    };
-    expect(applyServerMessage({ snapshot: state0, me: null }, message)).toEqual({});
+  it('roll resets acted — the server clears it on every roll it issues', () => {
+    const patch = applyServerMessage(
+      { snapshot: { ...state0, acted: ['p1', 'p2'] }, me: null },
+      { type: 'roll', roll: roll0 },
+    );
+    expect(patch.snapshot?.acted).toEqual([]);
   });
 });
 
@@ -239,5 +241,178 @@ describe('terminal server errors', () => {
     });
     expect(useRoomGameStore.getState().fatalError).toBeNull();
     expect(useRoomGameStore.getState().lastError).toBe('only the host can start');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 5 item 3 — optimistic fill and rollback
+// ---------------------------------------------------------------------------
+
+/** Two horizontally adjacent fillable cells — a legal `2` fallback blob. */
+function legalPair(board: Board): CellRef[] {
+  for (let y = 0; y < board.size.height; y += 1) {
+    for (let x = 0; x + 1 < board.size.width; x += 1) {
+      const i = y * board.size.width + x;
+      if (board.cells[i] === 'fillable' && board.cells[i + 1] === 'fillable') {
+        return [
+          { x, y },
+          { x: x + 1, y },
+        ];
+      }
+    }
+  }
+  throw new Error('fixture board has no adjacent fillable pair');
+}
+
+describe('optimistic fill (Phase 5 item 3)', () => {
+  const board = createBoard('transportation', 'tram');
+  // A roll whose fallback face is a single 2-cell blob, so one legal choice
+  // is easy to build by hand.
+  const roll = { ...issueRoll('seed-fill', 0), fallback: '2' as const };
+  const playing: RoomSnapshot = {
+    ...state0,
+    players: [alex, bella],
+    status: 'playing',
+    pictureId: board.pictureId,
+    roundBudget: 40,
+    round: 1,
+    currentRoll: roll,
+    boards: { p1: board, p2: board },
+    acted: [],
+  };
+  const cells = legalPair(board);
+  let sent: ClientMessage[] = [];
+
+  beforeEach(() => {
+    useRoomGameStore.getState().leave();
+    sent = [];
+    const socket = {
+      send: (raw: string) => sent.push(JSON.parse(raw) as ClientMessage),
+      close: () => {},
+      onopen: null as (() => void) | null,
+      onclose: null,
+      onmessage: null,
+      onerror: null,
+    };
+    useRoomGameStore.getState().join('ws://test/api/room/ABCD/ws', 'ABCD', 'Alex', () => socket);
+    // The transport only sends once open; the store answers `open` with its
+    // `join`, which is the first thing `sent` records.
+    socket.onopen?.();
+    const { handleEvent } = useRoomGameStore.getState();
+    handleEvent({
+      type: 'message',
+      message: {
+        type: 'welcome',
+        protocolVersion: 2,
+        playerId: 'p1',
+        code: 'ABCD',
+        rejoinToken: 't',
+      },
+    });
+    handleEvent({ type: 'message', message: { type: 'state', state: playing } });
+    useRoomGameStore.setState({
+      pending: { kind: 'fallback', blobs: [{ size: 2, cells }], active: 0 },
+    });
+  });
+
+  it('commit predicts with applyMove, overlays the cells, and leaves the confirmed board alone', () => {
+    useRoomGameStore.getState().commit();
+    const state = useRoomGameStore.getState();
+    expect(state.prediction).toEqual({ round: 0, cells });
+    expect(state.pending).toBeNull();
+    expect(myBoard(state.snapshot, state.me)).toBe(board);
+  });
+
+  // ROADMAP.md Phase 5 item 3's Done means.
+  it('rolls back when the server rejects a move the client predicted as legal', () => {
+    useRoomGameStore.getState().commit();
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: { type: 'fill-rejected', round: 0, reason: 'wrong-round' },
+    });
+    const state = useRoomGameStore.getState();
+    expect(state.prediction).toBeNull();
+    expect(state.lastRejection).toBe('wrong-round');
+    // The board is exactly the pre-move board: no cell of the prediction stuck.
+    expect(myBoard(state.snapshot, state.me)).toEqual(board);
+    expect(state.snapshot?.acted).toEqual([]);
+    // ...and the player may try again this round (a rejected fill isn't acting).
+    useRoomGameStore.getState().choose('fallback');
+    expect(useRoomGameStore.getState().pending).not.toBeNull();
+  });
+
+  it('acceptance folds the cells into the confirmed board, idempotently with the delta', () => {
+    useRoomGameStore.getState().commit();
+    const { handleEvent } = useRoomGameStore.getState();
+    handleEvent({
+      type: 'message',
+      message: { type: 'fill-accepted', playerId: 'p1', round: 0, cells },
+    });
+    handleEvent({
+      type: 'message',
+      message: { type: 'delta', delta: { playerId: 'p1', round: 0, cells } },
+    });
+    const state = useRoomGameStore.getState();
+    const mine = myBoard(state.snapshot, state.me)!;
+    for (const c of cells) expect(mine.cells[c.y * mine.size.width + c.x]).toBe('filled');
+    expect(mine.cells.filter((c) => c === 'filled')).toHaveLength(cells.length);
+    expect(state.prediction).toBeNull();
+    expect(state.snapshot?.acted).toEqual(['p1']);
+    // Acting is once per round.
+    useRoomGameStore.getState().choose('fallback');
+    expect(useRoomGameStore.getState().pending).toBeNull();
+  });
+
+  it('sends the fill as intent and never shows another player a cell before their delta', () => {
+    useRoomGameStore.getState().commit();
+    expect(sent.at(-1)).toMatchObject({ type: 'fill', round: 0, choice: { kind: 'fallback' } });
+    const before = useRoomGameStore.getState().snapshot!.boards.p2;
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: { type: 'delta', delta: { playerId: 'p2', round: 0, cells } },
+    });
+    const after = useRoomGameStore.getState().snapshot!;
+    expect(after.boards.p2).not.toEqual(before);
+    expect(after.acted).toEqual(['p2']);
+  });
+
+  it('pass waits for its echo; passed marks acting; the next roll clears the round', () => {
+    useRoomGameStore.getState().pass();
+    expect(sent.at(-1)).toEqual({ type: 'pass', round: 0 });
+    expect(useRoomGameStore.getState().passPending).toBe(true);
+    const { handleEvent } = useRoomGameStore.getState();
+    handleEvent({ type: 'message', message: { type: 'passed', playerId: 'p1', round: 0 } });
+    handleEvent({ type: 'message', message: { type: 'passed', playerId: 'p2', round: 0 } });
+    expect(useRoomGameStore.getState().passPending).toBe(false);
+    expect(useRoomGameStore.getState().snapshot?.acted).toEqual(['p1', 'p2']);
+
+    const seenBefore = useRoomGameStore.getState().roundSeenAt;
+    handleEvent({ type: 'message', message: { type: 'roll', roll: issueRoll('seed-fill', 1) } });
+    const state = useRoomGameStore.getState();
+    expect(state.snapshot?.acted).toEqual([]);
+    expect(state.snapshot?.currentRoll?.round).toBe(1);
+    expect(state.roundSeenAt).not.toBeNull();
+    expect(state.roundSeenAt! >= seenBefore!).toBe(true);
+  });
+
+  it('a session-ending round-result marks the room ended', () => {
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: {
+        type: 'round-result',
+        result: { round: 0, scores: [], complete: false },
+        sessionEnded: true,
+      },
+    });
+    expect(useRoomGameStore.getState().snapshot?.status).toBe('ended');
+  });
+
+  it('an already-acted error clears the wait instead of dimming the sheet forever', () => {
+    useRoomGameStore.getState().commit();
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: { type: 'error', code: 'already-acted', message: 'you have already played' },
+    });
+    expect(useRoomGameStore.getState().prediction).toBeNull();
   });
 });

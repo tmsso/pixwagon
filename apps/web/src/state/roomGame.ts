@@ -1,11 +1,27 @@
 import { create } from 'zustand';
+import { applyMove, fillCells } from '@pixwagon/game-core';
+import type { Board, CellRef, MoveRejection, Roll } from '@pixwagon/game-core';
 import { PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type {
   PlayerPresence,
   RoomSnapshot,
   ServerErrorCode,
   ServerMessage,
+  WireMoveChoice,
 } from '@pixwagon/protocol';
+import {
+  clearActive as clearActivePending,
+  isPendingComplete,
+  mirrorActivePiece,
+  placeActiveOrigin as placeActivePendingOrigin,
+  type PendingChoice,
+  rotateActivePiece,
+  setActive as setActivePending,
+  startFallback,
+  startPair,
+  toggleBlobCell as toggleBlobPendingCell,
+  toMoveChoice,
+} from './placement.ts';
 import { RoomConnection } from '../net/roomConnection.ts';
 import type { RoomConnectionEvent, WebSocketFactory } from '../net/roomConnection.ts';
 
@@ -76,14 +92,67 @@ function isHostAmong(players: readonly PlayerPresence[], playerId: string): bool
 }
 
 /**
+ * An optimistic fill (Phase 5 item 3): the cells this client's own
+ * `applyMove` said the move covers, sent to the referee and not yet ruled on.
+ * Deliberately *not* a predicted board: the board shown stays the server's
+ * (`snapshot.boards[me]`) and these cells draw on top as `candidate`, so a
+ * rollback is "forget the overlay" — there is no second board to keep in
+ * sync with deltas, and nothing to restore.
+ */
+export interface Prediction {
+  round: number;
+  cells: CellRef[];
+}
+
+/** The player's own board as the server last confirmed it. */
+export function myBoard(
+  snapshot: RoomSnapshot | null,
+  me: RoomPlayerIdentity | null,
+): Board | null {
+  if (!snapshot || !me) return null;
+  // The wire's `packId`/`pictureId` are plain strings; game-core's `Board`
+  // is the same shape (drift-tested server-side), so this only re-labels.
+  return (snapshot.boards[me.playerId] as Board | undefined) ?? null;
+}
+
+function withActed(acted: readonly string[], playerId: string): string[] {
+  return acted.includes(playerId) ? [...acted] : [...acted, playerId];
+}
+
+/** Fold one player's newly filled cells into the held snapshot. `fillCells`
+ *  is idempotent, which matters: the actor gets the same cells twice, once in
+ *  `fill-accepted` and again in the `delta` broadcast to everyone. */
+function withFilled(
+  snapshot: RoomSnapshot,
+  playerId: string,
+  cells: readonly CellRef[],
+): RoomSnapshot {
+  const board = snapshot.boards[playerId] as Board | undefined;
+  return {
+    ...snapshot,
+    boards: board ? { ...snapshot.boards, [playerId]: fillCells(board, cells) } : snapshot.boards,
+    acted: withActed(snapshot.acted, playerId),
+  };
+}
+
+/** Errors that mean "the fill/pass you are waiting on will never be ruled
+ *  on" — clear the wait instead of leaving the sheet dimmed forever. */
+const SETTLES_PENDING: ReadonlySet<ServerErrorCode> = new Set([
+  'already-acted',
+  'not-playing',
+  'bad-message',
+]);
+
+/**
  * The pure state-transition function: given what the store currently holds
  * and one inbound server message, what changes. No side effects (no storage,
  * no sockets) so a test can assert on it directly with plain objects.
  */
 export function applyServerMessage(
-  state: Pick<RoomGameSlice, 'snapshot' | 'me'>,
+  state: Pick<RoomGameSlice, 'snapshot' | 'me'> & Partial<Pick<RoomGameSlice, 'prediction'>>,
   message: ServerMessage,
 ): Partial<RoomGameSlice> {
+  const meId = state.me?.playerId;
   switch (message.type) {
     case 'welcome':
       // isHost is genuinely unknown until the `state` that always follows a
@@ -95,11 +164,15 @@ export function applyServerMessage(
       };
 
     case 'state':
+      // A full snapshot is the truth: if our fill was accepted its cells are
+      // in it, if it was lost they are not — either way the overlay goes.
       return {
         snapshot: message.state,
         me: state.me
           ? { playerId: state.me.playerId, isHost: message.state.hostId === state.me.playerId }
           : state.me,
+        prediction: null,
+        passPending: false,
       };
 
     case 'presence':
@@ -113,23 +186,69 @@ export function applyServerMessage(
     case 'roll':
       // The snapshot's `round` is "rolls issued so far" (docs/contracts/rng.md);
       // a `roll` broadcast is the same advance the server just made, mirrored
-      // here rather than waiting for a full resync to see it.
+      // here rather than waiting for a full resync to see it. A new round
+      // also clears `acted` — the server resets it on every roll it issues,
+      // and keeping the old list would show everyone as already done.
       return state.snapshot
         ? {
             snapshot: {
               ...state.snapshot,
               currentRoll: message.roll,
               round: message.roll.round + 1,
+              acted: [],
             },
+            pending: null,
+            prediction: null,
+            passPending: false,
+            lastRejection: null,
           }
         : {};
 
-    case 'error':
-      return { lastError: message.message };
+    case 'delta': {
+      if (!state.snapshot) return {};
+      const patch: Partial<RoomGameSlice> = {
+        snapshot: withFilled(state.snapshot, message.delta.playerId, message.delta.cells),
+      };
+      if (message.delta.playerId === meId) patch.prediction = null;
+      return patch;
+    }
 
-    // Fills, deltas and round results are Phase 5 — nothing here yet to fold
-    // into a snapshot that has no board state.
-    default:
+    case 'fill-accepted':
+      if (!state.snapshot) return { prediction: null };
+      return {
+        snapshot: withFilled(state.snapshot, message.playerId, message.cells),
+        prediction: null,
+      };
+
+    case 'fill-rejected':
+      // The rollback: drop the overlay, so the board shows exactly what the
+      // server holds — which never included those cells.
+      return { prediction: null, lastRejection: message.reason };
+
+    case 'passed': {
+      if (!state.snapshot) return {};
+      const patch: Partial<RoomGameSlice> = {
+        snapshot: { ...state.snapshot, acted: withActed(state.snapshot.acted, message.playerId) },
+      };
+      if (message.playerId === meId) patch.passPending = false;
+      return patch;
+    }
+
+    case 'round-result':
+      // Scores are recomputed from the snapshot's boards wherever they are
+      // shown (`roomRanking`), so a reconnect after the end — which gets a
+      // `state`, never this message — ranks identically. Only the end itself
+      // needs recording here.
+      return message.sessionEnded && state.snapshot
+        ? { snapshot: { ...state.snapshot, status: 'ended' } }
+        : {};
+
+    case 'error':
+      return SETTLES_PENDING.has(message.code)
+        ? { lastError: message.message, prediction: null, passPending: false }
+        : { lastError: message.message };
+
+    case 'pong':
       return {};
   }
 }
@@ -145,6 +264,20 @@ interface RoomGameSlice {
   /** Set when the server refused this connection for good (`TERMINAL_ERRORS`);
    *  the store has stopped reconnecting and the screen should say why. */
   fatalError: ServerErrorCode | null;
+  /** The choice being composed this round — the same `PendingChoice` solo
+   *  composes, built by the same pure `placement.ts` functions. */
+  pending: PendingChoice | null;
+  /** A fill sent and not yet ruled on (see `Prediction`). */
+  prediction: Prediction | null;
+  /** A pass sent and not yet echoed back as `passed`. */
+  passPending: boolean;
+  /** Why the referee refused the last fill — drives the non-scolding line. */
+  lastRejection: MoveRejection | null;
+  /** Local clock (ms) when this client first saw the round in play. The
+   *  host's "Skip waiting players" button appears `SKIP_WAITING_AFTER_MS`
+   *  after this; it can only be later than the server's own stamp, so the
+   *  button never shows before the server would accept the skip. */
+  roundSeenAt: number | null;
 }
 
 export interface RoomGameState extends RoomGameSlice {
@@ -158,6 +291,20 @@ export interface RoomGameState extends RoomGameSlice {
    *  should still reclaim the same seat). */
   leave: () => void;
   requestRoll: () => void;
+  choose: (kind: 'pair' | 'fallback') => void;
+  setActive: (index: number) => void;
+  rotateActive: () => void;
+  mirrorActive: () => void;
+  placeActiveOrigin: (cell: CellRef) => void;
+  toggleBlobCell: (cell: CellRef) => void;
+  clearActive: () => void;
+  cancelChoice: () => void;
+  /** Predict the pending choice with game-core's `applyMove` — the referee's
+   *  own function — and send it as a `fill`. A choice this client already
+   *  knows is illegal is never sent; it is shown as rejected right away. */
+  commit: () => void;
+  pass: () => void;
+  skipWaiting: () => void;
   /** Applies one transport event. Exposed as a store action — rather than a
    *  private detail of `join()` — specifically so a test can replay a
    *  scripted sequence of these directly, with no real connection. */
@@ -179,7 +326,31 @@ const initialSlice: RoomGameSlice = {
   rejoinToken: null,
   lastError: null,
   fatalError: null,
+  pending: null,
+  prediction: null,
+  passPending: false,
+  lastRejection: null,
+  roundSeenAt: null,
 };
+
+function updatePending(
+  pending: PendingChoice | null,
+  fn: (choice: PendingChoice) => PendingChoice,
+): PendingChoice | null {
+  return pending ? fn(pending) : pending;
+}
+
+/** The round in play and this player's board, if they can act on it now. */
+function actable(state: RoomGameSlice): { roll: Roll; board: Board } | null {
+  const snapshot = state.snapshot;
+  const board = myBoard(snapshot, state.me);
+  if (!snapshot || snapshot.status !== 'playing' || !snapshot.currentRoll || !board) return null;
+  if (state.me && snapshot.acted.includes(state.me.playerId)) return null;
+  if (state.prediction || state.passPending) return null;
+  // The wire roll's piece ids are plain strings; the server issued them via
+  // game-core's `issueRoll`, so they are real `PieceId`s.
+  return { roll: snapshot.currentRoll as Roll, board };
+}
 
 export const useRoomGameStore = create<RoomGameState>((set, get) => ({
   ...initialSlice,
@@ -208,6 +379,77 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
 
   requestRoll: () => {
     connection?.send({ type: 'request-roll' });
+  },
+
+  choose: (kind) => {
+    const ready = actable(get());
+    if (!ready) return;
+    set({
+      pending: kind === 'pair' ? startPair(ready.roll) : startFallback(ready.roll),
+      lastRejection: null,
+    });
+  },
+  setActive: (index) =>
+    set((state) => ({ pending: updatePending(state.pending, (c) => setActivePending(c, index)) })),
+  rotateActive: () =>
+    set((state) => ({ pending: updatePending(state.pending, rotateActivePiece) })),
+  mirrorActive: () =>
+    set((state) => ({ pending: updatePending(state.pending, mirrorActivePiece) })),
+  placeActiveOrigin: (cell) =>
+    set((state) => ({
+      pending: updatePending(state.pending, (c) => placeActivePendingOrigin(c, cell)),
+    })),
+  toggleBlobCell: (cell) =>
+    set((state) => ({
+      pending: updatePending(state.pending, (c) => toggleBlobPendingCell(c, cell)),
+    })),
+  clearActive: () =>
+    set((state) => ({ pending: updatePending(state.pending, clearActivePending) })),
+  cancelChoice: () => set({ pending: null, lastRejection: null }),
+
+  commit: () => {
+    const state = get();
+    const ready = actable(state);
+    if (!ready || !state.me || !state.pending || !isPendingComplete(state.pending)) return;
+
+    const choice = toMoveChoice(state.pending);
+    const round = ready.roll.round;
+    const predicted = applyMove(ready.board, ready.roll, {
+      playerId: state.me.playerId,
+      round,
+      choice,
+    });
+    if (!predicted.ok) {
+      set({ pending: null, lastRejection: predicted.reason });
+      return;
+    }
+
+    // Cells the prediction filled that the confirmed board had not.
+    const cells: CellRef[] = [];
+    predicted.board.cells.forEach((cell, index) => {
+      if (cell !== ready.board.cells[index]) {
+        cells.push({
+          x: index % ready.board.size.width,
+          y: Math.floor(index / ready.board.size.width),
+        });
+      }
+    });
+    set({ pending: null, lastRejection: null, prediction: { round, cells } });
+    // game-core's `MoveChoice` marks its arrays `readonly`; the wire type does
+    // not. Same data, so the cast only drops the modifier.
+    connection?.send({ type: 'fill', round, choice: choice as WireMoveChoice });
+  },
+
+  pass: () => {
+    const ready = actable(get());
+    if (!ready) return;
+    set({ pending: null, lastRejection: null, passPending: true });
+    connection?.send({ type: 'pass', round: ready.roll.round });
+  },
+
+  skipWaiting: () => {
+    const roll = get().snapshot?.currentRoll;
+    if (roll) connection?.send({ type: 'skip-waiting', round: roll.round });
   },
 
   handleEvent: (event) => {
@@ -244,6 +486,21 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
 
     const state = get();
     const patch = applyServerMessage(state, event.message);
+    // Stamped here, not in the pure function: it reads the clock. A `state`
+    // for the round we already saw keeps the old stamp, so a resync doesn't
+    // restart the host's skip countdown.
+    const nextRound = patch.snapshot?.currentRoll?.round;
+    if (nextRound !== undefined && nextRound !== state.snapshot?.currentRoll?.round) {
+      patch.roundSeenAt = Date.now();
+    }
+    if (patch.snapshot && patch.snapshot !== state.snapshot && state.pending) {
+      // The board under a half-composed choice can't change mid-round (only
+      // our own fill changes it), but the round can — `roll` already clears
+      // `pending`; a `state` resync onto a new round must too.
+      if (patch.snapshot.currentRoll?.round !== state.snapshot?.currentRoll?.round) {
+        patch.pending = null;
+      }
+    }
     if (event.message.type === 'welcome') {
       // 'online' lands here, not in applyServerMessage: connection status is
       // this layer's concern, not the pure message-handling function's.
