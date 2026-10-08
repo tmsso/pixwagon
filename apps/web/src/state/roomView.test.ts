@@ -7,6 +7,7 @@ const seat = (i: number): PlayerPresence => ({
   name: `P${i}`,
   seatIndex: i,
   isHost: i === 0,
+  connected: true,
 });
 
 const waiting: RoomSnapshot = {

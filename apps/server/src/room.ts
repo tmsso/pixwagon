@@ -3,19 +3,21 @@ import type { ServerMessage, WireMoveChoice } from '@pixwagon/protocol';
 import type { Env } from './env.ts';
 import { sendToAll } from './fanout.ts';
 import {
+  admitSocket,
   buildSnapshot,
   closeRoundIfDone,
   ensureBoard,
   ensureSeed,
   findStaleConnection,
   initialRoomState,
-  nextFreeSeat,
   normaliseRoom,
   presenceList,
   reclaimIdentity,
   registerIdentity,
   resolveHost,
-  roomIsFull,
+  seatForJoin,
+  skipWaiting,
+  stampRoundStart,
   startGame,
   submitFill,
   submitPass,
@@ -26,8 +28,13 @@ import {
 interface Attachment {
   playerId: string;
   name: string;
-  /** Seat 0..MAX_PLAYERS-1 — also the colour + hatch index (`playerColor`). */
+  /** Seat 0..MAX_PLAYERS-1 — also the colour + hatch index (`playerColor`).
+   *  `-1` until `join` completes: seats are assigned at join, not at accept
+   *  (see `seatForJoin`), so a socket that never joins never holds one. */
   seatIndex: number;
+  /** When the socket was accepted (ms) — lets `admitSocket` close idle
+   *  never-joined sockets once the room is at its socket cap. */
+  acceptedAt: number;
   /** Set once the connection completes the `join` handshake. Sockets that have
    *  only been accepted hold a provisional seat but are not players yet. */
   joined: boolean;
@@ -76,15 +83,6 @@ export class Room {
     return socket.deserializeAttachment() as Attachment | null;
   }
 
-  /** Every accepted socket's seat, joined or not — feeds `nextFreeSeat` so two
-   *  simultaneous joiners never land on the same seat. */
-  #takenSeats(): number[] {
-    return this.#state
-      .getWebSockets()
-      .map((socket) => this.#attachmentOf(socket)?.seatIndex)
-      .filter((seat): seat is number => seat !== undefined);
-  }
-
   /** The live, joined socket currently holding `playerId`, if any. Used to
    *  evict a stale connection (e.g. an old tab that never cleanly closed)
    *  when a rejoin reclaims its identity on a new socket. */
@@ -103,10 +101,10 @@ export class Room {
    *  sockets are not returned by `getWebSockets()`, but does not promise the
    *  closing one is already gone while its handler runs — so drop it
    *  explicitly rather than let a leaver linger in presence and host election. */
-  #seatedConns(exclude?: WebSocket): SeatedConn[] {
+  #seatedConns(...exclude: (WebSocket | null | undefined)[]): SeatedConn[] {
     return this.#state
       .getWebSockets()
-      .filter((socket) => socket !== exclude)
+      .filter((socket) => !exclude.includes(socket))
       .map((socket) => this.#attachmentOf(socket))
       .filter((a): a is Attachment => a !== null && a.joined)
       .map(({ playerId, name, seatIndex }) => ({ id: playerId, name, seatIndex }));
@@ -132,6 +130,23 @@ export class Room {
       return new Response('expected a websocket upgrade', { status: 426 });
     }
 
+    const now = Date.now();
+    const sockets = this.#state.getWebSockets();
+    const admission = admitSocket(
+      sockets.map((socket) => ({ socket, ...(this.#attachmentOf(socket) ?? { joined: false }) })),
+      now,
+    );
+    for (const { socket } of admission.evict) {
+      try {
+        socket.close(4001, 'join timed out');
+      } catch {
+        // Already closed.
+      }
+    }
+    if (!admission.admit) {
+      return new Response('room has too many open connections', { status: 503 });
+    }
+
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
 
@@ -146,7 +161,8 @@ export class Room {
     const attachment: Attachment = {
       playerId: crypto.randomUUID(),
       name: 'guest',
-      seatIndex: nextFreeSeat(this.#takenSeats()),
+      seatIndex: -1,
+      acceptedAt: now,
       joined: false,
       code: request.headers.get('X-Room-Code') ?? '',
     };
@@ -186,6 +202,9 @@ export class Room {
 
       case 'pass':
         return this.#handlePass(ws, attachment, decoded.message.round);
+
+      case 'skip-waiting':
+        return this.#handleSkipWaiting(ws, attachment, decoded.message.round);
 
       case 'ping':
         this.#send(ws, { type: 'pong', t: decoded.message.t });
@@ -257,15 +276,15 @@ export class Room {
     let token = attachment.rejoinToken;
     let stale: WebSocket | null = null;
 
-    // Full-room check and identity reclaim are here, not at accept: a seat is
-    // only provisional until the handshake completes. A re-`join` on an
+    // Full-room check, identity reclaim and the seat itself are all decided
+    // here, not at accept: a socket holds no seat until the handshake
+    // completes (`seatForJoin`). A re-`join` on an
     // already-joined socket (e.g. a name change) skips both — its identity is
     // already settled.
     if (!attachment.joined) {
       const reclaimed = reclaimIdentity(stored, rejoinToken);
       if (reclaimed) {
         playerId = reclaimed.playerId;
-        seatIndex = reclaimed.seatIndex;
         token = rejoinToken;
         // The old connection for this identity (a tab that never cleanly
         // closed) loses the seat to this new one rather than duplicating it.
@@ -281,16 +300,20 @@ export class Room {
 
       // Exclude `stale` too: Cloudflare doesn't promise it's gone from
       // `getWebSockets()` just because `close()` was called (same reasoning
-      // as `#reconcile`'s `exclude` param) — left uncounted here it would
-      // make a reclaim look like room-full and double the seat in presence.
-      const otherJoined = this.#seatedConns(stale ?? undefined).filter(
-        (c) => c.id !== playerId,
-      ).length;
-      if (roomIsFull(otherJoined + 1)) {
+      // as `#reconcile`'s `exclude` param) — left counted here it would make
+      // a reclaim look like room-full and double the seat in presence.
+      const seat = seatForJoin(
+        stored,
+        this.#seatedConns(ws, stale),
+        playerId,
+        reclaimed?.seatIndex,
+      );
+      if (seat === null) {
         this.#send(ws, { type: 'error', code: 'room-full', message: 'this room is full' });
         ws.close(1013, 'room full');
         return;
       }
+      seatIndex = seat;
     }
 
     // `token` is always set by this point: the `!attachment.joined` branch
@@ -375,10 +398,11 @@ export class Room {
       });
       return;
     }
-    await this.#state.storage.put(ROOM_KEY, started.state);
+    const startedState = stampRoundStart(stored, started.state, Date.now());
+    await this.#state.storage.put(ROOM_KEY, startedState);
     // A full snapshot, not just the roll: every client needs its new board and
     // the picture, and `state` is what a client already treats as the truth.
-    this.#broadcast(encode({ type: 'state', state: buildSnapshot(started.state, conns) }));
+    this.#broadcast(encode({ type: 'state', state: buildSnapshot(startedState, conns) }));
   }
 
   async #handleFill(
@@ -412,7 +436,7 @@ export class Room {
       ruling.state,
       conns.map((c) => c.id),
     );
-    await this.#state.storage.put(ROOM_KEY, closing.state);
+    await this.#state.storage.put(ROOM_KEY, stampRoundStart(stored, closing.state, Date.now()));
 
     this.#send(ws, {
       type: 'fill-accepted',
@@ -461,7 +485,59 @@ export class Room {
       ruling.state,
       conns.map((c) => c.id),
     );
-    await this.#state.storage.put(ROOM_KEY, closing.state);
+    await this.#state.storage.put(ROOM_KEY, stampRoundStart(stored, closing.state, Date.now()));
+    // Protocol 2: a pass is visible to everyone, the way a fill is via its
+    // `delta` — otherwise "waiting for Kim" can't tell Kim already passed.
+    this.#broadcast(encode({ type: 'passed', playerId: attachment.playerId, round }));
+    this.#announceClose(closing);
+  }
+
+  /** Host-only, once the round has waited long enough (`skipWaiting`). */
+  async #handleSkipWaiting(ws: WebSocket, attachment: Attachment, round: number): Promise<void> {
+    if (!attachment.joined) {
+      this.#send(ws, { type: 'error', code: 'not-joined', message: 'join before skipping' });
+      return;
+    }
+    const stored = await this.#loadExistingRoom();
+    if (!stored) {
+      this.#send(ws, { type: 'error', code: 'not-playing', message: 'no game is running' });
+      return;
+    }
+    if (stored.hostId !== attachment.playerId) {
+      this.#send(ws, { type: 'error', code: 'not-host', message: 'only the host can skip' });
+      return;
+    }
+
+    const conns = this.#seatedConns();
+    const now = Date.now();
+    const ruling = skipWaiting(
+      stored,
+      conns.map((c) => c.id),
+      round,
+      now,
+    );
+    if (!ruling.ok) {
+      if (ruling.error === 'not-playing') this.#sendActionError(ws, 'not-playing');
+      else if (ruling.error === 'too-early') {
+        this.#send(ws, {
+          type: 'error',
+          code: 'too-early',
+          message: 'give everyone a little longer before skipping',
+        });
+      }
+      // `wrong-round`: the round closed on its own while the request was in
+      // flight — exactly what the host wanted, so say nothing.
+      return;
+    }
+
+    const closing = closeRoundIfDone(
+      ruling.state,
+      conns.map((c) => c.id),
+    );
+    await this.#state.storage.put(ROOM_KEY, stampRoundStart(stored, closing.state, now));
+    for (const playerId of ruling.skipped) {
+      this.#broadcast(encode({ type: 'passed', playerId, round }));
+    }
     this.#announceClose(closing);
   }
 
@@ -507,7 +583,7 @@ export class Room {
       : null;
     const next = closing?.state ?? null;
     if (stored && next && next !== stored) {
-      await this.#state.storage.put(ROOM_KEY, next);
+      await this.#state.storage.put(ROOM_KEY, stampRoundStart(stored, next, Date.now()));
     }
     const state = next ?? initialRoomState('');
     this.#broadcast(encode({ type: 'presence', players: presenceList(state, conns) }));

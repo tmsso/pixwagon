@@ -34,8 +34,8 @@ const waitingSnapshot: RoomSnapshot = {
   currentRoll: null,
   hostId: 'p-alex',
   players: [
-    { id: 'p-alex', name: 'Alex', seatIndex: 0, isHost: true },
-    { id: 'p-sam', name: 'Sam', seatIndex: 1, isHost: false },
+    { id: 'p-alex', name: 'Alex', seatIndex: 0, isHost: true, connected: true },
+    { id: 'p-sam', name: 'Sam', seatIndex: 1, isHost: false, connected: true },
   ],
   status: 'lobby',
   pictureId: null,

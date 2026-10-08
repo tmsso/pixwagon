@@ -18,6 +18,7 @@ import type {
 import { getPack } from '@pixwagon/packs';
 import {
   MAX_PLAYERS,
+  SKIP_WAITING_AFTER_MS,
   type GameMode,
   type PlayerPresence,
   type RoomSnapshot,
@@ -78,6 +79,10 @@ export interface RoomState {
   boards: Record<string, Board>;
   /** Player ids that filled or passed in the round in play. */
   acted: string[];
+  /** Server clock (ms) when the round in play was issued — what the host's
+   *  `skip-waiting` is measured against. `null` before the first roll and in
+   *  storage written before protocol 2. */
+  roundStartedAt: number | null;
 }
 
 export type GameStatus = 'lobby' | 'playing' | 'ended';
@@ -113,6 +118,7 @@ export function initialRoomState(code: string): RoomState {
     roundBudget: null,
     boards: {},
     acted: [],
+    roundStartedAt: null,
   };
 }
 
@@ -127,20 +133,94 @@ export function normaliseRoom(stored: Partial<RoomState> & { code: string }): Ro
 }
 
 /**
- * Lowest free seat in `0..MAX_PLAYERS-1`. Derived from the live sockets' seats,
- * never an incrementing counter — a counter restarts at 0 after a hibernation
- * eviction and hands a joiner a seat (hue + hatch) someone is still using.
+ * Lowest free seat in `0..MAX_PLAYERS-1`, or `null` when every seat is taken.
+ * Derived from who holds seats right now, never an incrementing counter — a
+ * counter restarts at 0 after a hibernation eviction and hands a joiner a seat
+ * (hue + hatch) someone is still using.
  */
-export function nextFreeSeat(taken: readonly number[]): number {
+export function nextFreeSeat(taken: readonly number[]): number | null {
   const set = new Set(taken);
   for (let seat = 0; seat < MAX_PLAYERS; seat += 1) {
     if (!set.has(seat)) return seat;
   }
-  return taken.length % MAX_PLAYERS;
+  return null;
 }
 
-export function roomIsFull(joinedCount: number): boolean {
-  return joinedCount >= MAX_PLAYERS;
+/**
+ * Players who hold a board in the current game but have no live socket — they
+ * keep their seat (and colour) while away, so a newcomer can't take it and a
+ * rejoin finds it waiting. Only once a game has started: someone who leaves a
+ * lobby has nothing to come back to, so their seat is simply free again.
+ */
+export function awayPlayers(state: RoomState, conns: readonly SeatedConn[]): StoredPlayer[] {
+  if (state.status === 'lobby') return [];
+  const live = new Set(conns.map((c) => c.id));
+  const away = new Map<string, StoredPlayer>();
+  for (const identity of Object.values(state.players)) {
+    if (!live.has(identity.playerId) && state.boards[identity.playerId]) {
+      away.set(identity.playerId, identity);
+    }
+  }
+  return [...away.values()];
+}
+
+/**
+ * The seat a completing `join` gets, or `null` for a full room (2026-10-08).
+ * Seats used to be handed out when a socket was *accepted*, from every
+ * accepted socket — joined or not — with a wrap-around fallback once six were
+ * taken. Sockets that never sent `join` counted toward seats but not toward
+ * "full", so a handful of idle connections could give two real players the
+ * same seat, i.e. the same hue *and* hatch — the one thing CLAUDE.md §6 says
+ * must never happen. Now only joined players and away board-holders hold
+ * seats, and there is no wrap: no free seat means room-full.
+ *
+ * `preferred` is a rejoiner's old seat; they get it back unless someone else
+ * now holds it (possible after leaving a lobby, where seats aren't reserved).
+ */
+export function seatForJoin(
+  state: RoomState,
+  liveOthers: readonly SeatedConn[],
+  playerId: string,
+  preferred?: number,
+): number | null {
+  const taken = [
+    ...liveOthers.filter((c) => c.id !== playerId).map((c) => c.seatIndex),
+    ...awayPlayers(state, liveOthers)
+      .filter((p) => p.playerId !== playerId)
+      .map((p) => p.seatIndex),
+  ];
+  if (preferred !== undefined && !taken.includes(preferred)) return preferred;
+  return nextFreeSeat(taken);
+}
+
+/**
+ * Sockets a room holds at once, joined or not — two per seat, so every player
+ * can have a reconnect overlapping a not-yet-evicted old socket. Beyond this,
+ * `fetch` refuses the upgrade: an accepted socket costs the room nothing in
+ * storage, but nothing else bounded how many a misbehaving client could open.
+ */
+export const MAX_SOCKETS = MAX_PLAYERS * 2;
+
+/** How long an accepted socket may sit without sending `join` before it can
+ *  be closed to make room — far longer than a real client takes (it sends
+ *  `join` on open), short enough that idle connections can't hold a room. */
+export const PROVISIONAL_GRACE_MS = 10_000;
+
+/**
+ * Whether a new socket fits, and which idle never-joined sockets to close to
+ * make room. Only reached at the cap: below it nothing is evicted, so the
+ * common path stays a single length check. `acceptedAt` missing (sockets
+ * accepted before this field existed) counts as long ago.
+ */
+export function admitSocket<T extends { joined: boolean; acceptedAt?: number }>(
+  existing: readonly T[],
+  now: number,
+): { admit: boolean; evict: T[] } {
+  if (existing.length < MAX_SOCKETS) return { admit: true, evict: [] };
+  const evict = existing.filter(
+    (s) => !s.joined && now - (s.acceptedAt ?? 0) >= PROVISIONAL_GRACE_MS,
+  );
+  return { admit: existing.length - evict.length < MAX_SOCKETS, evict };
 }
 
 /** Fills `roomSeed` on the first join; a no-op (same reference) afterwards. */
@@ -384,6 +464,44 @@ export function awaitingPlayers(state: RoomState, connectedIds: readonly string[
   });
 }
 
+export type SkipResult =
+  | { ok: true; state: RoomState; skipped: string[] }
+  | { ok: false; error: 'not-playing' | 'wrong-round' | 'too-early' };
+
+/**
+ * The host's way past a player who is connected but not playing (owner
+ * decision 2026-10-08; D2 has no timer in v1): once the round has waited
+ * `SKIP_WAITING_AFTER_MS`, everyone it is still waiting on passes. Host-only is
+ * the glue's check — this is the pure "may it, and what changes" half. A
+ * round with nobody left to wait on skips nobody (it is about to close anyway).
+ */
+export function skipWaiting(
+  state: RoomState,
+  connectedIds: readonly string[],
+  round: number,
+  now: number,
+): SkipResult {
+  const roll = currentRoll(state);
+  if (state.status !== 'playing' || !roll) return { ok: false, error: 'not-playing' };
+  if (round !== roll.round) return { ok: false, error: 'wrong-round' };
+  // `null` = storage from before protocol 2 started stamping rounds; let the
+  // host through rather than leave that one round unskippable.
+  if (state.roundStartedAt !== null && now - state.roundStartedAt < SKIP_WAITING_AFTER_MS) {
+    return { ok: false, error: 'too-early' };
+  }
+  const skipped = awaitingPlayers(state, connectedIds);
+  return { ok: true, skipped, state: { ...state, acted: [...state.acted, ...skipped] } };
+}
+
+/**
+ * Stamp `roundStartedAt` when `next` issued a new round relative to `prev`.
+ * Kept out of `issueNextRoll` so every rules function stays clock-free; the
+ * glue calls this once on whatever it is about to persist.
+ */
+export function stampRoundStart(prev: RoomState, next: RoomState, now: number): RoomState {
+  return next.round !== prev.round ? { ...next, roundStartedAt: now } : next;
+}
+
 export type CloseRoundResult =
   | { closed: false; state: RoomState }
   | {
@@ -426,16 +544,25 @@ export function closeRoundIfDone(
 }
 
 /** `presence` payload / a snapshot's `players`, sorted by seat and stamped with
- *  `isHost` from the resolved state. */
+ *  `isHost` from the resolved state. Away board-holders are listed with
+ *  `connected: false` (protocol 2) so other players see a dimmed chip rather
+ *  than someone vanishing mid-game. */
 export function presenceList(state: RoomState, conns: readonly SeatedConn[]): PlayerPresence[] {
-  return [...conns]
-    .sort((a, b) => a.seatIndex - b.seatIndex)
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      seatIndex: c.seatIndex,
-      isHost: c.id === state.hostId,
-    }));
+  const live = conns.map((c) => ({
+    id: c.id,
+    name: c.name,
+    seatIndex: c.seatIndex,
+    isHost: c.id === state.hostId,
+    connected: true,
+  }));
+  const away = awayPlayers(state, conns).map((p) => ({
+    id: p.playerId,
+    name: p.name,
+    seatIndex: p.seatIndex,
+    isHost: false,
+    connected: false,
+  }));
+  return [...live, ...away].sort((a, b) => a.seatIndex - b.seatIndex);
 }
 
 /** The full snapshot sent on `join` and after a resync. */

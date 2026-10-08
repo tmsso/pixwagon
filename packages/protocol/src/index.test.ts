@@ -215,7 +215,7 @@ describe('room state shapes (Phase 4)', () => {
     expect(rollSchema.safeParse({ ...roll, pair: ['only-one'] }).success).toBe(false);
   });
 
-  const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true };
+  const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true, connected: true };
 
   it('accepts a player presence entry and bounds the seat index', () => {
     expect(playerPresenceSchema.safeParse(player).success).toBe(true);
@@ -279,7 +279,7 @@ describe('room state shapes (Phase 4)', () => {
 
 describe('Phase 5 messages', () => {
   const roll = { round: 0, seed: 's', pair: ['domino', 'monomino'], fallback: '1' };
-  const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true };
+  const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true, connected: true };
   const board = {
     size: { width: 2, height: 1 },
     packId: 'transportation',
@@ -348,5 +348,29 @@ describe('Phase 5 messages', () => {
     for (const code of ['already-acted', 'game-in-progress', 'not-playing']) {
       expect(serverErrorCodeSchema.safeParse(code).success).toBe(true);
     }
+  });
+});
+
+describe('protocol 2 additions', () => {
+  it('is protocol version 2', () => {
+    expect(PROTOCOL_VERSION).toBe(2);
+  });
+
+  it('presence requires the connected flag', () => {
+    const player = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: false };
+    expect(playerPresenceSchema.safeParse(player).success).toBe(false);
+    expect(playerPresenceSchema.safeParse({ ...player, connected: false }).success).toBe(true);
+  });
+
+  it('decodes a skip-waiting request and rejects one without a round', () => {
+    expect(decodeClientMessage(JSON.stringify({ type: 'skip-waiting', round: 3 })).ok).toBe(true);
+    expect(decodeClientMessage(JSON.stringify({ type: 'skip-waiting' })).ok).toBe(false);
+  });
+
+  it('types the passed broadcast and the too-early error', () => {
+    expect(
+      serverMessageSchema.safeParse({ type: 'passed', playerId: 'p1', round: 2 }).success,
+    ).toBe(true);
+    expect(serverErrorCodeSchema.safeParse('too-early').success).toBe(true);
   });
 });

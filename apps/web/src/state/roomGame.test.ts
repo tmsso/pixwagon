@@ -7,8 +7,20 @@ import { applyServerMessage, useRoomGameStore } from './roomGame.ts';
 // ServerMessage's `roll` field below.
 const roll0 = { round: 0, seed: 'seed-a', pair: ['p1-a', 'p1-b'] as const, fallback: '1' as const };
 
-const alex: PlayerPresence = { id: 'p1', name: 'Alex', seatIndex: 0, isHost: true };
-const bella: PlayerPresence = { id: 'p2', name: 'Bella', seatIndex: 1, isHost: false };
+const alex: PlayerPresence = {
+  id: 'p1',
+  name: 'Alex',
+  seatIndex: 0,
+  isHost: true,
+  connected: true,
+};
+const bella: PlayerPresence = {
+  id: 'p2',
+  name: 'Bella',
+  seatIndex: 1,
+  isHost: false,
+  connected: true,
+};
 
 const state0: RoomSnapshot = {
   code: 'ABCD',
