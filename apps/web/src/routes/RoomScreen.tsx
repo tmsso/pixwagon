@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router';
-import { createBoard } from '@pixwagon/game-core';
-import type { PieceId } from '@pixwagon/game-core';
-import { MAX_PLAYERS } from '@pixwagon/protocol';
+import type { CellRef, PieceId } from '@pixwagon/game-core';
+import { MAX_PLAYERS, SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { getPack } from '@pixwagon/packs';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
 import { HudFrame } from '../components/game/HudFrame.tsx';
+import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
 import { PlayerChip } from '../components/game/PlayerChip.tsx';
 import { RollControl } from '../components/game/RollControl.tsx';
 import { Button } from '../components/ui/Button.tsx';
@@ -15,10 +15,25 @@ import { Panel } from '../components/ui/Panel.tsx';
 import { useBoardCellSize } from '../design/boardScale.ts';
 import { roomSocketUrl } from '../net/roomOrigin.ts';
 import { loadDisplayName, normaliseName, saveDisplayName } from '../state/displayName.ts';
+import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
 import { fallbackFaceView, pieceOfferView } from '../state/offerView.ts';
-import { useRoomGameStore } from '../state/roomGame.ts';
+import {
+  activeCandidateCells,
+  candidateCells,
+  isPendingComplete,
+  pendingCellCount,
+} from '../state/placement.ts';
+import { myBoard, useRoomGameStore } from '../state/roomGame.ts';
 import type { RoomPlayerIdentity } from '../state/roomGame.ts';
-import { connectionPill, roomPhase, startBlockedReason, waitingStatus } from '../state/roomView.ts';
+import {
+  canSkipWaiting,
+  connectionPill,
+  roomPhase,
+  roomRanking,
+  startBlockedReason,
+  waitingLine,
+  waitingStatus,
+} from '../state/roomView.ts';
 import { NameField } from './NameField.tsx';
 
 /**
@@ -89,6 +104,8 @@ export function RoomScreen({ code }: { code: string }) {
       return <WaitingRoom snapshot={snapshot!} />;
     case 'playing':
       return <RoomGame snapshot={snapshot!} />;
+    case 'ended':
+      return <RoomEnded snapshot={snapshot!} />;
   }
 }
 
@@ -135,6 +152,9 @@ function RoomPlayers({
             colorIndex={player.seatIndex}
             host={!inGame && player.isHost}
             active={player.id === me?.playerId}
+            // Away players keep their seat and squares (protocol 2); the
+            // chip dims and says "away" rather than vanishing (pass 02 `12c`).
+            connected={player.connected}
           />
         ))}
     </>
@@ -204,17 +224,85 @@ function WaitingRoom({ snapshot }: { snapshot: RoomSnapshot }) {
   );
 }
 
+/** The local clock, refreshed once when `at` (ms) passes — for UI that
+ *  appears after a delay, like the host's skip button, without a ticking
+ *  interval. The state update happens in the timer callback, never during
+ *  render or synchronously in the effect. */
+function useNowAfter(at: number | null): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (at === null) return;
+    const timer = setTimeout(() => setNow(Date.now()), Math.max(0, at - Date.now()));
+    return () => clearTimeout(timer);
+  }, [at]);
+  return now;
+}
+
+/**
+ * The networked game (Phase 5 item 3; pass 02 `12a`–`12c`, `03f`). The same
+ * turn flow as solo's `GameScreen` — offers, then the `PlacementEditor`
+ * sheet — over this player's own board from the snapshot (D1(a): everyone
+ * has a copy of one picture). A committed choice shows as `candidate` cells
+ * until the referee rules (`fill-accepted` / `fill-rejected`); the sheet's
+ * offers stay dimmed meanwhile.
+ */
 function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useRoomGameStore((state) => state.me);
   const connection = useRoomGameStore((state) => state.connection);
-  const lastError = useRoomGameStore((state) => state.lastError);
-  const requestRoll = useRoomGameStore((state) => state.requestRoll);
-  // Provisional: the server holds no board or picture until Phase 5 item 1,
-  // so this shows the picture solo plays, empty. Phase 5 replaces it with the
-  // room's `pictureId` and this player's own board from the snapshot.
-  const board = useMemo(() => createBoard('transportation', 'tram'), []);
-  const cellSize = useBoardCellSize(board.size.width);
+  const pending = useRoomGameStore((state) => state.pending);
+  const prediction = useRoomGameStore((state) => state.prediction);
+  const passPending = useRoomGameStore((state) => state.passPending);
+  const lastRejection = useRoomGameStore((state) => state.lastRejection);
+  const roundSeenAt = useRoomGameStore((state) => state.roundSeenAt);
+  const store = useRoomGameStore.getState();
+  const now = useNowAfter(roundSeenAt === null ? null : roundSeenAt + SKIP_WAITING_AFTER_MS);
+
+  const board = myBoard(snapshot, me);
+  const cellSize = useBoardCellSize(board?.size.width ?? 1);
   const roll = snapshot.currentRoll!;
+  // The server issued these through game-core's `issueRoll`, so the wire
+  // strings are real piece ids; the brand is a compile-time tag.
+  const pair = [roll.pair[0] as PieceId, roll.pair[1] as PieceId] as const;
+
+  if (!board) {
+    // A joiner's board arrives in the `state` that follows `welcome`.
+    return (
+      <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
+        <p className="text-ink-muted" role="status">
+          Getting your board…
+        </p>
+      </main>
+    );
+  }
+
+  const acted = me !== null && snapshot.acted.includes(me.playerId);
+  const awaitingServer = prediction !== null || passPending;
+  const done = board.cells.every((cell) => cell !== 'fillable');
+  const canAct = !acted && !awaitingServer && !done && connection === 'online';
+  // Same pass rule as solo (owner decision 2026-10-08): only with no legal
+  // move. The server would accept a pass any time; this is a client choice.
+  const canPass =
+    canAct &&
+    !pending &&
+    !pairHasLegalPlacement(board, pair) &&
+    !fallbackHasLegalPlacement(board, roll.fallback);
+  const waiting = waitingLine(snapshot, me?.playerId ?? null);
+  const showSkip = canSkipWaiting(snapshot, me, roundSeenAt, now);
+
+  function handleCellPress(cell: CellRef) {
+    // `pending` only exists while this player can act (`choose` checks).
+    if (!pending) return;
+    if (pending.kind === 'pair') store.placeActiveOrigin(cell);
+    else store.toggleBlobCell(cell);
+  }
+
+  const pendingCount = pending ? pendingCellCount(pending) : 0;
+  const overlay = pending ? candidateCells(pending) : (prediction?.cells ?? []);
+
+  let status: string | null = null;
+  if (done) status = 'Your picture is complete!';
+  else if (awaitingServer) status = 'Checking with the room…';
+  else if (acted) status = 'Done for this round.';
 
   return (
     <HudFrame
@@ -223,37 +311,116 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
       round={roll.round + 1}
       connection={connectionPill(connection)}
       players={<RoomPlayers snapshot={snapshot} me={me} inGame />}
+      sheet={
+        pending ? (
+          <PlacementEditor
+            pending={pending}
+            commitLabel={`Place ${pendingCount} square${pendingCount === 1 ? '' : 's'}`}
+            commitDisabled={!isPendingComplete(pending)}
+            onSetActive={store.setActive}
+            onRotate={store.rotateActive}
+            onMirror={store.mirrorActive}
+            onTakeBack={store.clearActive}
+            onCancel={store.cancelChoice}
+            onCommit={store.commit}
+          />
+        ) : undefined
+      }
       controls={
         <div className="flex flex-col gap-3">
           <RollControl
-            // The server issued these through game-core's `issueRoll`, so the
-            // wire strings are real piece ids; the brand is a compile-time tag.
-            pair={[
-              pieceOfferView(roll.pair[0] as PieceId),
-              pieceOfferView(roll.pair[1] as PieceId),
-            ]}
+            pair={[pieceOfferView(pair[0]), pieceOfferView(pair[1])]}
             fallbackFace={fallbackFaceView(roll.fallback)}
-            disabled
+            onChoose={store.choose}
+            // `03f`: offers dim while the referee rules on a sent fill/pass.
+            awaitingServer={awaitingServer}
+            disabled={!canAct}
           />
-          <p className="text-center text-sm text-ink-muted">
-            Placing pieces arrives with the next update.
-          </p>
-          {me?.isHost ? (
-            <Button variant="secondary" size="lg" onClick={requestRoll}>
-              Next round
+          {canPass ? (
+            <Button variant="secondary" size="lg" onClick={store.pass}>
+              Pass the round
             </Button>
-          ) : (
-            <p className="text-center text-sm text-ink-muted">The host deals the next round.</p>
-          )}
-          {lastError ? (
+          ) : null}
+          {status ? (
+            <p className="text-center text-sm font-medium text-ink" role="status">
+              {status}
+            </p>
+          ) : null}
+          {(acted || done) && waiting ? (
+            <p className="text-center text-sm text-ink-muted">{waiting}</p>
+          ) : null}
+          {showSkip ? (
+            <Button variant="secondary" size="lg" onClick={store.skipWaiting}>
+              Skip waiting players
+            </Button>
+          ) : null}
+          {lastRejection ? (
+            // Never scolding, never "invalid move" (design pass 02, 03g; D1's
+            // reworded copy — under per-player boards nobody "got there first").
             <p className="text-center text-sm text-ink-muted" role="alert">
-              {lastError}
+              Those squares didn&rsquo;t fit — try another spot.
             </p>
           ) : null}
         </div>
       }
     >
-      <BoardCanvas board={board} cellSize={cellSize} />
+      <BoardCanvas
+        board={board}
+        cellSize={cellSize}
+        colorIndex={snapshot.players.find((p) => p.id === me?.playerId)?.seatIndex ?? 0}
+        candidateCells={overlay}
+        activeCandidateCells={pending ? activeCandidateCells(pending) : []}
+        invalid={lastRejection !== null}
+        onCellPress={handleCellPress}
+      />
     </HudFrame>
+  );
+}
+
+/**
+ * The end of a session (Phase 5's Accept: everyone sees the same final
+ * ranking). Deliberately minimal — ranked names, points, squares — computed
+ * by `roomRanking` from the snapshot's boards. The full results screen,
+ * board comparison and rematch are Phase 6 (owner decision 2026-10-08).
+ */
+function RoomEnded({ snapshot }: { snapshot: RoomSnapshot }) {
+  const me = useRoomGameStore((state) => state.me);
+  const ranking = roomRanking(snapshot);
+
+  return (
+    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
+      <header className="text-center">
+        <p className="text-sm text-ink-muted">
+          Room <span className="font-mono tracking-widest">{snapshot.code}</span>
+        </p>
+        <h1 className="text-2xl font-semibold text-ink">Game over</h1>
+      </header>
+      <Panel title="Final ranking">
+        <ol className="grid gap-2">
+          {ranking.map((row) => (
+            <li key={row.playerId} className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-3">
+                <span className="w-6 text-right font-mono text-ink-muted">{row.rank}.</span>
+                <PlayerChip
+                  name={row.playerId === me?.playerId ? `${row.name} (you)` : row.name}
+                  colorIndex={row.seatIndex}
+                  active={row.playerId === me?.playerId}
+                />
+              </span>
+              <span className="text-right text-sm text-ink-muted">
+                {row.complete ? (
+                  <span className="font-medium text-ink">Complete · {row.points} pts</span>
+                ) : (
+                  `${row.filled} of ${row.total} squares`
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </Panel>
+      <Link to="/lobby" className="text-center text-accent underline">
+        Back to the lobby
+      </Link>
+    </main>
   );
 }
