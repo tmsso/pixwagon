@@ -10,7 +10,7 @@ One WebSocket per active room. The client connects to `GET /api/room/:code/ws`; 
 
 ## Versioning
 
-`PROTOCOL_VERSION` (currently `1`) is sent on `join`. A server that does not speak the version replies `error: protocol-version-mismatch` and closes with 1002 — rather than half-working, which is the failure mode that costs a day to diagnose.
+`PROTOCOL_VERSION` (currently `2`; history in `index.ts`) is sent on `join`. A server that does not speak the version replies `error: protocol-version-mismatch` and closes with 1002 — rather than half-working, which is the failure mode that costs a day to diagnose.
 
 ## Direction and trust
 
@@ -28,6 +28,8 @@ Bounds are part of the contract, not an implementation detail: display names are
 | `leave`         | Voluntary exit                                            |
 | `request-roll`  | Ask the referee to issue the round's roll                 |
 | `fill`          | **Intent**: `{ round, choice }` — see below               |
+| `pass`          | `{ round }` — nothing this round (Phase 5)                |
+| `skip-waiting`  | `{ round }` — host passes for stragglers (protocol 2)     |
 | `rematch`       | Same players, fresh seed                                  |
 | `ping`          | Liveness; kept explicit so hibernation is testable        |
 
@@ -36,7 +38,8 @@ Bounds are part of the contract, not an implementation detail: display names are
 | `welcome`        | `{ protocolVersion, playerId, code, rejoinToken }` |
 | `state`          | Full snapshot — on join and after resync           |
 | `delta`          | Incremental truth; the common case                 |
-| `presence`       | Player list, derived from live sockets             |
+| `presence`       | Player list: live sockets plus away board-holders  |
+| `passed`         | `{ playerId, round }` — a pass, made visible       |
 | `roll`           | The issued roll                                    |
 | `fill-accepted`  | Confirms an optimistic fill                        |
 | `fill-rejected`  | Triggers client rollback                           |
@@ -119,7 +122,26 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
 - `PROTOCOL_VERSION` stays `1`: every change is additive for the deployed
   Phase 4 client except `fill-rejected.cells`, which no shipped client reads.
 
+## Decided for protocol 2 (2026-10-08, before the Phase 5 deploy)
+
+- **`PROTOCOL_VERSION` → `2`.** The Phase 5 server would silently stall an
+  installed PWA still on a v1 build after round 1; the bump turns that into the
+  existing "reload to update" screen.
+- **`PlayerPresence.connected`.** A player holding a board in the current game
+  with no live socket is listed with `connected: false` and keeps their seat
+  (pass 02 `12c`'s "away" chip). Someone who leaves a lobby is just gone.
+- **`passed { playerId, round }`** (server): broadcast for every pass, so
+  clients can show who the round is still waiting on.
+- **`skip-waiting { round }`** (client, host only): once the round has waited
+  `SKIP_WAITING_AFTER_MS` (30 s, server clock), everyone still awaited passes.
+  Early → `error: too-early`; a round that already closed is silently ignored.
+  D2's "no timer in v1" stands — this is the host's manual escape hatch.
+- **Seats are assigned at `join`, not at socket accept**, and never wrap: no
+  free seat is `room-full`. A room holds at most 12 sockets; at the cap,
+  never-joined sockets older than 10 s are closed to make room, otherwise the
+  upgrade gets HTTP 503.
+
 ## Not yet decided
 
-- A `connected` flag on `PlayerPresence`, so a dropped player shows as "away"
-  (pass 02 `12c`) instead of vanishing — Phase 5 item 3.
+- Per-socket message rate limiting (deferred: the free tier caps rather than
+  bills, so the worst case is a daily outage, not a cost).

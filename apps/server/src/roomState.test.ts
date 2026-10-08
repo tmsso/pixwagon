@@ -13,10 +13,13 @@ import {
   fallbackFaceSchema,
   MAX_PLAYERS,
   moveRejectionSchema,
+  SKIP_WAITING_AFTER_MS,
   roomSnapshotSchema,
 } from '@pixwagon/protocol';
 import type { WireMoveChoice } from '@pixwagon/protocol';
 import {
+  admitSocket,
+  awayPlayers,
   awaitingPlayers,
   buildSnapshot,
   closeRoundIfDone,
@@ -35,7 +38,11 @@ import {
   registerIdentity,
   resolveHost,
   roundBudgetFor,
-  roomIsFull,
+  MAX_SOCKETS,
+  PROVISIONAL_GRACE_MS,
+  seatForJoin,
+  skipWaiting,
+  stampRoundStart,
   startGame,
   submitFill,
   submitPass,
@@ -52,16 +59,9 @@ describe('nextFreeSeat', () => {
     expect(nextFreeSeat([2, 0, 1])).toBe(3);
   });
 
-  it('wraps once every seat is taken rather than returning out of range', () => {
+  it('returns null once every seat is taken — never wraps onto a used seat', () => {
     const all = Array.from({ length: MAX_PLAYERS }, (_, i) => i);
-    expect(nextFreeSeat(all)).toBeLessThan(MAX_PLAYERS);
-  });
-});
-
-describe('roomIsFull', () => {
-  it('is true only at MAX_PLAYERS joined', () => {
-    expect(roomIsFull(MAX_PLAYERS - 1)).toBe(false);
-    expect(roomIsFull(MAX_PLAYERS)).toBe(true);
+    expect(nextFreeSeat(all)).toBeNull();
   });
 });
 
@@ -522,5 +522,152 @@ describe('protocol / game-core enum drift guards (Phase 5)', () => {
       'incomplete-compound-choice': true,
     } satisfies Record<MoveRejection, true>;
     expect([...moveRejectionSchema.options].sort()).toEqual(Object.keys(reasons).sort());
+  });
+});
+
+describe('seats under more than six sockets (2026-10-08 hardening)', () => {
+  const six = Array.from({ length: MAX_PLAYERS }, (_, i) => conn(`p${i}`, i));
+
+  it("a seventh joiner is refused instead of sharing someone else's seat", () => {
+    const state = initialRoomState('TRAM');
+    expect(seatForJoin(state, six, 'p-new')).toBeNull();
+  });
+
+  it('every seat handed to six successive joiners is distinct', () => {
+    let state = initialRoomState('TRAM');
+    const live: SeatedConn[] = [];
+    for (let i = 0; i < MAX_PLAYERS; i += 1) {
+      const seat = seatForJoin(state, live, `p${i}`);
+      expect(seat).not.toBeNull();
+      live.push(conn(`p${i}`, seat!));
+      state = registerIdentity(state, `tok${i}`, {
+        playerId: `p${i}`,
+        seatIndex: seat!,
+        name: 'x',
+      });
+    }
+    expect(new Set(live.map((c) => c.seatIndex)).size).toBe(MAX_PLAYERS);
+  });
+
+  it('a rejoiner gets their old seat back, or the lowest free one if it was taken', () => {
+    const state = initialRoomState('TRAM');
+    expect(seatForJoin(state, [conn('b', 1)], 'a', 3)).toBe(3);
+    expect(seatForJoin(state, [conn('b', 3)], 'a', 3)).toBe(0);
+    // A stale live socket of the same player never blocks their own seat.
+    expect(seatForJoin(state, [conn('a', 3)], 'a', 3)).toBe(3);
+  });
+
+  it("an away player's seat stays reserved mid-game, but not in the lobby", () => {
+    const lobby = registerIdentity(initialRoomState('TRAM'), 'tok-a', {
+      playerId: 'a',
+      seatIndex: 0,
+      name: 'Alex',
+    });
+    expect(seatForJoin(lobby, [conn('b', 1)], 'c')).toBe(0);
+
+    const playing = registerIdentity(started(['a', 'b']), 'tok-a', {
+      playerId: 'a',
+      seatIndex: 0,
+      name: 'Alex',
+    });
+    expect(seatForJoin(playing, [conn('b', 1)], 'c')).toBe(2);
+    // ...and the away player reclaims it.
+    expect(seatForJoin(playing, [conn('b', 1)], 'a', 0)).toBe(0);
+  });
+});
+
+describe('admitSocket', () => {
+  const now = 1_000_000;
+  const joined = (n: number) => Array.from({ length: n }, () => ({ joined: true, acceptedAt: 0 }));
+
+  it('admits below the cap without evicting anything', () => {
+    expect(admitSocket(joined(MAX_SOCKETS - 1), now)).toEqual({ admit: true, evict: [] });
+  });
+
+  it('at the cap, evicts idle never-joined sockets past the grace period to make room', () => {
+    const idle = { joined: false, acceptedAt: now - PROVISIONAL_GRACE_MS };
+    const fresh = { joined: false, acceptedAt: now - 1 };
+    const sockets = [...joined(MAX_SOCKETS - 2), idle, fresh];
+    expect(admitSocket(sockets, now)).toEqual({ admit: true, evict: [idle] });
+  });
+
+  it('refuses when the cap is all joined players or sockets still inside their grace', () => {
+    expect(admitSocket(joined(MAX_SOCKETS), now).admit).toBe(false);
+    const young = Array.from({ length: MAX_SOCKETS }, () => ({ joined: false, acceptedAt: now }));
+    expect(admitSocket(young, now)).toEqual({ admit: false, evict: [] });
+  });
+});
+
+describe('presence with away players (protocol 2)', () => {
+  const withIdentities = (state: RoomState): RoomState =>
+    registerIdentity(
+      registerIdentity(state, 'tok-a', { playerId: 'a', seatIndex: 0, name: 'Alex' }),
+      'tok-b',
+      { playerId: 'b', seatIndex: 1, name: 'Bella' },
+    );
+
+  it('lists a disconnected board-holder as connected:false, sorted by seat', () => {
+    const state = { ...withIdentities(started(['a', 'b'])), hostId: 'b' };
+    const players = presenceList(state, [conn('b', 1, 'Bella')]);
+    expect(players).toEqual([
+      { id: 'a', name: 'Alex', seatIndex: 0, isHost: false, connected: false },
+      { id: 'b', name: 'Bella', seatIndex: 1, isHost: true, connected: true },
+    ]);
+    expect(awayPlayers(state, [conn('b', 1)]).map((p) => p.playerId)).toEqual(['a']);
+  });
+
+  it('someone who left a lobby is simply gone', () => {
+    const state = withIdentities(initialRoomState('TRAM'));
+    expect(presenceList(state, [conn('b', 1, 'Bella')]).map((p) => p.id)).toEqual(['b']);
+  });
+
+  it('the snapshot validates against the protocol 2 schema', () => {
+    const state = withIdentities(started(['a', 'b']));
+    expect(roomSnapshotSchema.safeParse(buildSnapshot(state, [conn('b', 1)])).success).toBe(true);
+  });
+});
+
+describe('skipWaiting', () => {
+  const t0 = 5_000_000;
+  const stamped = (state: RoomState): RoomState => ({ ...state, roundStartedAt: t0 });
+
+  it('is too early before SKIP_WAITING_AFTER_MS, then passes everyone still awaited', () => {
+    const state = stamped(started(['a', 'b', 'c']));
+    const a = submitPass(state, 'a', 0);
+    if (!a.ok) throw new Error('fixture');
+    expect(skipWaiting(a.state, ['a', 'b', 'c'], 0, t0 + SKIP_WAITING_AFTER_MS - 1)).toEqual({
+      ok: false,
+      error: 'too-early',
+    });
+    const skip = skipWaiting(a.state, ['a', 'b', 'c'], 0, t0 + SKIP_WAITING_AFTER_MS);
+    expect(skip).toMatchObject({ ok: true, skipped: ['b', 'c'] });
+    if (!skip.ok) return;
+    // ...which lets the round close on its own.
+    expect(closeRoundIfDone(skip.state, ['a', 'b', 'c']).closed).toBe(true);
+  });
+
+  it('refuses a stale round and a room that is not playing', () => {
+    const state = stamped(started());
+    expect(skipWaiting(state, ['a', 'b'], 4, t0 + SKIP_WAITING_AFTER_MS)).toEqual({
+      ok: false,
+      error: 'wrong-round',
+    });
+    expect(skipWaiting(initialRoomState('TRAM'), ['a'], 0, t0)).toEqual({
+      ok: false,
+      error: 'not-playing',
+    });
+  });
+
+  it('lets an unstamped (pre-protocol-2) round be skipped rather than stall', () => {
+    expect(skipWaiting(started(), ['a', 'b'], 0, 0)).toMatchObject({ ok: true });
+  });
+});
+
+describe('stampRoundStart', () => {
+  it('stamps only when the round advanced', () => {
+    const before = started();
+    expect(stampRoundStart(before, before, 42)).toBe(before);
+    const after = { ...before, round: before.round + 1 };
+    expect(stampRoundStart(before, after, 42).roundStartedAt).toBe(42);
   });
 });

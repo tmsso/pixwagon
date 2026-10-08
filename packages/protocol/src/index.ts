@@ -19,7 +19,27 @@ import { z } from 'zod';
  * join; a server seeing a version it does not speak refuses the connection with
  * a clear error rather than half-working.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
+
+/*
+ * Version history — bump on any change an older peer would misread:
+ *  1 — Phase 4 (rooms, presence, host-issued rolls).
+ *  2 — Phase 5 client (2026-10-08): `presence.connected`, the `passed`
+ *      broadcast, host `skip-waiting`. The bump is what turns an installed PWA
+ *      still running a v1 build into the "reload to update" screen instead of a
+ *      room that silently stalls after round 1 against the Phase 5 server.
+ */
+
+/**
+ * How long a round must have been waiting before the host may skip the
+ * players who have not acted yet (owner decision, 2026-10-08). D2 has no turn
+ * timer in v1; without this, one connected player who put their phone down
+ * stalls the whole room forever. The server enforces it with its own clock;
+ * the client only uses it to decide when to show the button, starting its
+ * timer when it *receives* the roll — always later than the server issued it,
+ * so the button never appears early.
+ */
+export const SKIP_WAITING_AFTER_MS = 30_000;
 
 /**
  * The most players a room seats — one per visually distinguishable identity
@@ -160,8 +180,10 @@ export const gameStatusSchema = z.enum(['lobby', 'playing', 'ended']);
  * One seated player, as it appears in `presence` and in a room snapshot's
  * `players`. `seatIndex` is both the seat and the colour/hatch index
  * (`playerColor(seatIndex)`); `isHost` marks the one connection allowed to
- * issue rolls. A `connected` flag is deliberately absent until the
- * reconnect/resync half of Phase 4 lands — every entry here is a live socket.
+ * start the game. `connected: false` (protocol 2) is a player who holds a
+ * board in the current game but has no live socket — they keep their seat and
+ * squares and show as "away" (pass 02 `12c`) instead of vanishing. Players who
+ * left a lobby before any game are simply not listed.
  */
 export const playerPresenceSchema = z.object({
   id: z.string().min(1),
@@ -172,6 +194,7 @@ export const playerPresenceSchema = z.object({
     .min(0)
     .max(MAX_PLAYERS - 1),
   isHost: z.boolean(),
+  connected: z.boolean(),
 });
 
 export type PlayerPresence = z.infer<typeof playerPresenceSchema>;
@@ -286,6 +309,12 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
    * Counts as acting, so the round can close without this player.
    */
   z.object({ type: z.literal('pass'), round: z.number().int().nonnegative() }),
+  /**
+   * Host-only (protocol 2): pass on behalf of every connected player the round
+   * is still waiting on, once it has waited `SKIP_WAITING_AFTER_MS`. `round`
+   * guards against a skip racing the round closing on its own.
+   */
+  z.object({ type: z.literal('skip-waiting'), round: z.number().int().nonnegative() }),
   z.object({ type: z.literal('rematch') }),
   /** Liveness. Kept explicit so hibernation behaviour is testable. */
   z.object({ type: z.literal('ping'), t: z.number() }),
@@ -314,6 +343,9 @@ export const serverErrorCodeSchema = z.enum([
   'game-in-progress',
   // Phase 5: `fill`/`pass` before the host started, or after the game ended.
   'not-playing',
+  // Protocol 2: `skip-waiting` before the round has waited
+  // `SKIP_WAITING_AFTER_MS`.
+  'too-early',
   'internal',
 ]);
 
@@ -349,6 +381,16 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
       round: z.number().int().nonnegative(),
       cells: z.array(cellRefSchema),
     }),
+  }),
+  /**
+   * A player passed this round (protocol 2) — on their own or skipped by the
+   * host. Without it other clients could not tell "waiting for Kim" from
+   * "Kim already passed": a fill is visible as a `delta`, a pass was not.
+   */
+  z.object({
+    type: z.literal('passed'),
+    playerId: z.string(),
+    round: z.number().int().nonnegative(),
   }),
   z.object({ type: z.literal('presence'), players: z.array(playerPresenceSchema) }),
   z.object({ type: z.literal('roll'), roll: rollSchema }),
