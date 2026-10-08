@@ -357,6 +357,80 @@ describe('submitFill', () => {
   });
 });
 
+describe('tampered fills (Phase 5 item 4)', () => {
+  // What a modified client could send that the roll cannot cover. Each must
+  // be refused with nothing stored — no board change, not counted as acting,
+  // and no cells for `room.ts` to broadcast as a `delta` (it broadcasts only
+  // on `ok: true`; the live half of this is `pnpm tamper:check`).
+  const state = started();
+  const roll = currentRoll(state)!;
+  const notOffered = (['monomino', 'domino', 'tromino-i', 'tromino-l'] as const).find(
+    (id) => !roll.pair.includes(id as never),
+  )!;
+  const legal = legalFill(state, 'a');
+  const allFillable = state.boards.a!.cells.flatMap((cell, i) =>
+    cell === 'fillable'
+      ? [{ x: i % state.boards.a!.size.width, y: Math.floor(i / state.boards.a!.size.width) }]
+      : [],
+  );
+
+  const cases: [string, WireMoveChoice][] = [
+    [
+      'more cells than the fallback face allows',
+      { kind: 'fallback', blobs: [allFillable.slice(0, 3), allFillable.slice(3, 6)] },
+    ],
+    [
+      'a piece the pair did not offer',
+      {
+        kind: 'pair',
+        placements: [
+          {
+            pieceId: notOffered,
+            orientation: { rotation: 0, mirrored: false },
+            origin: { x: 1, y: 1 },
+          },
+          {
+            pieceId: roll.pair[1],
+            orientation: { rotation: 0, mirrored: false },
+            origin: { x: 4, y: 4 },
+          },
+        ],
+      },
+    ],
+    [
+      'an invented piece id',
+      {
+        kind: 'pair',
+        placements: [
+          {
+            pieceId: 'mega-square',
+            orientation: { rotation: 0, mirrored: false },
+            origin: { x: 1, y: 1 },
+          },
+          {
+            pieceId: roll.pair[1],
+            orientation: { rotation: 0, mirrored: false },
+            origin: { x: 4, y: 4 },
+          },
+        ],
+      },
+    ],
+    ['cells off the board', { kind: 'fallback', blobs: [[{ x: 999, y: 999 }]] }],
+  ];
+
+  it.each(cases)('refuses %s and stores nothing', (_name, choice) => {
+    const result = submitFill(state, 'a', 0, choice);
+    expect(result.ok).toBe(false);
+    expect('rejection' in result).toBe(true);
+    expect(state.boards.a).toEqual(createBoard('transportation', state.pictureId!));
+    expect(state.acted).toEqual([]);
+  });
+
+  it('the same cells sent as a legal choice are accepted — the refusals were about the choice', () => {
+    expect(submitFill(state, 'a', 0, legal).ok).toBe(true);
+  });
+});
+
 describe('submitPass', () => {
   it('counts as acting, and refuses a pass for a round that already closed', () => {
     const state = started();
