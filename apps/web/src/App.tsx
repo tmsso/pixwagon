@@ -1,4 +1,5 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router';
+import { CrashBoundary, CrashForDev } from './CrashScreen.tsx';
 import { UpdateBanner } from './pwa/UpdateBanner.tsx';
 import { GameRoute } from './routes/GameRoute.tsx';
 import { HomeScreen } from './routes/HomeScreen.tsx';
@@ -19,29 +20,36 @@ import { ResultsScreen } from './routes/ResultsScreen.tsx';
 export function App() {
   return (
     <BrowserRouter>
-      {/* A service-worker update banner, above every route. It gates itself to
-          stay out of an in-progress round (Annotation 17). */}
-      <UpdateBanner />
-      <Routes>
-        <Route path="/" element={<HomeScreen />} />
-        <Route path="/lobby" element={<LobbyScreen />} />
-        <Route path="/r/:code" element={<GameRoute />} />
-        <Route path="/results" element={<ResultsScreen />} />
-        <Route path="/packs" element={<PackPickerScreen />} />
-        <Route
-          path="*"
-          element={
-            <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
-              <div>
-                <h1 className="text-2xl font-semibold text-ink">No such page</h1>
-                <Link to="/" className="mt-3 inline-block text-accent underline">
-                  Back to the start
-                </Link>
-              </div>
-            </main>
-          }
-        />
-      </Routes>
+      {/* Outermost inside the router: a render crash anywhere — banner
+          included — shows a way out instead of a blank page. */}
+      <CrashBoundary>
+        {/* A service-worker update banner, above every route. It gates itself to
+            stay out of an in-progress round (Annotation 17). */}
+        <UpdateBanner />
+        <Routes>
+          <Route path="/" element={<HomeScreen />} />
+          <Route path="/lobby" element={<LobbyScreen />} />
+          <Route path="/r/:code" element={<GameRoute />} />
+          <Route path="/results" element={<ResultsScreen />} />
+          <Route path="/packs" element={<PackPickerScreen />} />
+          {/* Dev-only: `import.meta.env.DEV` is a build-time constant, so this
+            route does not exist in a production build. */}
+          {import.meta.env.DEV ? <Route path="/__crash" element={<CrashForDev />} /> : null}
+          <Route
+            path="*"
+            element={
+              <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
+                <div>
+                  <h1 className="text-2xl font-semibold text-ink">No such page</h1>
+                  <Link to="/" className="mt-3 inline-block text-accent underline">
+                    Back to the start
+                  </Link>
+                </div>
+              </main>
+            }
+          />
+        </Routes>
+      </CrashBoundary>
     </BrowserRouter>
   );
 }
