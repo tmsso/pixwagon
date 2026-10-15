@@ -28,7 +28,7 @@ This is the one part of "Phase 0 is sync-ready" that rests on inference rather t
 2. `pnpm design:check` — confirm every card renders with visibly distinct variants.
 3. Create a **design-system**-type project in Claude Design.
 4. `/design-sync` from a session on this repo to upload `design-system/`.
-5. Generate the six surfaces (see `BRIEF.md`), refine, and annotate on canvas.
+5. Generate the surfaces from the live brief (`BRIEF-02.md` Parts A/B for solo and PWA, `BRIEF-03.md` for rooms; `BRIEF.md` is pass 01's record), refine, and annotate on canvas.
 6. **Handoff button** back into a fresh Claude Code session.
 
 ## The habit that prevents drift
