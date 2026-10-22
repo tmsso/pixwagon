@@ -60,6 +60,40 @@ export function canSkipWaiting(
   return now - roundSeenAt >= SKIP_WAITING_AFTER_MS;
 }
 
+/** Where the room is in the session (Phase 6, D8): which picture of how
+ *  many, and which round of that picture's budget. */
+export interface PictureProgress {
+  /** 1-based. */
+  picture: number;
+  pictures: number;
+  /** 1-based, counted from the picture's first roll, not from round 0. */
+  round: number;
+  rounds: number | null;
+  /** The first round of a picture after the first — the moment to say the
+   *  room moved on. */
+  isNewPicture: boolean;
+}
+
+export function pictureProgress(snapshot: RoomSnapshot): PictureProgress | null {
+  if (snapshot.status === 'lobby' || !snapshot.currentRoll) return null;
+  // `round` counts rolls issued, so the roll in play is round − stageStartRound.
+  const round = Math.max(1, snapshot.round - snapshot.stageStartRound);
+  return {
+    picture: snapshot.stage + 1,
+    pictures: snapshot.stageCount ?? 1,
+    round,
+    rounds: snapshot.roundBudget,
+    isNewPicture: snapshot.stage > 0 && round === 1,
+  };
+}
+
+/** How much of their current picture `playerId` has filled, 0–1, or `null`
+ *  without a board — what an opponent's chip shows mid-game (D9). */
+export function boardCompletion(snapshot: RoomSnapshot, playerId: string): number | null {
+  const board = snapshot.boards[playerId] as Board | undefined;
+  return board ? scoreBoard(playerId, board).completion : null;
+}
+
 export interface RankedPlayer {
   playerId: string;
   name: string;

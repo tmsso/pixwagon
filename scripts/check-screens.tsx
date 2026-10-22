@@ -174,6 +174,23 @@ const screens: ScreenCase[] = [
     expect: ['TRAM', 'Round 3', 'Connected', 'The pair', 'The single', 'You', 'Kim', 'away'],
   },
   {
+    name: 'Room (picture 2 of 3, first round)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom({
+        ...playingSnapshot,
+        stage: 1,
+        round: 11,
+        stageStartRound: 10,
+        currentRoll: { ...playingSnapshot.currentRoll!, round: 10 },
+        history: [{ 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram }],
+      }),
+    // D9: opponents show completion on their chips (Sam and Kim: 0%).
+    expect: ['Picture 2 of 3', 'Round 1 of 40', 'On to picture 2 of 3', '0%'],
+  },
+  {
     name: 'Room (acted, waiting for others)',
     path: '/r/TRAM',
     routePath: '/r/:code',

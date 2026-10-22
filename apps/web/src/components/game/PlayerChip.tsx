@@ -7,6 +7,9 @@ export interface PlayerChipProps {
   connected?: boolean;
   /** Shown in own-board mode and on the results screen. */
   score?: number;
+  /** How much of their picture a player has filled, 0–1 (D9: what others see
+   *  of an opponent mid-game — never the board itself). Shown as text. */
+  completion?: number;
   /** Marks whose turn it is to fill. */
   active?: boolean;
   /** The room's host (design pass 02, `02c`–`02e`) — a text label, not a
@@ -19,6 +22,7 @@ export function PlayerChip({
   colorIndex,
   connected = true,
   score,
+  completion,
   active = false,
   host = false,
 }: PlayerChipProps) {
@@ -41,6 +45,9 @@ export function PlayerChip({
       <span className="font-medium text-ink">{name}</span>
       {host ? <span className="text-xs text-ink-muted">host</span> : null}
       {score !== undefined ? <span className="font-mono text-ink-muted">{score}</span> : null}
+      {completion !== undefined ? (
+        <span className="font-mono text-xs text-ink-muted">{Math.round(completion * 100)}%</span>
+      ) : null}
       {/* Connection state is never colour-only: absent players are also dimmed and labelled. */}
       {!connected ? <span className="text-xs text-ink-muted">away</span> : null}
     </div>

@@ -25,8 +25,10 @@ import {
 import { myBoard, useRoomGameStore } from '../state/roomGame.ts';
 import type { RoomPlayerIdentity } from '../state/roomGame.ts';
 import {
+  boardCompletion,
   canSkipWaiting,
   connectionPill,
+  pictureProgress,
   roomPhase,
   roomRanking,
   startBlockedReason,
@@ -182,10 +184,19 @@ function RoomPlayers({
             // Away players keep their seat and squares (protocol 2); the
             // chip dims and says "away" rather than vanishing (pass 02 `12c`).
             connected={player.connected}
+            // D9: mid-game, other players show how far along they are —
+            // a number on the chip, never their board.
+            {...(inGame && player.id !== me?.playerId
+              ? completionProp(boardCompletion(snapshot, player.id))
+              : {})}
           />
         ))}
     </>
   );
+}
+
+function completionProp(completion: number | null): { completion?: number } {
+  return completion === null ? {} : { completion };
 }
 
 function WaitingRoom({ snapshot }: { snapshot: RoomSnapshot }) {
@@ -317,16 +328,30 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   const pendingCount = pending ? pendingCellCount(pending) : 0;
   const overlay = pending ? candidateCells(pending) : (prediction?.cells ?? []);
 
+  const progress = pictureProgress(snapshot);
+  const morePictures = progress !== null && progress.picture < progress.pictures;
+
   let status: string | null = null;
-  if (done) status = 'Your picture is complete!';
-  else if (awaitingServer) status = 'Checking with the room…';
+  if (done) {
+    status = morePictures
+      ? 'Your picture is complete! The room moves on when everyone is done.'
+      : 'Your picture is complete!';
+  } else if (awaitingServer) status = 'Checking with the room…';
   else if (acted) status = 'Done for this round.';
+  else if (progress?.isNewPicture) {
+    // D8: the whole room moved on together. Said on the new picture's first
+    // round only; the finished one is kept for the results screen.
+    status = `On to picture ${progress.picture} of ${progress.pictures} — your last one is kept for the results.`;
+  }
 
   return (
     <HudFrame
       roomCode={snapshot.code}
-      // `roll.round` is 0-based on the wire (docs/contracts/rng.md).
-      round={roll.round + 1}
+      // Counted within the picture in play (D8: a fresh budget per picture),
+      // not the global 0-based `roll.round` (docs/contracts/rng.md).
+      round={progress?.round ?? roll.round + 1}
+      {...(progress?.rounds ? { roundOf: progress.rounds } : {})}
+      {...(progress ? { picture: { index: progress.picture, count: progress.pictures } } : {})}
       connection={connectionPill(connection)}
       players={<RoomPlayers snapshot={snapshot} me={me} inGame />}
       sheet={

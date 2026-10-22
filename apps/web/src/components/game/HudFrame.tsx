@@ -3,6 +3,11 @@ import type { ReactNode } from 'react';
 export interface HudFrameProps {
   roomCode?: string;
   round?: number;
+  /** Rounds the picture in play gets (rooms, D3) — shown as "Round 3 of 25". */
+  roundOf?: number;
+  /** Picture cycling (Phase 6, D8): "Picture 2 of 3". Omitted for solo, which
+   *  plays one picture. */
+  picture?: { index: number; count: number };
   /** Live connection state. Omit entirely for solo/daily — the pill exists
    *  only inside a networked room (docs/design/surfaces/ Annotation 08); a
    *  connection state with no connection to report would be lying, not idle. */
@@ -40,6 +45,8 @@ const CONNECTION_LABEL = {
 export function HudFrame({
   roomCode,
   round,
+  roundOf,
+  picture,
   connection,
   players,
   children,
@@ -53,8 +60,16 @@ export function HudFrame({
           {roomCode ? (
             <span className="font-mono text-lg tracking-widest text-ink">{roomCode}</span>
           ) : null}
+          {picture && picture.count > 1 ? (
+            <span className="text-sm text-ink">
+              Picture {picture.index} of {picture.count}
+            </span>
+          ) : null}
           {round !== undefined ? (
-            <span className="text-sm text-ink-muted">Round {round}</span>
+            <span className="text-sm text-ink-muted">
+              Round {round}
+              {roundOf !== undefined ? ` of ${roundOf}` : ''}
+            </span>
           ) : null}
         </div>
         {connection ? (
