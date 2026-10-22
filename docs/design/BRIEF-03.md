@@ -1,6 +1,8 @@
 # Claude Design brief — Pixwagon, pass 03 (rooms as built + Phase 6 forward-design)
 
-**Drafted 2026-10-15. Not yet sent.** This brief **replaces Part C** of
+**Drafted 2026-10-15. Answered 2026-10-22 by `handoff-03/`** (drawn as a Design
+canvas in Claude, from the source; the prerequisites below were for the
+`/design-sync` route and were not needed — see `handoff-03/README.md`). This brief **replaces Part C** of
 `BRIEF-02.md` (the provisional multiplayer block). Parts A and B of pass 02 —
 the solo game, the offer control, the placement sheet, the PWA surfaces — stay
 authoritative and are **not** reopened here. Where this brief and pass 02's

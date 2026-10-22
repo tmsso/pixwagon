@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>02 Waiting room</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 1346px; height: 960px">
+
+  <!-- 02c -->
+  <div class="fr">
+    <p class="cap"><b>02c</b><span>/r/KM4T · host · 1 of 6</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="align-items: center; padding-top: 12px">
+        <span class="eyebrow">Room code</span>
+        <p class="bigcode">KM4T</p>
+        <button class="btn secondary sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M10 14l4-4"></path><path d="M8.5 11.5L6 14a3 3 0 0 0 4 4l2.5-2.5"></path><path d="M15.5 12.5L18 10a3 3 0 0 0-4-4l-2.5 2.5"></path></svg>Copy link</button>
+      </div>
+      <div class="panel stack gap3">
+        <span class="ph">Players · 1 of 6</span>
+        <div class="wrap"><span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="lab">you · host</span></span></div>
+        <p class="t-sm muted">Waiting for someone to join. Send them the link, or read out the code.</p>
+      </div>
+      <div class="panel sunken row" style="gap: 12px">
+        <div class="thumb"><dc-import name="Pic" pic="tram" mode="target" cell="5" hint-size="71px,47px"></dc-import></div>
+        <div class="stack gap1" style="flex: 1">
+          <span class="eyebrow">This game</span>
+          <p class="t-sm b5">Same board · Transportation</p>
+          <p class="t-xs muted">3 pictures, played in turn</p>
+        </div>
+        <a href="B1-host-choices.dc.html" class="t-sm b5" style="min-height: 2.75rem; display: inline-flex; align-items: center">Change</a>
+      </div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full" disabled>Start game</button>
+        <p class="t-sm muted ctr">Needs one more player</p>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 02d -->
+  <div class="fr">
+    <p class="cap"><b>02d</b><span>/r/KM4T · a guest’s view · 3 of 6</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="align-items: center; padding-top: 12px">
+        <span class="eyebrow">Room code</span>
+        <p class="bigcode">KM4T</p>
+        <button class="btn secondary sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M5 12l4 4 10-10"></path></svg>Link copied</button>
+      </div>
+      <div class="panel stack gap3">
+        <span class="ph">Players · 3 of 6</span>
+        <div class="wrap">
+          <span class="chip"><span class="sw p0"></span><b>Alex</b><span class="lab">host</span></span>
+          <span class="chip active"><span class="sw p1"></span><b>Sam</b><span class="lab">you</span></span>
+          <span class="chip"><span class="sw p2"></span><b>Jo</b></span>
+        </div>
+      </div>
+      <div class="panel sunken row" style="gap: 12px">
+        <div class="thumb"><dc-import name="Pic" pic="tram" mode="target" cell="5" hint-size="71px,47px"></dc-import></div>
+        <div class="stack gap1" style="flex: 1">
+          <span class="eyebrow">This game</span>
+          <p class="t-sm b5">Same board · Transportation</p>
+          <p class="t-xs muted">3 pictures, played in turn · Alex picks</p>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="notice" role="status" style="justify-content: center; min-height: 3.25rem">
+        <span class="t-sm">Alex starts the game when everyone’s here.</span>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 02e -->
+  <div class="fr">
+    <p class="cap"><b>02e</b><span>/r/KM4T · host · full, 6 of 6</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="align-items: center; padding-top: 12px">
+        <span class="eyebrow">Room code</span>
+        <p class="bigcode">KM4T</p>
+        <button class="btn secondary sm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M10 14l4-4"></path><path d="M8.5 11.5L6 14a3 3 0 0 0 4 4l2.5-2.5"></path><path d="M15.5 12.5L18 10a3 3 0 0 0-4-4l-2.5 2.5"></path></svg>Copy link</button>
+      </div>
+      <div class="panel stack gap3">
+        <span class="ph">Players · 6 of 6</span>
+        <div class="wrap" style="gap: 6px">
+          <span class="chip active"><span class="sw p0"></span><b>Alex</b><span class="lab">you · host</span></span>
+          <span class="chip"><span class="sw p1"></span><b>Sam</b></span>
+          <span class="chip"><span class="sw p2"></span><b>Jo</b></span>
+          <span class="chip"><span class="sw p3"></span><b>Ravi</b></span>
+          <span class="chip"><span class="sw p4"></span><b>Mia</b></span>
+          <span class="chip"><span class="sw p5"></span><b>Kim</b></span>
+        </div>
+        <p class="t-sm muted">Room is full — six is the most we can tell apart on a board.</p>
+      </div>
+      <div class="panel sunken row" style="gap: 12px">
+        <div class="thumb"><dc-import name="Pic" pic="tulip" mode="target" cell="5" hint-size="41px,59px"></dc-import></div>
+        <div class="stack gap1" style="flex: 1">
+          <span class="eyebrow">This game</span>
+          <p class="t-sm b5">Own board · Garden</p>
+          <p class="t-xs muted">3 pictures, played in turn</p>
+        </div>
+        <a href="B1-host-choices.dc.html" class="t-sm b5" style="min-height: 2.75rem; display: inline-flex; align-items: center">Change</a>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn lg full">Start game</button>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1346,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

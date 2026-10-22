@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>12d, 12i Own board and picture cycling</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 1346px; height: 960px">
+
+  <!-- 12d -->
+  <div class="fr">
+    <p class="cap"><b>12d</b><span>own board · others as completion, never their board</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="hud">
+      <header>
+        <div class="hstat">
+          <span class="mono t-lg" style="letter-spacing: .14em">KM4T</span>
+          <span class="stage" aria-label="Picture 1 of 3"><span class="dots"><i class="f"></i><i></i><i></i></span>1 of 3</span>
+          <span class="t-sm muted">Round 6 of 26</span>
+        </div>
+        <span class="pill">Connected</span>
+      </header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="sc">67%</span><span class="mbar" aria-hidden="true"><i style="width: 67%"></i></span><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="sc">56%</span><span class="mbar" aria-hidden="true"><i style="width: 56%"></i></span><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+      </div>
+      <main>
+        <div class="board"><dc-import name="Pic" pic="mushroom" mode="board" cell="20" progress="0.45" seat="0" hint-size="209px,209px"></dc-import></div>
+        <p class="hint">Your own picture — everyone gets the same offers.</p>
+      </main>
+      <footer>
+        <div class="offers">
+          <button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns: repeat(3, 14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">6 squares</span></button>
+          <button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">2 + 2 squares</span></button>
+        </div>
+      </footer>
+    </div></div>
+  </div>
+
+  <!-- 12i · same board, complete -->
+  <div class="fr">
+    <p class="cap"><b>12i</b><span>picture 2 begins · the last one was finished</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="hud">
+      <header>
+        <div class="hstat">
+          <span class="mono t-lg" style="letter-spacing: .14em">KM4T</span>
+          <span class="stage" aria-label="Picture 2 of 3"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span>2 of 3</span>
+          <span class="t-sm muted">Round 1 of 18</span>
+        </div>
+        <span class="pill">Connected</span>
+      </header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+      </div>
+      <main>
+        <div class="donestrip" role="status">
+          <div class="thumb"><dc-import name="Pic" pic="tram" mode="target" cell="4" hint-size="59px,39px"></dc-import></div>
+          <div class="stack gap1" style="flex: 1"><span class="eyebrow">Picture 1 · Tram</span><span class="t-sm b5">Complete · 100 points</span></div>
+        </div>
+        <div class="board"><dc-import name="Pic" pic="sailboat" mode="board" cell="20" progress="0" seat="0" hint-size="230px,188px"></dc-import></div>
+        <p class="hint"><b>Sailboat</b> — a fresh board and 18 rounds.</p>
+      </main>
+      <footer>
+        <div class="offers">
+          <button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="glyph" style="grid-template-columns: repeat(3, 14px)"><i class="on"></i><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">7 squares</span></button>
+          <button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">2 squares</span></button>
+        </div>
+      </footer>
+    </div></div>
+  </div>
+
+  <!-- 12i · own board, unfinished -->
+  <div class="fr">
+    <p class="cap"><b>12i</b><span>own board · picture 2 begins · the last ran out of rounds</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="hud">
+      <header>
+        <div class="hstat">
+          <span class="mono t-lg" style="letter-spacing: .14em">KM4T</span>
+          <span class="stage" aria-label="Picture 2 of 3"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span>2 of 3</span>
+          <span class="t-sm muted">Round 1 of 26</span>
+        </div>
+        <span class="pill">Connected</span>
+      </header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="sc">0%</span><span class="mbar" aria-hidden="true"><i style="width: 0%"></i></span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="sc">0%</span><span class="mbar" aria-hidden="true"><i style="width: 0%"></i></span></span>
+      </div>
+      <main>
+        <div class="donestrip" role="status">
+          <div class="thumb"><dc-import name="Pic" pic="mushroom" mode="board" cell="4" progress="0.9" seat="0" hint-size="49px,49px"></dc-import></div>
+          <div class="stack gap1" style="flex: 1"><span class="eyebrow">Picture 1 · Mushroom</span><span class="t-sm b5">Unfinished · scores nothing</span><span class="t-xs muted">Nothing fitted those last six squares.</span></div>
+        </div>
+        <div class="board"><dc-import name="Pic" pic="tulip" mode="board" cell="20" progress="0" seat="0" hint-size="146px,209px"></dc-import></div>
+        <p class="hint"><b>Tulip</b> — a fresh board. 26 rounds for everyone this picture.</p>
+      </main>
+      <footer>
+        <div class="offers">
+          <button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i></span><span class="glyph" style="grid-template-columns: repeat(1, 14px)"><i class="on"></i><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">6 squares</span></button>
+          <button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i><i></i></span></div><span class="t-xs muted">1 + 3 squares</span></button>
+        </div>
+      </footer>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1346,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

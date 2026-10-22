@@ -20,6 +20,8 @@ export default tseslint.config(
       // added the files but not this ignore entry, so `render-pictures-02.js`'s
       // browser `document` use has been red-lighting CI since.
       'docs/design/handoff-02/**',
+      // Pass-03's handoff — design reference and canvas source, no app code.
+      'docs/design/handoff-03/**',
     ],
   },
 

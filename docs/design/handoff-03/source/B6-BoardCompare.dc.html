@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BoardCompare (component)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="spec" style="width: 1180px; height: 1000px">
+  <div class="stack gap2">
+    <div class="row" style="gap: 12px"><h2>BoardCompare</h2><span class="prop">Proposal · revises the shipped component (#43)</span></div>
+    <p class="lede">The session’s boards side by side: a row per player in rank order, a column per picture. Same rendering as the game board — filled cells in the player’s hue and hatch — so identity is on the board, on the swatch and in the name. One component for same board and own board.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 560px 1fr; gap: 24px">
+    <div class="stack gap4">
+      <div class="card">
+        <span class="ph">Anatomy · one row, tablet scale (8 px cells)</span>
+        <div class="bc-row me" style="grid-template-columns: 120px repeat(3, minmax(0, 1fr)); padding: 10px">
+          <div class="bc-who"><span class="rk">2nd</span><span class="nm"><span class="sw s14 p0"></span>You</span><span class="tot">2 pictures · 200</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="8" progress="1" seat="0" hint-size="107px,71px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="8" progress="1" seat="0" hint-size="98px,80px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="8" progress="0.86" seat="0" hint-size="80px,98px"></dc-import><span class="no">unfinished</span></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 120px 1fr; gap: 6px 14px" class="t-xs">
+          <span class="mono b6">rank</span><span class="muted">“1st”, “1st · tied”. Mono. Ties share a rank (roomRanking already does).</span>
+          <span class="mono b6">who</span><span class="muted">PlayerChip’s swatch (hue + hatch) and name; “You” for the viewer, whose row also gets the accent border.</span>
+          <span class="mono b6">totals</span><span class="muted">Pictures finished · points. A tie-break line (“4 fewer squares”) only when it decided a rank. “left” with the broken-link glyph for a player away at the end.</span>
+          <span class="mono b6">cell</span><span class="muted">That player’s board for that picture, painted like the game board (the shipped BoardCell mini board). Under it, in words: “✓ done” or “unfinished”. Own board adds the picture’s name.</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="ph">Props</span>
+        <pre style="margin: 0; font: 400 12px/1.6 var(--mono); color: #171c21; white-space: pre-wrap">BoardCompareProps {
+  mode: 'same-board' | 'own-board'
+  pictures: { id, name }[]   // column order = stage order
+  rows: {
+    playerId, name, seatIndex, you, left
+    rank, tied, pictures, points, tieBreak?
+    boards: (Board | null)[]  // one per stage; null = joined later
+  }[]
+}</pre>
+        <p class="t-xs muted">Fed from <code>[...history, boards]</code> and an extended <code>roomRanking</code>. No new protocol.</p>
+      </div>
+    </div>
+    <div class="stack gap4">
+      <div class="card">
+        <span class="ph">Own board · two players, phone scale</span>
+        <div class="bc" style="width: 358px">
+          <div class="bc-head"><span></span><span>Picture 1</span><span>Picture 2</span><span>Picture 3</span></div>
+          <div class="bc-row">
+            <div class="bc-who"><span class="rk">1st</span><span class="nm"><span class="sw s14 p4"></span>Mia</span><span class="tot">3 pictures · 300</span></div>
+            <div class="bc-cell"><dc-import name="Pic" pic="tulip" mode="board" cell="5" progress="1" seat="4" hint-size="41px,59px"></dc-import><span class="ok">✓ Tulip</span></div>
+            <div class="bc-cell"><dc-import name="Pic" pic="watering-can" mode="board" cell="5" progress="1" seat="4" hint-size="71px,47px"></dc-import><span class="ok">✓ Can</span></div>
+            <div class="bc-cell"><dc-import name="Pic" pic="mushroom" mode="board" cell="5" progress="1" seat="4" hint-size="59px,59px"></dc-import><span class="ok">✓ Mushroom</span></div>
+          </div>
+          <div class="bc-row me">
+            <div class="bc-who"><span class="rk">2nd</span><span class="nm"><span class="sw s14 p5"></span>You</span><span class="tot">2 pictures · 200</span></div>
+            <div class="bc-cell"><dc-import name="Pic" pic="watering-can" mode="board" cell="5" progress="1" seat="5" hint-size="71px,47px"></dc-import><span class="ok">✓ Can</span></div>
+            <div class="bc-cell"><dc-import name="Pic" pic="mushroom" mode="board" cell="5" progress="0.8" seat="5" hint-size="59px,59px"></dc-import><span class="no">Mushroom · unfinished</span></div>
+            <div class="bc-cell"><dc-import name="Pic" pic="tulip" mode="board" cell="5" progress="1" seat="5" hint-size="41px,59px"></dc-import><span class="ok">✓ Tulip</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="ph">Rules</span>
+        <div class="stack gap2 t-sm">
+          <span>Phone: 5 px cells for three columns, so three pictures fit 358 px. A pack with four or more pictures scrolls the cells sideways inside the component; the who column stays pinned.</span>
+          <span>From 768 px: 8 px cells; from 1180 px: 12 px. Integer steps only, like the board (Annotation 11).</span>
+          <span>Six players on a phone is six rows — the results screen scrolls, the buttons stay pinned at the bottom.</span>
+          <span>The finished picture’s own colours are shown once, at the moment it’s finished (12f, 12i), not here — in a same-board session every row would be the same image.</span>
+          <span>A player who joined mid-game has no board for the earlier pictures: that cell reads “joined later” in place of a board, as the shipped component already does.</span>
+          <span>The shipped version stacks boards under each chip; this one puts pictures in aligned columns so a same-board session compares like with like. Its card in <code>scripts/design-system/cards.tsx</code> is updated and re-synced with the change.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

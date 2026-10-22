@@ -10,6 +10,10 @@ docs/architecture.md
 docs/design/BRIEF-02.md
 docs/design/handoff-02/
 
+# Pass 03's handoff: a generated flat export plus the Design canvas source
+# (.dc.html is the canvas's own format; prettier would rewrap its markup).
+docs/design/handoff-03/
+
 # Generated. Their formatting is the generator's business.
 design-system/
 apps/web/src/design/tokens.css

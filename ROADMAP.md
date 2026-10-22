@@ -41,7 +41,7 @@ Live (deployed 2026-10-22 from `main` at PR #46, protocol 3): web app `https://p
 3. ~~Decisions D1–D3~~ — decided 2026-09-16; Phase 5 can follow Phase 4 without a stop.
 4. ~~2026-10-08 batch~~ — Phase 5 items 3–4, protocol 2, Phase 8 and first-contact polish merged (#29–#36) and deployed 2026-10-08.
 5. _Superseded by 4:_ **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
-6. **2026-10-22 batch** — D6 (persistent rejoin), Phase 6 (protocol 3, own-board, picture cycling, results and rematch, D7 pack choice), Phase 7a (daily) and 7b (local history), as stacked PRs #38–#46. Next: merge and deploy them, then the **device session** (now steps 2–5), then the **design pass 03 rework** of the provisional Phase 6 screens once its handoff lands (`docs/design/handoff-03/`), then **Phase 9**.
+6. **2026-10-22 batch** — D6 (persistent rejoin), Phase 6 (protocol 3, own-board, picture cycling, results and rematch, D7 pack choice), Phase 7a (daily) and 7b (local history), as stacked PRs #38–#46. Next: merge and deploy them, then the **device session** (now steps 2–5), then the **design pass 03 rework** of the provisional Phase 6 screens — the handoff has landed (`docs/design/handoff-03/`, 2026-10-22; its README's 19 engineering notes are the work list), then **Phase 9**.
 
 ## Decisions D5–D7 — **decided 2026-10-08** (owner: D5 keep, D6 and D7 agreed)
 

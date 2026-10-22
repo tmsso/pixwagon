@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>02 Lobby and joining by link</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 1346px; height: 960px">
+
+  <!-- 02a -->
+  <div class="fr">
+    <p class="cap"><b>02a</b><span>/lobby · entering a code</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="row">
+        <button class="iconbtn" aria-label="Back to the start"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M14 5l-7 7 7 7"></path></svg></button>
+        <h1 class="t-xl">Play with friends</h1>
+      </div>
+      <p class="t-sm muted">Up to six of you. Everyone gets the same pieces each round and fills their own copy of the picture.</p>
+      <div class="panel field">
+        <label for="n02a">Your name</label>
+        <input id="n02a" class="input" value="Alex">
+      </div>
+      <div class="spacer"></div>
+      <div class="panel stack gap3">
+        <span class="ph">Join a room</span>
+        <p class="t-sm muted">Ask whoever set it up for the room code.</p>
+        <div class="codeboxes" aria-label="Room code"><span class="on">K</span><span class="on">M</span><span class="on">4</span><span class="empty">–</span></div>
+        <p class="t-xs muted">Four letters or numbers · never I, O, 0 or 1</p>
+        <button class="btn lg full" disabled>Join room</button>
+      </div>
+      <p class="t-xs muted ctr">or</p>
+      <button class="btn secondary full">Create a room</button>
+    </div></div>
+  </div>
+
+  <!-- 02b -->
+  <div class="fr">
+    <p class="cap"><b>02b</b><span>/lobby · not a room code</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="row">
+        <button class="iconbtn" aria-label="Back to the start"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M14 5l-7 7 7 7"></path></svg></button>
+        <h1 class="t-xl">Play with friends</h1>
+      </div>
+      <p class="t-sm muted">Up to six of you. Everyone gets the same pieces each round and fills their own copy of the picture.</p>
+      <div class="panel field">
+        <label for="n02b">Your name</label>
+        <input id="n02b" class="input" value="Alex">
+      </div>
+      <div class="spacer"></div>
+      <div class="panel stack gap3">
+        <span class="ph">Join a room</span>
+        <div class="codeboxes" aria-label="Room code"><span class="bad">K</span><span class="bad">M</span><span class="bad">4</span><span class="bad">O</span></div>
+        <p class="t-sm danger-t" role="alert">That isn’t a room code — check the letters again.</p>
+        <div class="panel sunken" style="padding: 10px 12px"><p class="t-xs muted">Codes never use I, O, 0 or 1 — read aloud, they’re the ones people mix up. If you see an O, it’s probably something else.</p></div>
+        <button class="btn lg full">Join room</button>
+      </div>
+      <p class="t-xs muted ctr">or</p>
+      <button class="btn secondary full">Create a room</button>
+    </div></div>
+  </div>
+
+  <!-- 02f -->
+  <div class="fr">
+    <p class="cap"><b>02f</b><span>/r/KM4T · opened from a link, no name yet</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <p class="mono b6 ctr" style="font-size: 15px; letter-spacing: -0.01em; padding-top: 6px">Pixwagon</p>
+      <div class="panel" style="display: grid; place-items: center; padding: 22px">
+        <dc-import name="Pic" pic="tram" mode="target" cell="18" hint-size="227px,151px"></dc-import>
+      </div>
+      <div class="stack gap2">
+        <span class="eyebrow">Room KM4T</span>
+        <h1 class="t-2xl">Join the game</h1>
+        <p class="t-base muted">A quick picture game for up to six. Each round you all get the same pieces — place yours to fill in your own copy of a pixel picture.</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="field">
+        <label for="n02f">What should the others call you?</label>
+        <input id="n02f" class="input" placeholder="Guest">
+      </div>
+      <button class="btn lg full">Join room</button>
+      <p class="t-xs muted ctr">No sign-up. Your name is only used in this room.</p>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1346,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

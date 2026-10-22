@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>12 A round in a room</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 2222px; height: 960px">
+
+  <!-- 12h · joining -->
+  <div class="fr">
+    <p class="cap"><b>12h</b><span>joining · before the room answers</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="align-items: center; padding-top: 12px">
+        <span class="eyebrow">Room code</span>
+        <p class="bigcode">KM4T</p>
+        <span class="skel" style="width: 112px; height: 36px; border-radius: .5rem"></span>
+      </div>
+      <div class="panel stack gap3">
+        <span class="ph">Players</span>
+        <div class="row" style="gap: 8px"><span class="skel" style="width: 92px; height: 28px"></span><span class="skel" style="width: 74px; height: 28px"></span></div>
+      </div>
+      <p class="t-sm muted ctr" role="status">Joining room <span class="mono" style="color: #171c21; letter-spacing: .12em">KM4T</span>…</p>
+      <div class="spacer"></div>
+      <span class="skel" style="width: 100%; height: 3.25rem; border-radius: .875rem"></span>
+    </div></div>
+  </div>
+
+  <!-- 12h · getting your board -->
+  <div class="fr">
+    <p class="cap"><b>12h</b><span>joining mid-game · getting your board</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="hud">
+      <header><div class="hstat"><span class="mono t-lg" style="letter-spacing: .14em">KM4T</span><span class="t-sm muted">Round 4 of 22</span></div><span class="pill">Connected</span></header>
+      <div class="players">
+        <span class="chip"><span class="sw p0"></span><b>Alex</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip active"><span class="sw p2"></span><b>You</b></span>
+      </div>
+      <main>
+        <div class="skelbox" style="width: 269px; height: 185px"></div>
+        <p class="hint" role="status">Getting your board…</p>
+      </main>
+      <footer>
+        <div class="offers"><span class="skelbox" style="flex: 1; height: 104px"></span><span class="skelbox" style="flex: 1; height: 104px"></span></div>
+      </footer>
+    </div></div>
+  </div>
+
+  <!-- 12b -->
+  <div class="fr">
+    <p class="cap"><b>12b</b><span>you’re still placing · two are done</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="hud">
+      <header><div class="hstat"><span class="mono t-lg" style="letter-spacing: .14em">KM4T</span><span class="t-sm muted">Round 4 of 22</span></div><span class="pill">Connected</span></header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p3"></span><b>Ravi</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+      </div>
+      <main>
+        <div class="board"><dc-import name="Pic" pic="tram" mode="board" cell="20" progress="0.42" seat="0" hint-size="251px,167px"></dc-import></div>
+        <p class="hint">Take <b>the pair</b> or <b>the single</b>.</p>
+      </main>
+      <footer>
+        <div class="offers">
+          <button class="offer"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></button>
+          <button class="offer"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></button>
+        </div>
+      </footer>
+    </div></div>
+  </div>
+
+  <!-- 12g -->
+  <div class="fr">
+    <p class="cap"><b>12g</b><span>checking with the room · sheet held</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="hud withsheet">
+      <header><div class="hstat"><span class="mono t-lg" style="letter-spacing: .14em">KM4T</span><span class="t-sm muted">Round 4 of 22</span></div><span class="pill">Connected</span></header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p3"></span><b>Ravi</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+      </div>
+      <main>
+        <div class="board"><dc-import name="Pic" pic="tram" mode="board" cell="20" progress="0.42" seat="0" ghost="3,5;4,5;3,6;7,6;8,6" hint-size="251px,167px"></dc-import></div>
+        <p class="hint" role="status">Checking with the room…</p>
+      </main>
+      <div class="scrim"></div>
+      <div class="sheet wait" aria-busy="true">
+        <div class="grip"></div>
+        <div class="chosenbar"><span class="lb">The pair</span><span class="glyph" style="grid-template-columns: repeat(2, 8px)"><i class="on" style="width: 8px; height: 8px"></i><i class="on" style="width: 8px; height: 8px"></i><i class="on" style="width: 8px; height: 8px"></i><i style="width: 8px; height: 8px"></i></span><span class="glyph" style="grid-template-columns: repeat(2, 8px)"><i class="on" style="width: 8px; height: 8px"></i><i class="on" style="width: 8px; height: 8px"></i></span><span class="swap">Switch</span></div>
+        <div class="pieces">
+          <div class="pcard"><span class="glyph" style="grid-template-columns: repeat(2, 10px)"><i class="on" style="width: 10px; height: 10px"></i><i class="on" style="width: 10px; height: 10px"></i><i class="on" style="width: 10px; height: 10px"></i><i style="width: 10px; height: 10px"></i></span><span class="stl">On the board</span></div>
+          <div class="pcard"><span class="glyph" style="grid-template-columns: repeat(2, 10px)"><i class="on" style="width: 10px; height: 10px"></i><i class="on" style="width: 10px; height: 10px"></i></span><span class="stl">On the board</span></div>
+        </div>
+        <div class="tools">
+          <button class="tool" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><rect x="7" y="9" width="9" height="9"></rect><path d="M6 7.5V3.5h4"></path><path d="M6.2 3.6A9 9 0 0 1 20 8"></path></svg><span>Turn</span></button>
+          <button class="tool" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M12 2v20" stroke-dasharray="3 3"></path><path d="M9 6H4v12h5"></path><path d="M15 6h5v12h-5"></path></svg><span>Flip</span></button>
+          <button class="tool" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><rect x="4" y="4" width="16" height="16"></rect><path d="M9 9l6 6M15 9l-6 6"></path></svg><span>Take back</span></button>
+        </div>
+        <div class="row" style="gap: 8px; margin-top: auto">
+          <button class="btn lg" style="flex: 1" disabled>Placing…</button>
+          <button class="btn secondary lg" disabled>Cancel</button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 12a -->
+  <div class="fr">
+    <p class="cap"><b>12a</b><span>done · waiting for the others</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="hud">
+      <header><div class="hstat"><span class="mono t-lg" style="letter-spacing: .14em">KM4T</span><span class="t-sm muted">Round 4 of 22</span></div><span class="pill">Connected</span></header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p3"></span><b>Ravi</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+      </div>
+      <main>
+        <div class="board"><dc-import name="Pic" pic="tram" mode="board" cell="20" progress="0.5" seat="0" hint-size="251px,167px"></dc-import></div>
+        <p class="hint">Your five squares are in.</p>
+      </main>
+      <footer>
+        <div class="offers">
+          <span class="offer off"><span class="lb">The pair</span><div class="glyphs"><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="glyph" style="grid-template-columns: repeat(2, 14px)"><i class="on"></i><i class="on"></i></span></div><span class="t-xs muted">5 squares</span></span>
+          <span class="offer off"><span class="lb">The single</span><div class="combo"><span class="pips"><i></i></span><span class="rule"></span><span class="pips"><i></i><i></i></span></div><span class="t-xs muted">1 + 2 squares</span></span>
+        </div>
+        <p class="status" role="status">Done for this round.</p>
+        <p class="sub">Waiting for Jo and Ravi — the next round starts by itself.</p>
+      </footer>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2222,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
