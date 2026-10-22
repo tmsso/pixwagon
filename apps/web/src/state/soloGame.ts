@@ -20,6 +20,7 @@ import {
 } from './placement.ts';
 import { DEFAULT_SOLO_PACK_ID, loadSoloPack } from './packChoice.ts';
 import { dailyConfig } from './daily.ts';
+import { recordResult } from './history.ts';
 
 /**
  * Client state store — decided 2026-08-15 (ROADMAP.md Phase 2): zustand over a
@@ -125,11 +126,14 @@ function sessionFromConfig(config: SoloSessionConfig) {
   };
 }
 
-/** Reads `?seed=` from the current URL, if any — see `freshSoloConfig`'s note. */
+/** Reads `?seed=` from the current URL, if any — see `freshSoloConfig`'s note.
+ *  A seeded run is pinned to the default pack's first picture (the tram),
+ *  whatever pack this device last chose (D7): seeds like `achievability-0`
+ *  are witnesses for that picture, and a verification link must replay the
+ *  same board on any device. */
 export function initialSoloConfig(search: string): SoloSessionConfig {
   const seed = new URLSearchParams(search).get('seed');
-  const config = freshSoloConfig();
-  return seed ? { ...config, roomSeed: seed } : config;
+  return seed ? { ...freshSoloConfig(DEFAULT_SOLO_PACK_ID), roomSeed: seed } : freshSoloConfig();
 }
 
 function updatePending(
@@ -198,6 +202,17 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
 
     if (isComplete(result.board)) {
       set({ board: result.board, pending: null, lastRejection: null, status: 'complete' });
+      // Phase 7b: completed results are kept on this device. Here, at the
+      // one moment a session completes, rather than in the Results screen,
+      // so a result counts even if that screen is never opened.
+      recordResult({
+        kind: state.daily ? 'daily' : 'solo',
+        daily: state.daily,
+        packId: state.packId,
+        pictureId: state.pictureId,
+        rounds: state.round + 1,
+        completedAt: new Date().toISOString(),
+      });
       return;
     }
 

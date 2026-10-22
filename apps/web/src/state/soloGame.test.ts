@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FALLBACK_BLOB_SIZES, createBoard, issueRoll, legalCellsFor } from '@pixwagon/game-core';
 import type { Board, CellRef, Orientation } from '@pixwagon/game-core';
 import { absolutePieceCells } from './legality.ts';
+import { loadHistory } from './history.ts';
 import { initialSoloConfig, useSoloGameStore } from './soloGame.ts';
 
 describe('initialSoloConfig', () => {
@@ -15,6 +16,20 @@ describe('initialSoloConfig', () => {
   it('honours a ?seed= override, for reproducible verification', () => {
     const config = initialSoloConfig('?seed=achievability-0');
     expect(config.roomSeed).toBe('achievability-0');
+  });
+
+  it('pins a seeded run to the tram even when another pack is remembered (D7)', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => (key === 'pixwagon.soloPack' ? 'garden' : null),
+      setItem: () => {},
+    });
+    expect(initialSoloConfig('')).toMatchObject({ packId: 'garden', pictureId: 'tulip' });
+    expect(initialSoloConfig('?seed=achievability-0')).toMatchObject({
+      packId: 'transportation',
+      pictureId: 'tram',
+      roomSeed: 'achievability-0',
+    });
+    vi.unstubAllGlobals();
   });
 });
 
@@ -110,9 +125,19 @@ describe('the store round loop, replayed against the Phase 1 achievability-0 wit
     // the test that would have caught Phase 2 slice A shipping the store's
     // rounds 1-indexed while issueRoll/Move.round are 0-indexed (rng.md):
     // achievability-0 is only a proven witness for the 0-indexed sequence.
-    useSoloGameStore
-      .getState()
-      .start({ roomSeed: 'achievability-0', packId: 'transportation', pictureId: 'tram' });
+    // Played as a daily (Phase 7b): completing it must leave a result in
+    // this device's history, which is what Home reads after a reload.
+    const stored = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => void stored.set(key, value),
+    });
+    useSoloGameStore.getState().start({
+      roomSeed: 'achievability-0',
+      packId: 'transportation',
+      pictureId: 'tram',
+      daily: '2026-10-22',
+    });
 
     const maxRounds = 100;
     for (let i = 0; i < maxRounds; i += 1) {
@@ -168,5 +193,14 @@ describe('the store round loop, replayed against the Phase 1 achievability-0 wit
     }
 
     expect(useSoloGameStore.getState().status).toBe('complete');
+    const [result, ...rest] = loadHistory();
+    expect(rest).toEqual([]);
+    expect(result).toMatchObject({
+      kind: 'daily',
+      daily: '2026-10-22',
+      pictureId: 'tram',
+      rounds: useSoloGameStore.getState().round + 1,
+    });
+    vi.unstubAllGlobals();
   });
 });
