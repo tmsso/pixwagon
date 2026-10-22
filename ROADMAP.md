@@ -46,6 +46,15 @@ Live (deployed 2026-10-08 from `main` at PR #36, protocol 2): web app `https://p
 - **D6 — ghost players. Decided: agreed — first item of the next batch.** The rejoin token lives in `sessionStorage`, so closing and reopening a tab (or relaunching an installed iOS app) rejoins as a _new_ player; since protocol 2 the old identity stays "away" holding a seat — duplicate names in the ranking, and a six-player room can lock itself out. Recommended: move the token to `localStorage` (per room code) in Phase 6.
 - **D7 — choosing a pack. Decided: agreed — lands with Phase 6.** Garden ships but solo and rooms always play Transportation. Recommended: a pack choice in the waiting room and on the solo start, alongside Phase 6's own-board work.
 
+## Decisions D8–D10 — **decided 2026-10-22** (owner agreed to all defaults, up front for the Phase 6 batch)
+
+Phase 6 is built in parallel with design pass 03 (`docs/design/BRIEF-03.md`). The UI is provisional, from pass 02 `13a–13c`, and pass 03 reworks the visuals afterwards.
+
+- **D8 — picture cycling is lockstep.** The room moves to the next picture together once every player's current picture has resolved (completed or out of rounds). Each picture gets a fresh budget, and the session ends after the pack. The round counter stays global and is never reset per picture, because `issueRoll(roomSeed, round)` keys on the round alone. This replaces the "per-player `currentPictureIndex`" wording in Phase 6 below.
+- **D9 — own-board mid-game visibility: completion on chips only.** Boards are compared only on the results screen (`BoardCompare`).
+- **D10 — rematch is host-only and returns everyone to the waiting room** with the same mode and pack, which the host may change before Start. `roomSeed` rotates by `deriveSeed(oldSeed, 'rematch', n)`, with `n` stored.
+- **D6 addendum — the newest tab wins.** With the token in `localStorage`, a second tab takes the seat over. The older tab gets a terminal "open in another tab" state, not a reconnect, because otherwise two tabs would evict each other in a loop. Testing two players locally now needs two browser profiles or a private window.
+
 ---
 
 ## Device verification session (owner-owned, no code)

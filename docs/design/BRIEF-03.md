@@ -72,10 +72,27 @@ reopening one is an owner-level change, not a design proposal.
   cycling.)
 - **D6 — closing a tab will no longer make a ghost.** Decided, lands first in
   the next batch: a player who closes and reopens the app rejoins as themselves.
-  Design can assume one chip per person.
+  Design can assume one chip per person. Because the identity is now shared by
+  every tab of one browser, opening the room in a second tab takes the seat
+  over and the first tab shows a terminal "open in another tab" state with a
+  "Play here" button (decided 2026-10-22) — design that state alongside `02g`.
 - **D7 — pack choice.** Garden ships now (tulip, watering can, mushroom) and is
   no longer "coming soon" anywhere. The host picks the pack in the waiting
   room; a solo player picks it before starting.
+- **D8 — picture cycling is lockstep** (decided 2026-10-22). The whole room
+  moves to the next picture together, once every player's current picture has
+  resolved (completed, or out of rounds). A player who finishes early waits
+  for the rest, exactly as at the end of a Phase 5 game. So in same-board mode
+  everyone is always on the same picture, and "Picture 2 of 3" is one shared
+  moment for the room.
+- **D9 — own-board mid-game visibility: completion only** (decided
+  2026-10-22). During a game a player sees each opponent's progress on their
+  chip (how complete their picture is), never their board. Boards are shown
+  side by side only on the results screen, in `BoardCompare`.
+- **D10 — rematch is host-only and returns to the waiting room** (decided
+  2026-10-22). Everyone still connected goes back to `/r/CODE` with the same
+  mode and pack. The host may change either, then presses Start. Nobody
+  rejoins.
 - **Six seats, two to start.** `MAX_PLAYERS` is 6 (one per hue + hatch pair).
   Starting needs two players. Room codes are four characters from an alphabet
   with no `I`, `O`, `0` or `1` — pass 02's sample code `PIXW` can never be
@@ -170,10 +187,11 @@ cited by ID in code comments, so they are stable addresses like annotations are.
 
 ## Part B — forward-design Phase 6
 
-Phase 6's server and client work has not started; the requirements in
-`ROADMAP.md` Phase 6 are firm, the screens are not. This is the authoritative
-design for them unless implementation finds a reason to deviate (and records
-it).
+Phase 6 is being built **in parallel with this pass** (owner, 2026-10-22):
+the engineering ships a provisional UI built from pass 02's `13a`–`13c`, and
+this pass's result replaces its visuals afterwards. D8–D10 above are fixed
+for both. Treat the live build as a baseline, not a constraint. Where the
+build and this brief disagree on anything other than D1–D10, this pass wins.
 
 - **Waiting room, host choices (`02c`–`02e` extended).** The host picks:
   - **Mode** — "Same board" (everyone the same picture) or "Own board" (each
@@ -187,10 +205,11 @@ it).
   plays Transportation, and the pack picker (`/packs`) lists packs but choosing
   one does nothing. Decide where the choice lives: on the picker, as a step
   after "Solo", or remembered from last time. Daily keeps a fixed rotation and
-  shows no choice.
+  shows no choice. (The provisional build remembers the pack last chosen on
+  the picker; redesign freely.)
 - **Own-board game (`12d`, revise).** Each player's board shows a different
-  picture. Does a player see anyone else's progress mid-game? Pass 02 left this
-  open; design it, keeping D1's "no shared cells" in mind.
+  picture. Opponents appear as completion on their chips only (D9); design how
+  that reads without colour, keeping D1's "no shared cells" in mind.
 - **Picture cycling (new `12i`).** The moment one picture resolves (complete,
   or out of rounds) and the next begins: a progress marker ("Picture 2 of 3"),
   what happens to the finished picture, and how the round budget for the new
@@ -204,9 +223,10 @@ it).
   component, not a frame: side-by-side finished boards with player identity
   (hue **and** hatch) and rank, for both modes. Name it `BoardCompare`; once it
   is built, it gets a preview card and is re-synced, like every component.
-- **Rematch (`13c`, revise).** Same players, new game, nobody rejoins. Who can
-  start it (host only, like Start?), what non-hosts see while the host decides,
-  and what happens to a player who has already left the results screen.
+- **Rematch (`13c`, revise).** Same players, new game, nobody rejoins. The
+  host starts it and everyone returns to the waiting room (D10). Design what
+  non-hosts see while the host decides, and what happens to a player who has
+  already left the results screen.
 
 ---
 
