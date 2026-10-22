@@ -57,6 +57,13 @@ Two consequences, both load-bearing:
   RNG stream (one stream, two draws — not two independent streams that could
   coincide).
 
+## Decided in Phases 6–7 (2026-10-22)
+
+- **Picture order:** `pictureOrder(roomSeed, packId)` is a selection shuffle drawn from `createRng(deriveSeed(roomSeed, 'pictures'))`. Its first draw is `int(n)`, so its first picture is exactly what Phase 5's single `pick` chose for the same seed.
+- **Picture cycling never resets the round.** Every picture of a session draws its offers from `issueRoll(roomSeed, round)` with the same, ever-increasing round. Resetting per picture would replay picture 1's offers on picture 2.
+- **Rematch:** `roomSeed = deriveSeed(baseSeed, 'rematch', n)`, where `baseSeed` is the room's first seed and `n` the stored rematch count. It is derived from the base and never chained, so any game in a room's history is reproducible from two stored values.
+- **Daily:** `daily-YYYY-MM-DD` (UTC date), fed to the ordinary solo store. The picture is a rotation over every registered pack's pictures by day number, not a seeded pick.
+
 ## Not yet decided
 
 - Whether `Roll` carries the derived seed or only the round index. Currently it carries both; collapse it in Phase 4 if the redundancy proves useless.

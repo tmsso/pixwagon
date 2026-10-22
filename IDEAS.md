@@ -10,6 +10,9 @@ Loose backlog. Nothing here is scheduled; `ROADMAP.md` is the plan. Pick things 
 - **Puzzle chains.** A picture that unlocks the next one, giving solo a shape beyond one-off boards.
 - **Roll history / replay.** Seeded rooms are reproducible by construction, so a replay is mostly a UI. Would make "that was unfair" arguments settleable.
 
+- **Picture variety in solo.** Solo plays the chosen pack's first picture (D7 kept that behaviour). A seeded pick per game, or solo cycling like rooms do, would use the whole pack. The `achievability-0` witness is about the tram, so keep a way to pin it.
+- **Daily streak.** `state/history.ts` already keeps one entry per daily date, so a "3 days in a row" line on Home is a read, not a new store.
+
 ## Content
 
 - Pack ideas beyond transportation: garden, kitchen, weather, instruments, tools. Each must be drawn originally.
