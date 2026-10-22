@@ -28,9 +28,9 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 | 8     | Second shape pack                     | delivered | ✅ met      | Garden ships as data; pack choice is D7                   |
 | 9     | Polish                                | —         | —           |                                                           |
 
-Live (deployed 2026-10-08 from `main` at PR #36, protocol 2): web app `https://pixwagon.pages.dev` (Pages) · room worker `https://pixwagon-app.tmsso.workers.dev` (version `4a6b7e59`). Live-verified: `/health` → `protocolVersion: 2`; two headless browsers on production created and joined a room, both reached round 1 with the placement sheet working, and a closed player showed as "away" on the other — no page errors.
+Live (deployed 2026-10-22 from `main` at PR #46, protocol 3): web app `https://pixwagon.pages.dev` (Pages) · room worker `https://pixwagon-app.tmsso.workers.dev` (version `a34dba09`). Live-verified: `/health` → `protocolVersion: 3`. On production, two headless browsers: the host picked Own board + Garden and the guest saw it live; after Start, both were on "Picture 1 of 3" with different pictures and the opponent's completion on the chip. The daily puzzle started. No page errors.
 
-> **Not yet live: the 2026-10-22 stack (#38–#46, protocol 3).** It deploys after it is merged, worker first, then Pages, by the rule below. Until then production stays on protocol 2. After the deploy, installed phones show "This room runs a newer version" until the update banner on Home is accepted.
+> **Protocol 3 went live 2026-10-22.** Installed phones show "This room runs a newer version" until the update banner on Home is accepted. Device-session steps 4–5 say so.
 
 > Deploy rule since protocol 2: the worker and Pages always go out back to back, worker first, from a fresh `main` build with `VITE_ROOM_ORIGIN` unset (grep the bundle for the live worker origin before deploying Pages).
 

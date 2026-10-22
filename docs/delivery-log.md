@@ -334,3 +334,19 @@ Verified before merge on the preview worker `pixwagon-app-preview` and the `phas
 - The daily matched in two isolated contexts, one offline.
 
 One daily run timed out once after a reload, right after a deploy, and didn't reproduce. Nothing here ran on a phone yet (device-session step 5).
+
+### 2026-10-22 — stack merged and deployed (protocol 3 live)
+
+The owner merged #38–#46 in order with merge commits. `main` (`51ba988`) equals #45's code (including its late `?seed=` fix) plus #46's docs. CI is green.
+
+Production build from fresh `main` with `VITE_ROOM_ORIGIN` unset: the bundle names `pixwagon-app.tmsso.workers.dev` and never the preview. `wrangler deploy` gave version `a34dba09`, and `/health` → protocol 3. The Pages deploy followed straight after, and the live site serves the same bundle hash as the local build.
+
+Live check with two headless browsers on `pixwagon.pages.dev`:
+
+- the host's Own board + Garden choice reached the guest;
+- Start put both on "Picture 1 of 3" with different pictures (7×10 and 12×8);
+- the opponent's chip showed 0%;
+- the daily puzzle started;
+- no page errors.
+
+Phase 6 and 7 stay "accept pending" until device-session step 5.
