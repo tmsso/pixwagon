@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBoard, issueRoll } from '@pixwagon/game-core';
 import type { Board, CellRef } from '@pixwagon/game-core';
 import type { ClientMessage, PlayerPresence, RoomSnapshot } from '@pixwagon/protocol';
@@ -234,6 +234,26 @@ describe('terminal server errors', () => {
     expect(sockets[0]?.closed).toBe(true);
   });
 
+  it('replaced (D6: another tab took the seat) is terminal, so the tabs cannot ping-pong', () => {
+    const sockets: FakeSocket[] = [];
+    useRoomGameStore.getState().join('ws://test/api/room/ABCD/ws', 'ABCD', 'Alex', () => {
+      const socket = fakeSocket();
+      sockets.push(socket);
+      return socket;
+    });
+
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: { type: 'error', code: 'replaced', message: 'this room was opened somewhere else' },
+    });
+    // The server's own 4000 close lands after its error message.
+    sockets[0]?.onclose?.({ code: 4000, reason: 'reconnected elsewhere' });
+
+    expect(useRoomGameStore.getState().fatalError).toBe('replaced');
+    expect(useRoomGameStore.getState().connection).toBe('idle');
+    expect(sockets).toHaveLength(1); // no reconnect attempt was dialled
+  });
+
   it('an ordinary error (not-host) is not terminal', () => {
     useRoomGameStore.getState().handleEvent({
       type: 'message',
@@ -241,6 +261,66 @@ describe('terminal server errors', () => {
     });
     expect(useRoomGameStore.getState().fatalError).toBeNull();
     expect(useRoomGameStore.getState().lastError).toBe('only the host can start');
+  });
+});
+
+interface FakeSocket {
+  sent: ClientMessage[];
+  send(data: string): void;
+  close(): void;
+  onopen: (() => void) | null;
+  onclose: ((event: { code: number; reason: string }) => void) | null;
+  onmessage: null;
+  onerror: null;
+}
+
+function fakeSocket(): FakeSocket {
+  const socket: FakeSocket = {
+    sent: [],
+    send: (data) => socket.sent.push(JSON.parse(data) as ClientMessage),
+    close: () => {},
+    onopen: null,
+    onclose: null,
+    onmessage: null,
+    onerror: null,
+  };
+  return socket;
+}
+
+describe('rejoin token persistence (D6)', () => {
+  const stored = new Map<string, string>();
+
+  beforeEach(() => {
+    stored.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => void stored.set(key, value),
+    });
+    useRoomGameStore.getState().leave();
+    return () => vi.unstubAllGlobals();
+  });
+
+  it('a token from one visit is resent on the next — closing the tab no longer makes a ghost', () => {
+    const first = fakeSocket();
+    useRoomGameStore.getState().join('ws://test', 'ABCD', 'Alex', () => first);
+    useRoomGameStore.getState().handleEvent({
+      type: 'message',
+      message: {
+        type: 'welcome',
+        protocolVersion: 2,
+        playerId: 'p1',
+        code: 'ABCD',
+        rejoinToken: 'tok-1',
+      },
+    });
+    expect(stored.get('pixwagon.rejoinToken.ABCD')).toBe('tok-1');
+
+    // A brand-new page load: the store starts empty, only localStorage remains.
+    useRoomGameStore.getState().leave();
+    const second = fakeSocket();
+    useRoomGameStore.getState().join('ws://test', 'ABCD', 'Alex', () => second);
+    second.onopen?.();
+    expect(second.sent[0]).toMatchObject({ type: 'join', rejoinToken: 'tok-1' });
   });
 });
 

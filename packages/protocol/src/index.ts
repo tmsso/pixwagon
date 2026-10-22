@@ -346,6 +346,11 @@ export const serverErrorCodeSchema = z.enum([
   // Protocol 2: `skip-waiting` before the round has waited
   // `SKIP_WAITING_AFTER_MS`.
   'too-early',
+  // D6 (2026-10-22): sent to the older socket just before the server closes
+  // it, when the same rejoin token joined from somewhere else (another tab
+  // shares the token since it moved to localStorage). Terminal on the client:
+  // reconnecting would take the seat back and evict the newer tab in turn.
+  'replaced',
   'internal',
 ]);
 

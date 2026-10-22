@@ -54,14 +54,22 @@ export interface RoomPlayerIdentity {
   isHost: boolean;
 }
 
-function sessionKey(code: string): string {
+/**
+ * The rejoin token lives in `localStorage`, per room code (D6, 2026-10-22).
+ * It used to be `sessionStorage`, which dies with the tab: closing and
+ * reopening the app (or iOS relaunching an installed PWA) then joined as a
+ * brand-new player while the old identity sat "away" holding a seat. The cost
+ * of sharing it across tabs is that a second tab *is* the same player — the
+ * server hands it the seat and tells the older tab `replaced` (terminal below).
+ */
+function tokenKey(code: string): string {
   return `pixwagon.rejoinToken.${code}`;
 }
 
 function loadRejoinToken(code: string): string | null {
-  if (typeof sessionStorage === 'undefined') return null;
+  if (typeof localStorage === 'undefined') return null;
   try {
-    return sessionStorage.getItem(sessionKey(code));
+    return localStorage.getItem(tokenKey(code));
   } catch {
     // Private-mode quota errors — reconnecting just looks like a fresh join.
     return null;
@@ -69,9 +77,9 @@ function loadRejoinToken(code: string): string | null {
 }
 
 function persistRejoinToken(code: string, token: string): void {
-  if (typeof sessionStorage === 'undefined') return;
+  if (typeof localStorage === 'undefined') return;
   try {
-    sessionStorage.setItem(sessionKey(code), token);
+    localStorage.setItem(tokenKey(code), token);
   } catch {
     // Best effort — worst case, the next reconnect re-registers as new.
   }
@@ -85,6 +93,9 @@ function persistRejoinToken(code: string, token: string): void {
 const TERMINAL_ERRORS: ReadonlySet<ServerErrorCode> = new Set([
   'room-full',
   'protocol-version-mismatch',
+  // Another tab took this identity over (D6). Reconnecting would evict it in
+  // turn, and the two tabs would ping-pong forever.
+  'replaced',
 ]);
 
 function isHostAmong(players: readonly PlayerPresence[], playerId: string): boolean {
@@ -293,7 +304,7 @@ interface RoomGameSlice {
 export interface RoomGameState extends RoomGameSlice {
   /** Opens a connection to `url` and joins `code` as `name`, resending a
    *  previously-issued rejoin token for this code if one is in
-   *  `sessionStorage`. `createSocket` is a test/Storybook seam, passed
+   *  `localStorage`. `createSocket` is a test/Storybook seam, passed
    *  straight through to `RoomConnection`. */
   join: (url: string, code: string, name: string, createSocket?: WebSocketFactory) => void;
   /** A deliberate leave — closes the connection and clears the room, but

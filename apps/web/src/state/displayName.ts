@@ -3,8 +3,8 @@ import { displayNameSchema } from '@pixwagon/protocol';
 /**
  * The player's display name — no accounts (CLAUDE.md §1), so this is the
  * whole of a player's identity beyond the room's rejoin token. Kept in
- * `localStorage` (not `sessionStorage` like the rejoin token): the name should
- * survive closing the tab, a seat in one particular room should not.
+ * `localStorage`, like the rejoin token since D6 (2026-10-22): both should
+ * survive closing the tab.
  */
 
 const KEY = 'pixwagon.displayName';

@@ -292,6 +292,19 @@ export class Room {
         // `#findLiveSocket` is the glue lookup of the actual socket to close.
         if (findStaleConnection(this.#seatedConns(ws), playerId)) {
           stale = this.#findLiveSocket(playerId, ws);
+          // Say why before closing: a bare close looks like a network drop,
+          // and the evicted tab would reconnect and evict this one (D6).
+          // `sendToAll` guards the send: the old socket may be half-dead.
+          if (stale) {
+            sendToAll(
+              [stale],
+              encode({
+                type: 'error',
+                code: 'replaced',
+                message: 'this room was opened somewhere else',
+              }),
+            );
+          }
           stale?.close(4000, 'reconnected elsewhere');
         }
       } else {

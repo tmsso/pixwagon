@@ -141,6 +141,17 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   never-joined sockets older than 10 s are closed to make room, otherwise the
   upgrade gets HTTP 503.
 
+## Decided 2026-10-22 (D6, still protocol 2)
+
+- **`error: replaced`** (server → the older socket). When a `join` reclaims an
+  identity that still has a live socket, the server sends that socket
+  `replaced` and then closes it with 4000. The client treats `replaced` as
+  terminal, like `room-full`. The rejoin token moved from `sessionStorage` to
+  `localStorage`, so every tab of one browser shares it. Without the terminal
+  error, two tabs would keep evicting each other. This is an additive
+  server-to-client code, and protocol-2 clients keep their tokens per tab, so
+  they never receive it. No version bump.
+
 ## Not yet decided
 
 - Per-socket message rate limiting (deferred: the free tier caps rather than
