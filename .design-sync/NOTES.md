@@ -10,7 +10,7 @@ bundle it can compose. `apps/web` is a Vite **app**, not a library — there is 
 infrastructure (e.g. a `packages/ui` workspace member) that no roadmap phase
 currently calls for.
 
-Instead, this repo ships `design-system/`: 17 fully self-contained, standalone
+Instead, this repo ships `design-system/`: fully self-contained (19 cards as of 2026-10-22, 20 once `BoardCompare` lands), standalone
 preview-card HTML files (Tailwind compiled inline, no external stylesheet
 dependency), generated from the _real_ components in
 `apps/web/src/components/{ui,game}/` by `scripts/build-design-system.tsx`
@@ -52,3 +52,24 @@ components) but not live composability.
   format and has now been exercised through a real upload for the first time —
   see `docs/design/README.md`'s "Known unknown" section for what to check if
   cards group, title, or size oddly in the Design System pane.
+
+## Re-sync 2026-10-22: write-only, never delete
+
+The project now holds more than this repo's upload. Claude Design's own work
+lives beside the cards: `surfaces/`, `design_handoff_pass02/`,
+`design_handoff_six_surfaces/`, `uploads/` (including `BRIEF-03.md`), plus
+`_ds_bundle.js`, `_ds_manifest.json`, `styles.css`, `thumbnail.html` and
+`github.md`, which the app generated. A re-sync therefore:
+
+- runs `pnpm design:build` and `pnpm design:check` first, from the branch
+  whose cards you mean to publish (usually `main`);
+- writes exactly `components/*/index.html`, `foundations/*/index.html`,
+  `manifest.json` and `README.md` from `./design-system`, with an **empty
+  delete list**;
+- deletes a card only when it is removed from `cards.tsx`, path by path, after
+  looking at it, and never with a glob.
+
+Done 2026-10-22 from `main` (19 cards; 21 files written, nothing deleted;
+the remote `manifest.json` was read back and matches). Sync again after the
+2026-10-22 stack merges: #43 adds `components/board-compare/` (card 20) and
+#42 adds PlayerChip's "Progress" variant.
