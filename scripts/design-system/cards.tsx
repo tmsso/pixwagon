@@ -11,8 +11,10 @@
  */
 
 import type { ReactNode } from 'react';
-import type { Roll } from '@pixwagon/game-core';
+import { createBoard, fillCells } from '../../packages/game-core/src/index.ts';
+import type { Board, Roll } from '@pixwagon/game-core';
 import { BoardCell } from '../../apps/web/src/components/game/BoardCell.tsx';
+import { BoardCompare } from '../../apps/web/src/components/game/BoardCompare.tsx';
 import { DiceFace } from '../../apps/web/src/components/game/DiceFace.tsx';
 import { HudFrame } from '../../apps/web/src/components/game/HudFrame.tsx';
 import { PackCard } from '../../apps/web/src/components/game/PackCard.tsx';
@@ -106,6 +108,18 @@ function Row({ children }: { children: ReactNode }) {
 
 const picture = transportation.pictures[0]!;
 const balloon = transportation.pictures[2]!;
+
+/** `board` with its first `share` (0–1) of fillable cells filled — fixture
+ *  boards for BoardCompare. */
+function partlyFilled(board: Board, share: number): Board {
+  const fillable = board.cells.flatMap((cell, i) =>
+    cell === 'fillable' ? [{ x: i % board.size.width, y: Math.floor(i / board.size.width) }] : [],
+  );
+  return fillCells(board, fillable.slice(0, Math.round(fillable.length * share)));
+}
+const tramBoard = createBoard('transportation', 'tram');
+const sailBoard = createBoard('transportation', 'sailboat');
+const balloonBoard = createBoard('transportation', 'hot-air-balloon');
 
 export const cards: Card[] = [
   // -------------------------------------------------------------------------
@@ -758,6 +772,75 @@ export const cards: Card[] = [
             pictureCount={8}
             difficulty="medium"
             preview={{ rows: balloon.rows, palette: balloon.palette }}
+          />
+        </Variant>
+      </div>
+    ),
+  },
+
+  {
+    path: 'components/board-compare/index.html',
+    name: 'BoardCompare',
+    group: 'Board',
+    subtitle: 'Finished boards side by side, ranked — own-board, a tie, a leaver, a late joiner',
+    viewport: { width: 700, height: 620 },
+    render: () => (
+      <div className="flex w-[30rem] flex-col gap-6">
+        <Variant label="own-board, ranked">
+          <BoardCompare
+            meId="b"
+            entries={[
+              {
+                playerId: 'a',
+                name: 'Sam',
+                seatIndex: 1,
+                rank: 1,
+                tied: false,
+                leftMidGame: false,
+                completedPictures: 2,
+                filled: 120,
+                boards: [partlyFilled(tramBoard, 1), partlyFilled(sailBoard, 1), partlyFilled(balloonBoard, 0.4)],
+              },
+              {
+                playerId: 'b',
+                name: 'Alex',
+                seatIndex: 0,
+                rank: 2,
+                tied: false,
+                leftMidGame: false,
+                completedPictures: 1,
+                filled: 98,
+                boards: [partlyFilled(sailBoard, 1), partlyFilled(balloonBoard, 0.6), partlyFilled(tramBoard, 0.3)],
+              },
+            ]}
+          />
+        </Variant>
+        <Variant label="tie, leaver, late joiner">
+          <BoardCompare
+            entries={[
+              {
+                playerId: 'c',
+                name: 'Kim',
+                seatIndex: 2,
+                rank: 1,
+                tied: true,
+                leftMidGame: true,
+                completedPictures: 0,
+                filled: 40,
+                boards: [partlyFilled(tramBoard, 0.5), partlyFilled(tramBoard, 0.25)],
+              },
+              {
+                playerId: 'd',
+                name: 'Jo',
+                seatIndex: 3,
+                rank: 1,
+                tied: true,
+                leftMidGame: false,
+                completedPictures: 0,
+                filled: 40,
+                boards: [null, partlyFilled(tramBoard, 0.75)],
+              },
+            ]}
           />
         </Variant>
       </div>

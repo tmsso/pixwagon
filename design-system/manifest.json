@@ -182,6 +182,16 @@
       }
     },
     {
+      "name": "BoardCompare",
+      "path": "components/board-compare/index.html",
+      "group": "Board",
+      "subtitle": "Finished boards side by side, ranked — own-board, a tie, a leaver, a late joiner",
+      "viewport": {
+        "width": 700,
+        "height": 620
+      }
+    },
+    {
       "name": "HudFrame",
       "path": "components/hud-frame/index.html",
       "group": "Components",

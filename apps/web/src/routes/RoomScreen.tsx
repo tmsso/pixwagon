@@ -5,6 +5,7 @@ import type { CellRef, PieceId } from '@pixwagon/game-core';
 import { MAX_PLAYERS, SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
+import { BoardCompare } from '../components/game/BoardCompare.tsx';
 import { HudFrame } from '../components/game/HudFrame.tsx';
 import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
 import { PlayerChip } from '../components/game/PlayerChip.tsx';
@@ -421,14 +422,19 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
 }
 
 /**
- * The end of a session (Phase 5's Accept: everyone sees the same final
- * ranking). Deliberately minimal — ranked names, points, squares — computed
- * by `roomRanking` from the snapshot's boards. The full results screen,
- * board comparison and rematch are Phase 6 (owner decision 2026-10-08).
+ * The room results screen (Phase 6; pass 02 `13a`–`13c`, provisional until
+ * design pass 03). Ranked by completed pictures, then squares, from the
+ * snapshot alone (`roomRanking`), so everyone — including someone who
+ * reconnects after the end — sees the same ranking (Phase 5's Accept). Every
+ * picture of the session is shown side by side in `BoardCompare`. The host
+ * offers a rematch (D10): everyone returns to the waiting room, nobody
+ * rejoins.
  */
 function RoomEnded({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useRoomGameStore((state) => state.me);
+  const rematch = useRoomGameStore((state) => state.rematch);
   const ranking = roomRanking(snapshot);
+  const pictures = snapshot.stageCount ?? 1;
 
   return (
     <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
@@ -437,35 +443,26 @@ function RoomEnded({ snapshot }: { snapshot: RoomSnapshot }) {
           Room <span className="font-mono tracking-widest">{snapshot.code}</span>
         </p>
         <h1 className="text-2xl font-semibold text-ink">Game over</h1>
+        <p className="text-sm text-ink-muted">
+          {snapshot.mode === 'own-board' ? 'Own board' : 'Same board'} · {pictures} picture
+          {pictures === 1 ? '' : 's'}
+        </p>
       </header>
       <Panel title="Final ranking">
-        <ol className="grid gap-2">
-          {ranking.map((row) => (
-            <li key={row.playerId} className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-3">
-                <span className="w-6 text-right font-mono text-ink-muted">{row.rank}.</span>
-                <PlayerChip
-                  name={row.playerId === me?.playerId ? `${row.name} (you)` : row.name}
-                  colorIndex={row.seatIndex}
-                  active={row.playerId === me?.playerId}
-                />
-              </span>
-              <span className="text-right text-sm text-ink-muted">
-                {row.completedPictures > 0 ? (
-                  <span className="font-medium text-ink">
-                    {row.completedPictures} complete · {row.points} pts
-                  </span>
-                ) : (
-                  `${row.filled} of ${row.total} squares`
-                )}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <BoardCompare entries={ranking} {...(me ? { meId: me.playerId } : {})} />
       </Panel>
-      <Link to="/lobby" className="text-center text-accent underline">
-        Back to the lobby
-      </Link>
+      <div className="grid gap-2 text-center">
+        {me?.isHost ? (
+          <Button size="lg" onClick={rematch}>
+            Rematch
+          </Button>
+        ) : (
+          <p className="text-sm text-ink-muted">The host can start a rematch for everyone here.</p>
+        )}
+        <Link to="/lobby" className="text-accent underline">
+          Back to the lobby
+        </Link>
+      </div>
     </main>
   );
 }
