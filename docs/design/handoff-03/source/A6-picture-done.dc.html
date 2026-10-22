@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>12f, 13d, 14 Finishing early, game over, crash</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 1784px; height: 960px">
+
+  <!-- 12f · Phase 5 -->
+  <div class="fr">
+    <p class="cap"><b>12f</b><span>your picture is complete · one-picture session</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="hud">
+      <header><div class="hstat"><span class="mono t-lg" style="letter-spacing: .14em">KM4T</span><span class="t-sm muted">Round 9 of 22</span></div><span class="pill">Connected</span></header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"></rect><rect x="13" y="4" width="7" height="7"></rect><rect x="4" y="13" width="7" height="7"></rect><rect x="13" y="13" width="7" height="7"></rect></svg>finished</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+      </div>
+      <main>
+        <div class="board"><dc-import name="Pic" pic="tram" mode="board" cell="20" progress="1" seat="0" hint-size="251px,167px"></dc-import></div>
+      </main>
+      <footer>
+        <div class="row" style="gap: 14px">
+          <div class="thumb"><dc-import name="Pic" pic="tram" mode="target" cell="6" hint-size="83px,55px"></dc-import></div>
+          <div class="stack gap1">
+            <span class="eyebrow">Picture complete</span>
+            <p class="t-lg">Tram · 100 points</p>
+          </div>
+        </div>
+        <p class="sub" role="status" style="text-align: left">Sam and Jo are still placing. The results open when they’re done.</p>
+      </footer>
+    </div></div>
+  </div>
+
+  <!-- 12f · Phase 6 -->
+  <div class="fr">
+    <p class="cap"><b>12f</b><span>your picture is complete · next one waits for the room</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="hud">
+      <header>
+        <div class="hstat">
+          <span class="mono t-lg" style="letter-spacing: .14em">KM4T</span>
+          <span class="stage" aria-label="Picture 1 of 3"><span class="dots"><i class="f"></i><i></i><i></i></span>1 of 3</span>
+          <span class="t-sm muted">Round 9 of 22</span>
+        </div>
+        <span class="pill">Connected</span>
+      </header>
+      <div class="players">
+        <span class="chip active"><span class="sw p0"></span><b>You</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"></rect><rect x="13" y="4" width="7" height="7"></rect><rect x="4" y="13" width="7" height="7"></rect><rect x="13" y="13" width="7" height="7"></rect></svg>finished</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="st"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="10.5" width="3.5" height="3.5"></rect><rect x="10.25" y="10.5" width="3.5" height="3.5"></rect><rect x="17.5" y="10.5" width="3.5" height="3.5"></rect></svg>placing</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="st done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M5 12.5l4 4 10-10"></path></svg>done</span></span>
+      </div>
+      <main>
+        <div class="board"><dc-import name="Pic" pic="tram" mode="board" cell="20" progress="1" seat="0" hint-size="251px,167px"></dc-import></div>
+      </main>
+      <footer>
+        <div class="row" style="gap: 14px">
+          <div class="thumb"><dc-import name="Pic" pic="tram" mode="target" cell="6" hint-size="83px,55px"></dc-import></div>
+          <div class="stack gap1">
+            <span class="eyebrow">Picture 1 of 3 complete</span>
+            <p class="t-lg">Tram · 100 points</p>
+          </div>
+        </div>
+        <p class="sub" role="status" style="text-align: left">Picture 2 starts for everyone when Sam and Jo are done with this one.</p>
+      </footer>
+    </div></div>
+  </div>
+
+  <!-- 13d -->
+  <div class="fr">
+    <p class="cap"><b>13d</b><span>game over · a one-picture session (fallback)</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="padding-top: 8px">
+        <span class="eyebrow">Game over · Room KM4T · Tram</span>
+        <h1 class="t-2xl">Jo wins</h1>
+        <p class="t-sm muted">One picture this time. A finished picture scores 100; an unfinished one scores nothing.</p>
+      </div>
+      <div class="stack gap2">
+        <div class="rank" style="border-color: #2a9d8a"><span class="pos">1</span><dc-import name="Pic" pic="tram" mode="board" cell="4" progress="1" seat="2" hint-size="59px,39px"></dc-import><span class="row" style="gap: 6px"><span class="sw s14 p2"></span><b class="b5">Jo</b></span><span class="sc">100<span class="t-xs muted" style="display: block; font-family: var(--sans); font-weight: 400; margin-top: 3px">complete</span></span></div>
+        <div class="rank"><span class="pos">2</span><dc-import name="Pic" pic="tram" mode="board" cell="4" progress="0.86" seat="0" hint-size="59px,39px"></dc-import><span class="row" style="gap: 6px"><span class="sw s14 p0"></span><b class="b5">You</b></span><span class="sc">0<span class="t-xs muted" style="display: block; font-family: var(--sans); font-weight: 400; margin-top: 3px">47 of 54</span></span></div>
+        <div class="rank"><span class="pos">3</span><dc-import name="Pic" pic="tram" mode="board" cell="4" progress="0.76" seat="1" hint-size="59px,39px"></dc-import><span class="row" style="gap: 6px"><span class="sw s14 p1"></span><b class="b5">Sam</b></span><span class="sc">0<span class="t-xs muted" style="display: block; font-family: var(--sans); font-weight: 400; margin-top: 3px">41 of 54</span></span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full">Rematch</button>
+        <button class="btn ghost full">Leave room</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 14 -->
+  <div class="fr">
+    <p class="cap"><b>14</b><span>crash screen · existing components only</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="screen">
+      <div class="spacer"></div>
+      <div class="stack gap4">
+        <h1 class="t-2xl">Something went wrong</h1>
+        <p class="t-base muted">Pixwagon hit a problem it couldn’t recover from. Reloading usually fixes it — if you were in a room, you’ll rejoin the same seat.</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full">Reload</button>
+        <a href="#" class="lnk">Back to the start</a>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1784,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

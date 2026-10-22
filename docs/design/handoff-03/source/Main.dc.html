@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixwagon pass 03 — cover</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div style="width: 1346px; height: 640px; box-sizing: border-box; padding: 48px 56px; background: #f6f7f9; display: grid; grid-template-columns: 520px 1fr; gap: 56px">
+  <div style="display: flex; flex-direction: column; gap: 18px">
+    <span class="eyebrow" style="color: #1f7a6c">Design pass 03 · answers docs/design/BRIEF-03.md</span>
+    <h1 style="font: 700 44px/1.05 var(--sans); letter-spacing: -0.03em">Rooms as built,<br>and Phase 6</h1>
+    <p class="t-base" style="color: #434e59">Part A gives a real design to every room state that shipped from pass 02's provisional frames or with none at all. Part B forward-designs Phase 6: host choices, own board, picture cycling, room results, BoardCompare and rematch. Pass 02 Parts A and B (solo, the offer control, the placement sheet, PWA) stay authoritative and are not redrawn.</p>
+    <p class="t-sm" style="color: #434e59">Phone-first at 390×844. Copy in the frames is final copy. Frame IDs are stable addresses; new annotations start at 21. Decisions D1–D10 are designed to, not reopened.</p>
+    <div class="row" style="gap: 8px; flex-wrap: wrap">
+      <span class="tagr" style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #1f7a6c; border: 1px solid #2a9d8a; border-radius: 999px; padding: 2px 9px">Revised</span>
+      <span class="t-xs muted">a pass 02 frame, redrawn</span>
+      <span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 2px 9px">New</span>
+      <span class="t-xs muted">a state that shipped with no design</span>
+      <span class="prop">Proposal</span>
+      <span class="t-xs muted">a new component or prop</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="stack gap2">
+      <span class="eyebrow">The cast, in every frame</span>
+      <div class="wrap" style="gap: 6px">
+        <span class="chip"><span class="sw p0"></span><b>Alex</b><span class="lab">host · seat 0</span></span>
+        <span class="chip"><span class="sw p1"></span><b>Sam</b><span class="lab">1</span></span>
+        <span class="chip"><span class="sw p2"></span><b>Jo</b><span class="lab">2</span></span>
+        <span class="chip"><span class="sw p3"></span><b>Ravi</b><span class="lab">3</span></span>
+        <span class="chip"><span class="sw p4"></span><b>Mia</b><span class="lab">4</span></span>
+        <span class="chip"><span class="sw p5"></span><b>Kim</b><span class="lab">5</span></span>
+      </div>
+      <p class="t-xs muted">Room KM4T. Hue and hatch on every swatch: solid, diagonal, dots, horizontal, cross, vertical.</p>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-content: start">
+    <div class="stack gap3">
+      <span class="eyebrow" style="color: #1f7a6c">Part A · reconcile</span>
+      <div class="stack gap1 t-sm">
+        <span><b class="mono">02a 02b</b> /lobby front door, bad code</span>
+        <span><b class="mono">02f</b> joining by link, no name yet</span>
+        <span><b class="mono">02c 02d 02e</b> waiting room: host, guest, full</span>
+        <span><b class="mono">02g1–3</b> can't join: full, newer version, open in another tab</span>
+        <span><b class="mono">12h</b> joining · getting your board</span>
+        <span><b class="mono">12b</b> still placing, others done</span>
+        <span><b class="mono">12g</b> checking with the room</span>
+        <span><b class="mono">12a</b> done for this round, waiting</span>
+        <span><b class="mono">03g</b> rejection, in a room</span>
+        <span><b class="mono">12c</b> reconnecting</span>
+        <span><b class="mono">12e</b> host moves on · the skipped player</span>
+        <span><b class="mono">12f</b> your picture is complete (Phase 5, Phase 6)</span>
+        <span><b class="mono">13d</b> game over, one-picture session</span>
+        <span><b class="mono">14</b> crash screen</span>
+        <span><b class="mono">PlayerChip</b> status <span class="prop" style="font-size: 9px">Proposal</span></span>
+      </div>
+    </div>
+    <div class="stack gap3">
+      <span class="eyebrow" style="color: #1f7a6c">Part B · Phase 6</span>
+      <div class="stack gap1 t-sm">
+        <span><b class="mono">02h</b> host picks mode and pack</span>
+        <span><b class="mono">02i</b> a guest sees the change</span>
+        <span><b class="mono">01d 06a</b> solo pack choice</span>
+        <span><b class="mono">12d</b> own board</span>
+        <span><b class="mono">12i</b> picture cycling</span>
+        <span><b class="mono">13a</b> room results, same board and own board</span>
+        <span><b class="mono">13b</b> a tie, someone who left</span>
+        <span><b class="mono">13c</b> rematch: host, guest, back in the room</span>
+        <span><b class="mono">BoardCompare</b> component</span>
+      </div>
+      <span class="eyebrow" style="margin-top: 12px">Annotations</span>
+      <div class="stack gap1 t-sm">
+        <span><b class="mono">21–34</b> new, on the canvas beside their frames</span>
+        <span><b class="mono">18 19 20</b> marked superseded, not renumbered</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1346,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

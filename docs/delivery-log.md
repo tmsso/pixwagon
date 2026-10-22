@@ -350,3 +350,14 @@ Live check with two headless browsers on `pixwagon.pages.dev`:
 - no page errors.
 
 Phase 6 and 7 stay "accept pending" until device-session step 5.
+
+### 2026-10-22 — design pass 03 handoff landed
+
+`docs/design/handoff-03/` answers `BRIEF-03.md`. It was drawn as a Design canvas in Claude rather than sent through standalone Claude Design, so it was designed from the source (components, tokens, hatch patterns, pack rows, the live room screens) instead of from synced cards. The brief's re-upload prerequisite was not needed. There is no Handoff-button bundle; the directory is hand-written in pass 02's shape.
+
+- **Part A:** 22 frames giving the rooms as built a real design. Lobby, joining by link, waiting room, three can't-join states, a round under simultaneous play, rejection, reconnecting, the host's skip and the skipped player's view, finishing early, game over, crash.
+- **Part B:** 14 frames for Phase 6. Host mode/pack sheet, solo pack choice, own board, picture cycling, results, rematch.
+- **Components:** a PlayerChip `status` proposal and a BoardCompare revision, specified, not built.
+- **Annotations:** 21–34 new; 18–20 marked superseded.
+
+The canvas was reconciled with the evening's merged stack (#38–#46) before landing: `HudFrame`'s picture marker, `PlayerChip.completion` and the shipped `BoardCompare` are treated as existing. The README's "Notes for engineering" (19 items) is the work list for the pass-03 rework. Owner approved the canvas before the PR. Light theme only; dark mode is still undesigned, as in pass 02.

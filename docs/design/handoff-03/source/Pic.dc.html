@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pack picture</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+</style>
+</helmet>
+<div role="img" aria-label="{{label}}" style="display: grid; gap: 1px; line-height: 0; width: max-content; grid-template-columns: repeat({{cols}}, {{size}}px)">
+  <sc-for list="{{cells}}" as="c" hint-placeholder-count="96">
+    <span class="{{c.cls}}" style="display: block; width: {{c.s}}px; height: {{c.s}}px; border: {{c.bd}}; background-color: {{c.bg}}"></span>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"pic":{"editor":"enum","options":["tram","sailboat","balloon","tulip","watering-can","mushroom"],"default":"tram"},"mode":{"editor":"enum","options":["target","outline","board"],"default":"board"},"cell":{"editor":"int","default":20,"min":3,"max":40},"progress":{"editor":"range","default":0.42,"min":0,"max":1,"step":0.01},"seat":{"editor":"int","default":0,"min":0,"max":5},"ghost":{"editor":null},"ghost2":{"editor":null},"inv":{"editor":null},"lock":{"editor":null},"$preview":{"width":320,"height":240}}'>
+// Draws a pack picture from the real row strings and palettes in
+// packages/packs/data/{transportation,garden}.json. Ported from pass 02's
+// render-pictures-02.js, plus the three Garden pictures. Reference only —
+// the app draws boards with BoardCanvas.
+// mode target  = the finished picture in its own palette (reveals, previews)
+// mode outline = the empty picture, cells outlined (what's coming)
+// mode board   = live play: fillable grey, filled in the seat's hue AND hatch
+class Component extends DCLogic {
+  renderVals() {
+    const PICS = {
+      tram: { name: 'Tram', palette: ['#d4483b', '#e8f1f5', '#2c3038', '#8a9199'], rows: ['.....3......', '.....3......', '.0000000000.', '.0111011110.', '.0111011110.', '.0000000000.', '.0000000000.', '..2......2..'] },
+      sailboat: { name: 'Sailboat', palette: ['#8a5a34', '#f3ede2', '#4a3b2a', '#3f8fbf'], rows: ['.....2.....', '...112.....', '..1112.....', '.11112.....', '111112.....', '.....2.....', '.0000000...', '..00000....', '.333333333.'] },
+      balloon: { name: 'Hot-air balloon', palette: ['#e0703a', '#f5c451', '#7a5230', '#5c6670'], rows: ['...000...', '.0000000.', '000000000', '011111110', '011111110', '000000000', '.0000000.', '..00000..', '...3.3...', '..22222..', '..22222..'] },
+      tulip: { name: 'Tulip', palette: ['#e0457b', '#3f8f3a', '#6cbf4a'], rows: ['.0.0.0.', '.00000.', '0000000', '0000000', '.00000.', '..000..', '...1...', '22.1.22', '.22122.', '...1...'] },
+      'watering-can': { name: 'Watering can', palette: ['#4a90c2', '#2f5f86', '#7fb6dd'], rows: ['......000...', '.....0...0..', '2...0000000.', '22.00000000.', '.2200000000.', '...00000000.', '...00000000.', '....111111..'] },
+      mushroom: { name: 'Mushroom', palette: ['#c8382f', '#f6efe3', '#efe2c7', '#5aa548'], rows: ['...0000...', '.00011000.', '0000000110', '0110000000', '0000000000', '..222222..', '...2222...', '...2222...', '...2222...', '..333333..'] }
+    };
+    const pic = PICS[this.props.pic] || PICS.tram;
+    const s = Number(this.props.cell || 12);
+    const mode = this.props.mode || 'target';
+    const progress = Number(this.props.progress || 0);
+    const seat = Number(this.props.seat || 0);
+    const set = (v) => new Set(String(v || '').split(';').map((p) => p.trim()).filter(Boolean));
+    const ghost = set(this.props.ghost);
+    const ghost2 = set(this.props.ghost2);
+    const inv = set(this.props.inv);
+    const lock = set(this.props.lock);
+    const cells = [];
+    pic.rows.forEach((row, y) => {
+      Array.from(row).forEach((ch, x) => {
+        const blank = ch === '.';
+        const key = x + ',' + y;
+        let cls = '';
+        let bg = 'transparent';
+        let bd = '1px solid transparent';
+        if (mode === 'target') {
+          bg = blank ? '#f6f7f9' : pic.palette[Number(ch)];
+        } else if (mode === 'outline') {
+          bg = '#f6f7f9';
+          if (!blank) bd = '1px solid #c3cbd4';
+        } else if (blank) {
+          bg = '#f6f7f9';
+        } else if (inv.has(key)) {
+          bg = 'rgb(214 74 63 / .2)'; bd = '2px solid #d64a3f';
+        } else if (ghost.has(key)) {
+          bg = 'rgb(42 157 138 / .35)'; bd = '1px solid #2a9d8a';
+        } else if (ghost2.has(key)) {
+          bg = 'rgb(42 157 138 / .2)'; bd = '1px dashed #2a9d8a';
+        } else if (lock.has(key)) {
+          bg = '#adb7c2'; bd = '1px solid #d3d9e0';
+        } else if (((x * 73 + y * 151 + 17) % 97) / 97 < progress) {
+          // A deterministic scatter, so the same progress always looks the same.
+          cls = 'p' + seat; bg = ''; bd = '1px solid rgb(0 0 0 / .1)';
+        } else {
+          bg = '#d3d9e0'; bd = '1px solid #d3d9e0';
+        }
+        cells.push({ cls: cls, bg: bg, bd: bd, s: s });
+      });
+    });
+    return { cells: cells, cols: pic.rows[0].length, size: s, label: pic.name };
+  }
+}
+</script>
+</body>
+</html>

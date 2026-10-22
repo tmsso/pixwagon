@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>13a, 13b Room results</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 1346px; height: 960px">
+
+  <!-- 13a · same board -->
+  <div class="fr">
+    <p class="cap"><b>13a</b><span>results · same board · host’s view</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="padding-top: 8px">
+        <span class="eyebrow">Game over · Transportation · same board</span>
+        <h1 class="t-2xl">Jo wins</h1>
+        <p class="t-sm muted">All three pictures finished. Ranked by pictures finished, then squares.</p>
+      </div>
+      <div class="bc" aria-label="Boards compared">
+        <div class="bc-head"><span></span><span>Tram</span><span>Sailboat</span><span>Balloon</span></div>
+        <div class="bc-row">
+          <div class="bc-who"><span class="rk">1st</span><span class="nm"><span class="sw s14 p2"></span>Jo</span><span class="tot">3 pictures · 300</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="1" seat="2" hint-size="71px,47px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="1" seat="2" hint-size="65px,53px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="1" seat="2" hint-size="53px,65px"></dc-import><span class="ok">✓ done</span></div>
+        </div>
+        <div class="bc-row me">
+          <div class="bc-who"><span class="rk">2nd</span><span class="nm"><span class="sw s14 p0"></span>You</span><span class="tot">2 pictures · 200</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="1" seat="0" hint-size="71px,47px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="1" seat="0" hint-size="65px,53px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="0.86" seat="0" hint-size="53px,65px"></dc-import><span class="no">unfinished</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-who"><span class="rk">3rd</span><span class="nm"><span class="sw s14 p1"></span>Sam</span><span class="tot">2 pictures · 200<br>4 fewer squares</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="1" seat="1" hint-size="71px,47px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="0.78" seat="1" hint-size="65px,53px"></dc-import><span class="no">unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="1" seat="1" hint-size="53px,65px"></dc-import><span class="ok">✓ done</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full">Rematch</button>
+        <button class="btn ghost full">Leave room</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 13a · own board -->
+  <div class="fr">
+    <p class="cap"><b>13a</b><span>results · own board</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="padding-top: 8px">
+        <span class="eyebrow">Game over · Garden · own board</span>
+        <h1 class="t-2xl">You win</h1>
+        <p class="t-sm muted">Same offers, different pictures. Ranked by pictures finished, then squares.</p>
+      </div>
+      <div class="bc" aria-label="Boards compared">
+        <div class="bc-head"><span></span><span>Picture 1</span><span>Picture 2</span><span>Picture 3</span></div>
+        <div class="bc-row me">
+          <div class="bc-who"><span class="rk">1st</span><span class="nm"><span class="sw s14 p0"></span>You</span><span class="tot">2 pictures · 200<br>151 squares</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="mushroom" mode="board" cell="5" progress="0.9" seat="0" hint-size="59px,59px"></dc-import><span class="no">Mushroom · unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tulip" mode="board" cell="5" progress="1" seat="0" hint-size="41px,59px"></dc-import><span class="ok">✓ Tulip</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="watering-can" mode="board" cell="5" progress="1" seat="0" hint-size="71px,47px"></dc-import><span class="ok">✓ Can</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-who"><span class="rk">2nd</span><span class="nm"><span class="sw s14 p1"></span>Sam</span><span class="tot">2 pictures · 200<br>142 squares</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tulip" mode="board" cell="5" progress="1" seat="1" hint-size="41px,59px"></dc-import><span class="ok">✓ Tulip</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="watering-can" mode="board" cell="5" progress="1" seat="1" hint-size="71px,47px"></dc-import><span class="ok">✓ Can</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="mushroom" mode="board" cell="5" progress="0.7" seat="1" hint-size="59px,59px"></dc-import><span class="no">Mushroom · unfinished</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-who"><span class="rk">3rd</span><span class="nm"><span class="sw s14 p2"></span>Jo</span><span class="tot">1 picture · 100</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="watering-can" mode="board" cell="5" progress="0.85" seat="2" hint-size="71px,47px"></dc-import><span class="no">Can · unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="mushroom" mode="board" cell="5" progress="1" seat="2" hint-size="59px,59px"></dc-import><span class="ok">✓ Mushroom</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tulip" mode="board" cell="5" progress="0.8" seat="2" hint-size="41px,59px"></dc-import><span class="no">Tulip · unfinished</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full">Rematch</button>
+        <button class="btn ghost full">Leave room</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 13b -->
+  <div class="fr">
+    <p class="cap"><b>13b</b><span>results · a tie · Ravi left mid-game</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="stack gap2" style="padding-top: 8px">
+        <span class="eyebrow">Game over · Transportation · same board</span>
+        <h1 class="t-2xl">It’s a tie</h1>
+        <p class="t-sm muted">You and Jo finished the same pictures with the same number of squares.</p>
+      </div>
+      <div class="bc" aria-label="Boards compared">
+        <div class="bc-head"><span></span><span>Tram</span><span>Sailboat</span><span>Balloon</span></div>
+        <div class="bc-row me">
+          <div class="bc-who"><span class="rk">1st · tied</span><span class="nm"><span class="sw s14 p0"></span>You</span><span class="tot">2 pictures · 200</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="1" seat="0" hint-size="71px,47px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="1" seat="0" hint-size="65px,53px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="0.8" seat="0" hint-size="53px,65px"></dc-import><span class="no">unfinished</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-who"><span class="rk">1st · tied</span><span class="nm"><span class="sw s14 p2"></span>Jo</span><span class="tot">2 pictures · 200</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="1" seat="2" hint-size="71px,47px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="0.85" seat="2" hint-size="65px,53px"></dc-import><span class="no">unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="1" seat="2" hint-size="53px,65px"></dc-import><span class="ok">✓ done</span></div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-who"><span class="rk">3rd</span><span class="nm"><span class="sw s14 p1"></span>Sam</span><span class="tot">1 picture · 100</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="1" seat="1" hint-size="71px,47px"></dc-import><span class="ok">✓ done</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="0.7" seat="1" hint-size="65px,53px"></dc-import><span class="no">unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="0.75" seat="1" hint-size="53px,65px"></dc-import><span class="no">unfinished</span></div>
+        </div>
+        <div class="bc-row left">
+          <div class="bc-who"><span class="rk">4th</span><span class="nm"><span class="sw s14 p3"></span>Ravi</span><span class="tot" style="display: inline-flex; gap: 3px; align-items: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M9 15l-1.5 1.5a3 3 0 0 1-4-4L5 11"></path><path d="M15 9l1.5-1.5a3 3 0 0 1 4 4L19 13"></path><path d="M4 4l16 16"></path></svg>left · 0</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="tram" mode="board" cell="5" progress="0.62" seat="3" hint-size="71px,47px"></dc-import><span class="no">unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="sailboat" mode="board" cell="5" progress="0.2" seat="3" hint-size="65px,53px"></dc-import><span class="no">unfinished</span></div>
+          <div class="bc-cell"><dc-import name="Pic" pic="balloon" mode="board" cell="5" progress="0" seat="3" hint-size="53px,65px"></dc-import><span class="no">unfinished</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full">Rematch</button>
+        <button class="btn ghost full">Leave room</button>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1346,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>02g Can't join</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pass03.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Inter",system-ui,sans-serif;color:#171c21}
+a{color:#1f7a6c}a:hover{color:#2a9d8a}
+</style>
+</helmet>
+<div class="strip" style="width: 1346px; height: 960px">
+
+  <!-- 02g1 -->
+  <div class="fr">
+    <p class="cap"><b>02g1</b><span>can’t join · room full</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="spacer"></div>
+      <div class="stack gap4" style="align-items: flex-start">
+        <div style="width: 56px; height: 56px; border-radius: 999px; background: #eaedf1; display: grid; place-items: center; color: #5a6673">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><rect x="3" y="5" width="5" height="5"></rect><rect x="9.5" y="5" width="5" height="5"></rect><rect x="16" y="5" width="5" height="5"></rect><rect x="3" y="14" width="5" height="5"></rect><rect x="9.5" y="14" width="5" height="5"></rect><rect x="16" y="14" width="5" height="5"></rect></svg>
+        </div>
+        <span class="eyebrow">Room KM4T</span>
+        <h1 class="t-2xl">This room is full</h1>
+        <p class="t-base muted">Room is full — six is the most we can tell apart on a board.</p>
+        <p class="t-sm muted">You can start a room of your own from the lobby.</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="spacer"></div>
+      <button class="btn lg full">Back to the lobby</button>
+    </div></div>
+  </div>
+
+  <!-- 02g2 -->
+  <div class="fr">
+    <p class="cap"><b>02g2</b><span>can’t join · room runs a newer version</span><span class="tagr">Revised</span></p>
+    <div class="phone"><div class="screen">
+      <div class="spacer"></div>
+      <div class="stack gap4" style="align-items: flex-start">
+        <div style="width: 56px; height: 56px; border-radius: 999px; background: #eaedf1; display: grid; place-items: center; color: #5a6673">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><path d="M12 3v11"></path><path d="M7 10l5 5 5-5"></path><path d="M4 19h16"></path></svg>
+        </div>
+        <span class="eyebrow">Room KM4T</span>
+        <h1 class="t-2xl">This room needs an update</h1>
+        <p class="t-base muted">This room runs a newer version of Pixwagon. Go back to the start and accept the update when it’s offered.</p>
+        <div class="panel sunken stack gap2" style="width: 100%; padding: 12px">
+          <span class="t-xs muted">On the start screen, look for this:</span>
+          <div class="row" style="gap: 10px; border: 1px solid #2a9d8a; background: rgb(42 157 138 / .1); border-radius: .875rem; padding: 8px 10px" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"><path d="M20 12a8 8 0 1 1-2.4-5.7"></path><path d="M20 4v5h-5"></path></svg>
+            <span class="t-sm" style="flex: 1">A new version is ready.</span>
+            <span class="btn sm" style="min-height: 2rem">Update</span>
+          </div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn lg full">Back to the start</button>
+    </div></div>
+  </div>
+
+  <!-- 02g3 -->
+  <div class="fr">
+    <p class="cap"><b>02g3</b><span>this tab lost its seat to another tab (D6)</span><span style="font: 600 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #171c21; border: 1px solid #5a6673; border-radius: 999px; padding: 1px 8px">New</span></p>
+    <div class="phone"><div class="screen">
+      <div class="spacer"></div>
+      <div class="stack gap4" style="align-items: flex-start">
+        <div style="width: 56px; height: 56px; border-radius: 999px; background: #eaedf1; display: grid; place-items: center; color: #5a6673">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" aria-hidden="true"><rect x="3" y="8" width="13" height="11"></rect><path d="M7 8V5h14v11h-5"></path></svg>
+        </div>
+        <span class="eyebrow">Room KM4T</span>
+        <h1 class="t-2xl">Open somewhere else</h1>
+        <p class="t-base muted">You opened this room in another tab or window, so it moved there.</p>
+        <p class="t-sm muted">Your seat and your board went with it. Nothing is lost either way.</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="stack gap2">
+        <button class="btn lg full">Play here</button>
+        <a href="#" class="lnk">Back to the start</a>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1346,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
