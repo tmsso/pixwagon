@@ -138,7 +138,43 @@ describe('in-game views (Phase 5 item 3)', () => {
       ['p2', 2],
       ['p3', 4],
     ]);
-    expect(ranking[0]).toMatchObject({ complete: true, name: 'P1' });
+    expect(ranking[0]).toMatchObject({ completedPictures: 1, name: 'P1', tied: false });
     expect(ranking[0]!.points).toBeGreaterThan(0);
+    expect(ranking.map((r) => r.tied)).toEqual([false, true, true, false]);
+  });
+
+  it('ranks the whole session: completed pictures across history first, then squares', () => {
+    // p0 completed picture 1 only; p1 completed nothing but filled more of
+    // picture 2. Completed pictures win — scoring is all-or-nothing.
+    const ended: RoomSnapshot = {
+      ...game,
+      status: 'ended',
+      history: [{ p0: full, p1: some }],
+      boards: { p0: board, p1: some },
+    };
+    const ranking = roomRanking(ended);
+    expect(ranking.map((r) => [r.playerId, r.rank, r.completedPictures])).toEqual([
+      ['p0', 1, 1],
+      ['p1', 2, 0],
+    ]);
+    expect(ranking[0]!.boards).toEqual([full, board]);
+  });
+
+  it('a mid-game joiner has no board for pictures before they joined; a leaver is flagged', () => {
+    const ended: RoomSnapshot = {
+      ...game,
+      status: 'ended',
+      history: [{ p0: some }],
+      boards: { p0: some, p2: full, gone: some },
+    };
+    const ranking = roomRanking(ended);
+    const p2 = ranking.find((r) => r.playerId === 'p2')!;
+    expect(p2.boards).toEqual([null, full]);
+    expect(p2.leftMidGame).toBe(true); // p2 is away in this fixture
+    expect(ranking.find((r) => r.playerId === 'gone')).toMatchObject({
+      leftMidGame: true,
+      name: 'A player who left',
+    });
+    expect(ranking.find((r) => r.playerId === 'p0')!.leftMidGame).toBe(false);
   });
 });

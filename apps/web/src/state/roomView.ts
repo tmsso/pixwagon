@@ -66,42 +66,67 @@ export interface RankedPlayer {
   seatIndex: number;
   /** 1-based; tied players share a rank. */
   rank: number;
+  /** Shares its rank with another player (pass 02 `13b`). */
+  tied: boolean;
+  /** Not connected at the end, or no longer in the room at all (`13c`).
+   *  Still ranked: their squares count (pass 02 Annotation 19). */
+  leftMidGame: boolean;
+  /** Completed pictures across the session — what ranks first. */
+  completedPictures: number;
   points: number;
+  /** Squares filled across every picture — the tiebreak. */
   filled: number;
   total: number;
-  complete: boolean;
+  /** One entry per picture of the session, oldest first, for `BoardCompare`.
+   *  `null` for a picture played before this player joined. */
+  boards: (Board | null)[];
 }
 
 /**
  * The end-of-session ranking (Phase 5's Accept: "both see the same final
- * ranking"). Computed from the snapshot's boards with game-core's own
- * `scoreBoard`, never from a message only some clients received — so a
- * player who reconnects after the end ranks the room identically. Points
- * first (all-or-nothing, so a finished picture beats any partial one), then
- * filled squares. The full results screen is Phase 6.
+ * ranking"; Phase 6 results, pass 02 `13a`–`13c`). Computed from the
+ * snapshot alone — every finished picture's boards (`history`) plus the last
+ * one's — with game-core's own `scoreBoard`, never from a message only some
+ * clients received, so a player who reconnects after the end ranks the room
+ * identically. Completed pictures first (scoring is all-or-nothing), then
+ * filled squares across the session, then seat for a stable order.
  */
 export function roomRanking(snapshot: RoomSnapshot): RankedPlayer[] {
-  const rows = Object.entries(snapshot.boards).map(([playerId, wireBoard]) => {
-    const board = wireBoard as Board;
-    const score = scoreBoard(playerId, board);
+  const stages = [...snapshot.history, snapshot.boards] as Record<string, Board>[];
+  const ids = new Set(stages.flatMap((stage) => Object.keys(stage)));
+  const rows = [...ids].map((playerId) => {
+    const boards = stages.map((stage) => stage[playerId] ?? null);
+    const scores = boards.flatMap((board) => (board ? [scoreBoard(playerId, board)] : []));
     const player = snapshot.players.find((p) => p.id === playerId);
     return {
       playerId,
       name: player?.name ?? 'A player who left',
       seatIndex: player?.seatIndex ?? MAX_PLAYERS,
-      points: score.points,
-      filled: score.filled,
-      total: score.total,
-      complete: isComplete(board),
+      leftMidGame: !player?.connected,
+      completedPictures: boards.filter((board) => board !== null && isComplete(board)).length,
+      points: scores.reduce((sum, score) => sum + score.points, 0),
+      filled: scores.reduce((sum, score) => sum + score.filled, 0),
+      total: scores.reduce((sum, score) => sum + score.total, 0),
+      boards,
     };
   });
-  rows.sort((a, b) => b.points - a.points || b.filled - a.filled || a.seatIndex - b.seatIndex);
+  rows.sort(
+    (a, b) =>
+      b.completedPictures - a.completedPictures || b.filled - a.filled || a.seatIndex - b.seatIndex,
+  );
+  const sameScore = (a: (typeof rows)[number], b: (typeof rows)[number]) =>
+    a.completedPictures === b.completedPictures && a.filled === b.filled;
   const ranked: RankedPlayer[] = [];
   for (const [index, row] of rows.entries()) {
     const prev = ranked[index - 1];
+    const next = rows[index + 1];
     // A tie shares the rank of the first player in it ("1, 1, 3").
-    const tied = prev !== undefined && prev.points === row.points && prev.filled === row.filled;
-    ranked.push({ ...row, rank: tied ? prev.rank : index + 1 });
+    const tiedWithPrev = prev !== undefined && sameScore(prev, row);
+    ranked.push({
+      ...row,
+      rank: tiedWithPrev ? prev.rank : index + 1,
+      tied: tiedWithPrev || (next !== undefined && sameScore(row, next)),
+    });
   }
   return ranked;
 }

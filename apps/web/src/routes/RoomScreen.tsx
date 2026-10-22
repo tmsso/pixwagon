@@ -435,8 +435,10 @@ function RoomEnded({ snapshot }: { snapshot: RoomSnapshot }) {
                 />
               </span>
               <span className="text-right text-sm text-ink-muted">
-                {row.complete ? (
-                  <span className="font-medium text-ink">Complete · {row.points} pts</span>
+                {row.completedPictures > 0 ? (
+                  <span className="font-medium text-ink">
+                    {row.completedPictures} complete · {row.points} pts
+                  </span>
                 ) : (
                   `${row.filled} of ${row.total} squares`
                 )}

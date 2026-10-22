@@ -169,7 +169,7 @@ const screens: ScreenCase[] = [
         status: 'ended',
         boards: { 'p-alex': tramHalf, 'p-sam': tramDone, 'p-kim': tram },
       }),
-    expect: ['Game over', 'Final ranking', '1.', 'Sam', 'Complete', 'Alex (you)', 'squares'],
+    expect: ['Game over', 'Final ranking', '1.', 'Sam', '1 complete', 'Alex (you)', 'squares'],
   },
   {
     name: 'Results',
