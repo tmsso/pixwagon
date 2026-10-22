@@ -70,6 +70,16 @@ describe('decodeClientMessage', () => {
     origin: { x, y },
   });
 
+  it('accepts a configure with either field, and refuses solo as a room mode', () => {
+    expect(decodeClientMessage(JSON.stringify({ type: 'configure', packId: 'garden' })).ok).toBe(
+      true,
+    );
+    expect(decodeClientMessage(JSON.stringify({ type: 'configure', mode: 'own-board' })).ok).toBe(
+      true,
+    );
+    expect(decodeClientMessage(JSON.stringify({ type: 'configure', mode: 'solo' })).ok).toBe(false);
+  });
+
   it('accepts a well-formed pair fill', () => {
     const result = decodeClientMessage(
       JSON.stringify({
@@ -236,6 +246,11 @@ describe('room state shapes (Phase 4)', () => {
       status: 'lobby',
       pictureId: null,
       roundBudget: null,
+      packId: 'transportation',
+      stage: 0,
+      stageCount: null,
+      stageStartRound: 0,
+      history: [],
       boards: {},
       acted: [],
     };
@@ -259,6 +274,11 @@ describe('room state shapes (Phase 4)', () => {
         status: 'lobby',
         pictureId: null,
         roundBudget: null,
+        packId: 'transportation',
+        stage: 0,
+        stageCount: null,
+        stageStartRound: 0,
+        history: [],
         boards: {},
         acted: [],
       },
@@ -298,6 +318,11 @@ describe('Phase 5 messages', () => {
       status: 'playing',
       pictureId: 'tram',
       roundBudget: 22,
+      packId: 'transportation',
+      stage: 0,
+      stageCount: 3,
+      stageStartRound: 0,
+      history: [],
       boards: { p1: board },
       acted: ['p1'],
     };
@@ -353,7 +378,7 @@ describe('Phase 5 messages', () => {
 
 describe('protocol 2 additions', () => {
   it('is protocol version 2', () => {
-    expect(PROTOCOL_VERSION).toBe(2);
+    expect(PROTOCOL_VERSION).toBe(3);
   });
 
   it('presence requires the connected flag', () => {

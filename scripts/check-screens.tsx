@@ -43,6 +43,11 @@ const waitingSnapshot: RoomSnapshot = {
   status: 'lobby',
   pictureId: null,
   roundBudget: null,
+  packId: 'transportation',
+  stage: 0,
+  stageCount: null,
+  stageStartRound: 0,
+  history: [],
   boards: {},
   acted: [],
 };
@@ -68,6 +73,11 @@ const playingSnapshot: RoomSnapshot = {
   status: 'playing',
   pictureId: 'tram',
   roundBudget: 40,
+  packId: 'transportation',
+  stage: 0,
+  stageCount: 3,
+  stageStartRound: 0,
+  history: [],
   players: [
     ...waitingSnapshot.players,
     { id: 'p-kim', name: 'Kim', seatIndex: 2, isHost: false, connected: false },

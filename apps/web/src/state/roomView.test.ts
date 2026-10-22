@@ -32,6 +32,11 @@ const waiting: RoomSnapshot = {
   status: 'lobby',
   pictureId: null,
   roundBudget: null,
+  packId: 'transportation',
+  stage: 0,
+  stageCount: null,
+  stageStartRound: 0,
+  history: [],
   boards: {},
   acted: [],
 };

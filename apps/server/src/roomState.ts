@@ -19,8 +19,8 @@ import { getPack } from '@pixwagon/packs';
 import {
   MAX_PLAYERS,
   SKIP_WAITING_AFTER_MS,
-  type GameMode,
   type PlayerPresence,
+  type RoomMode,
   type RoomSnapshot,
   type WireMoveChoice,
 } from '@pixwagon/protocol';
@@ -39,7 +39,9 @@ import {
 
 export interface RoomState {
   code: string;
-  mode: GameMode;
+  /** The host's choice in the lobby (Phase 6). Same-board and own-board
+   *  differ only in which picture each player gets (D1). */
+  mode: RoomMode;
   /**
    * Set exactly once, on the first join. `issueRoll(roomSeed, round)` — which
    * calls `deriveSeed(roomSeed, round)` and nothing else — drives every round's
@@ -68,12 +70,37 @@ export interface RoomState {
 
   /** `lobby` → (host starts) → `playing` → (all complete / budget) → `ended`. */
   status: GameStatus;
-  /** The only pack until Phase 8 adds a second. */
+  /** The host's pack choice (D7), validated against the registry. */
   packId: string;
-  /** Picked at start from `deriveSeed(roomSeed, 'pictures')`, so reproducible. */
+  /**
+   * The session's picture sequence: a seeded shuffle of the pack, fixed at
+   * start from `deriveSeed(roomSeed, 'pictures')` (`pictureOrder`), so
+   * reproducible. `null` before the first game.
+   */
+  pictureOrder: string[] | null;
+  /** 0-based index into `pictureOrder` of the picture in play (D8: the whole
+   *  room moves to the next one together). */
+  stage: number;
+  /** `pictureOrder[stage]` — what everyone plays in same-board mode, and the
+   *  base the own-board seat offset counts from. */
   pictureId: string | null;
-  /** `ceil(fillableCells / 3) + 4` rolls (D3), stored at start, never recomputed. */
+  /** Global round index of the stage's first roll. Rounds are never reset per
+   *  stage: `issueRoll(roomSeed, round)` keys on the round alone, so a reset
+   *  would replay picture 1's offers on picture 2. */
+  stageStartRound: number;
+  /** `ceil(fillableCells / 3) + 4` rolls (D3), fixed when the stage starts —
+   *  the largest of the stage's pictures in own-board mode. */
   roundBudget: number | null;
+  /** Boards of every finished stage, oldest first (the results screen). */
+  history: Record<string, Board>[];
+  /**
+   * Own-board: each board-holder's fixed offset along `pictureOrder`, given at
+   * start by seat rank (0, 1, 2, …) and to a mid-game joiner as the lowest
+   * unused one. Not the seat itself: seats can have gaps (a lobby leaver frees
+   * seat 1 while seat 3 stays), and seats 0 and 3 would land on the same
+   * picture of a three-picture pack.
+   */
+  pictureOffsets: Record<string, number>;
   /** One board per player id — kept when the player disconnects (their
    *  squares stay, pass 02 Annotation 19) and reclaimed on rejoin. */
   boards: Record<string, Board>;
@@ -87,7 +114,7 @@ export interface RoomState {
 
 export type GameStatus = 'lobby' | 'playing' | 'ended';
 
-/** Until Phase 8 ships a second pack, every room plays this one. */
+/** A new room's pack until the host picks another (D7). */
 export const DEFAULT_PACK_ID = 'transportation';
 
 /** The identity a rejoin token resolves to. */
@@ -114,8 +141,13 @@ export function initialRoomState(code: string): RoomState {
     players: {},
     status: 'lobby',
     packId: DEFAULT_PACK_ID,
+    pictureOrder: null,
+    stage: 0,
     pictureId: null,
+    stageStartRound: 0,
     roundBudget: null,
+    history: [],
+    pictureOffsets: {},
     boards: {},
     acted: [],
     roundStartedAt: null,
@@ -129,7 +161,13 @@ export function initialRoomState(code: string): RoomState {
  * `initialRoomState` is the whole migration.
  */
 export function normaliseRoom(stored: Partial<RoomState> & { code: string }): RoomState {
-  return { ...initialRoomState(stored.code), ...stored };
+  const room = { ...initialRoomState(stored.code), ...stored };
+  // A protocol-2 game in progress predates picture cycling: it is a
+  // one-picture session (Phase 5), so its order is just that picture.
+  if (room.pictureOrder === null && room.pictureId !== null) {
+    return { ...room, pictureOrder: [room.pictureId] };
+  }
+  return room;
 }
 
 /**
@@ -316,13 +354,69 @@ export function currentRoll(state: RoomState): Roll | null {
 // Phase 5 — the round lifecycle (D2: simultaneous rounds, auto-advance)
 // ---------------------------------------------------------------------------
 
-/** The picture a session plays — a seeded pick, so the same `roomSeed`
- *  always plays the same picture (docs/contracts/rng.md: derive, never draw
- *  from a shared stream). */
-export function pickPicture(roomSeed: string, packId: string): string {
+/**
+ * The session's picture sequence: a seeded shuffle of the pack, so the same
+ * `roomSeed` always plays the same pictures in the same order
+ * (docs/contracts/rng.md: derive, never draw from a shared stream). A
+ * selection shuffle whose first draw is `int(n)`, which makes its first
+ * picture exactly what Phase 5's single `pick` chose for the same seed.
+ */
+export function pictureOrder(roomSeed: string, packId: string): string[] {
   const pack = getPack(packId);
   if (!pack) throw new Error(`unknown pack "${packId}"`);
-  return createRng(deriveSeed(roomSeed, 'pictures')).pick(pack.pictures).id;
+  const rng = createRng(deriveSeed(roomSeed, 'pictures'));
+  const order = pack.pictures.map((picture) => picture.id);
+  for (let k = 0; k < order.length - 1; k += 1) {
+    const j = k + rng.int(order.length - k);
+    [order[k], order[j]] = [order[j]!, order[k]!];
+  }
+  return order;
+}
+
+/** The first picture of a session — what a Phase 5 room played. */
+export function pickPicture(roomSeed: string, packId: string): string {
+  return pictureOrder(roomSeed, packId)[0]!;
+}
+
+/** A player's seat as recorded at join, or 0 for an id the room never seated
+ *  (only reachable from tests that skip `registerIdentity`). */
+function seatOf(state: RoomState, playerId: string): number {
+  for (const identity of Object.values(state.players)) {
+    if (identity.playerId === playerId) return identity.seatIndex;
+  }
+  return 0;
+}
+
+/** Offsets 0..n-1 by seat order — the start of a game. */
+function offsetsBySeat(state: RoomState, playerIds: readonly string[]): Record<string, number> {
+  const offsets: Record<string, number> = {};
+  [...playerIds]
+    .sort((a, b) => seatOf(state, a) - seatOf(state, b))
+    .forEach((id, rank) => {
+      offsets[id] = rank;
+    });
+  return offsets;
+}
+
+/** The lowest offset no board-holder has — a mid-game joiner's. */
+function lowestFreeOffset(offsets: Record<string, number>): number {
+  const used = new Set(Object.values(offsets));
+  let offset = 0;
+  while (used.has(offset)) offset += 1;
+  return offset;
+}
+
+/**
+ * The picture `playerId` plays at `stage`. Same-board: the stage's picture for
+ * everyone. Own-board: shifted along the order by the player's stored offset,
+ * so players differ whenever there are no more of them than pictures, and
+ * over the session each player still meets every picture once.
+ */
+export function pictureFor(state: RoomState, playerId: string, stage = state.stage): string {
+  const order = state.pictureOrder;
+  if (!order || order.length === 0) throw new Error('pictureFor called before the game started');
+  const offset = state.mode === 'own-board' ? (state.pictureOffsets[playerId] ?? 0) : 0;
+  return order[(stage + offset) % order.length]!;
 }
 
 /** D3's budget: roughly the fillable cells over a typical fallback fill, plus
@@ -332,29 +426,81 @@ export function roundBudgetFor(board: Board): number {
   return Math.ceil(fillable / 3) + 4;
 }
 
+/**
+ * Fresh boards for `stage`, one per player id, and the stage's budget — the
+ * largest picture's, so in own-board mode nobody's picture is cut short by a
+ * smaller one's budget.
+ */
+function stageBoards(
+  state: RoomState,
+  playerIds: readonly string[],
+  stage: number,
+): { boards: Record<string, Board>; roundBudget: number } {
+  const boards: Record<string, Board> = {};
+  let roundBudget = 1;
+  for (const id of playerIds) {
+    const board = createBoard(state.packId, pictureFor(state, id, stage));
+    boards[id] = board;
+    roundBudget = Math.max(roundBudget, roundBudgetFor(board));
+  }
+  return { boards, roundBudget };
+}
+
+export type ConfigureResult =
+  { ok: true; state: RoomState } | { ok: false; error: 'game-in-progress' | 'bad-config' };
+
+/**
+ * The host's lobby choices (Phase 6, D7). Host-only is the glue's check.
+ * Lobby only: mid-game, a pack swap would orphan every board, and after a
+ * game it would make the results screen's snapshot disagree with the
+ * finished boards it shows (rematch returns to the lobby first, D10). An
+ * unknown pack is refused here rather than trusted, because `startGame` would
+ * otherwise throw inside the Durable Object on the next start. Same reference
+ * when nothing changed.
+ */
+export function configureRoom(
+  state: RoomState,
+  change: { mode?: RoomMode | undefined; packId?: string | undefined },
+): ConfigureResult {
+  if (state.status !== 'lobby') return { ok: false, error: 'game-in-progress' };
+  if (change.packId !== undefined && !getPack(change.packId)) {
+    return { ok: false, error: 'bad-config' };
+  }
+  const mode = change.mode ?? state.mode;
+  const packId = change.packId ?? state.packId;
+  if (mode === state.mode && packId === state.packId) return { ok: true, state };
+  return { ok: true, state: { ...state, mode, packId } };
+}
+
 export type StartResult =
   { ok: true; state: RoomState; roll: Roll } | { ok: false; error: 'game-in-progress' };
 
 /**
- * The host's one per-game action (D2): pick the picture, give every seated
- * player a board, fix the budget, issue round 0. Only from `lobby` — once
- * running, rounds advance on their own.
+ * The host's one per-game action (D2): fix the picture order, give every
+ * seated player a board for stage 0, fix the budget, issue the first roll.
+ * Only from `lobby` — once running, rounds advance on their own.
  */
 export function startGame(state: RoomState, playerIds: readonly string[]): StartResult {
   if (state.status !== 'lobby') return { ok: false, error: 'game-in-progress' };
   if (state.roomSeed === null) throw new Error('startGame called before roomSeed was set');
 
-  const pictureId = pickPicture(state.roomSeed, state.packId);
-  const fresh = createBoard(state.packId, pictureId);
-  const boards: Record<string, Board> = {};
-  for (const id of playerIds) boards[id] = fresh;
+  const order = pictureOrder(state.roomSeed, state.packId);
+  const ordered: RoomState = {
+    ...state,
+    pictureOrder: order,
+    stage: 0,
+    pictureId: order[0]!,
+    pictureOffsets: offsetsBySeat(state, playerIds),
+  };
+  const { boards, roundBudget } = stageBoards(ordered, playerIds, 0);
 
   const started: RoomState = {
-    ...state,
+    ...ordered,
     status: 'playing',
-    pictureId,
-    roundBudget: roundBudgetFor(fresh),
+    stageStartRound: state.round,
+    roundBudget,
     boards,
+    history: [],
     acted: [],
   };
   const { roll, state: next } = issueNextRoll(started);
@@ -362,17 +508,30 @@ export function startGame(state: RoomState, playerIds: readonly string[]): Start
 }
 
 /**
- * A player joining a game already under way gets a fresh board and plays from
- * the current round (a rejoiner already has one and keeps it). Same-reference
- * no-op otherwise.
+ * A player joining a game already under way gets a fresh board for the stage
+ * in play and plays from the current round (a rejoiner already has one and
+ * keeps it). Same-reference no-op otherwise.
  */
 export function ensureBoard(state: RoomState, playerId: string): RoomState {
-  if (state.status !== 'playing' || state.pictureId === null || state.boards[playerId]) {
+  if (state.status !== 'playing' || state.pictureOrder === null || state.boards[playerId]) {
     return state;
   }
+  const withOffset: RoomState =
+    state.pictureOffsets[playerId] === undefined
+      ? {
+          ...state,
+          pictureOffsets: {
+            ...state.pictureOffsets,
+            [playerId]: lowestFreeOffset(state.pictureOffsets),
+          },
+        }
+      : state;
   return {
-    ...state,
-    boards: { ...state.boards, [playerId]: createBoard(state.packId, state.pictureId) },
+    ...withOffset,
+    boards: {
+      ...withOffset.boards,
+      [playerId]: createBoard(state.packId, pictureFor(withOffset, playerId)),
+    },
   };
 }
 
@@ -509,16 +668,25 @@ export type CloseRoundResult =
       state: RoomState;
       result: RoundResult;
       sessionEnded: boolean;
+      /** The room moved on to the next picture (D8) — every board was
+       *  replaced, so clients need a full `state`, not just the roll. */
+      stageAdvanced: boolean;
       /** The next round's roll — absent when the session just ended. */
       roll?: Roll;
     };
 
 /**
- * Close the round once nobody connected is still owed an action, then either
- * issue the next roll or end the session (D3): every board complete, the
- * budget spent, or nobody connected has anything left to place (without that
- * last clause a room whose only incomplete board belongs to someone who left
- * would advance forever on empty rounds). Called after every fill, pass, join
+ * Close the round once nobody connected is still owed an action, then issue
+ * the next roll, move the room to the next picture, or end the session.
+ *
+ * The picture in play resolves (D3) when every board is complete, its budget
+ * is spent, or nobody connected has anything left to place. Without that last
+ * clause, a room whose only incomplete board belongs to someone who left
+ * would advance forever on empty rounds. On resolve, the whole room moves to
+ * the next picture together (D8 lockstep): boards go to `history`, everyone
+ * holding a board (away players too, so a rejoin finds the right picture)
+ * gets a fresh one, and the budget restarts from this round. After the last
+ * picture, the session ends. Called after every fill, pass, join
  * and disconnect — the disconnect case is what lets a round close when its
  * last straggler drops. An empty room never advances: no one is there to see
  * it, and the next joiner should find the round they left.
@@ -533,14 +701,38 @@ export function closeRoundIfDone(
 
   const result = scoreRound(state.round - 1, state.boards);
   const nothingLeftHere = seated.every((id) => isComplete(state.boards[id]!));
-  const sessionEnded =
-    result.complete || nothingLeftHere || state.round >= (state.roundBudget ?? 0);
+  const rollsThisStage = state.round - state.stageStartRound;
+  const stageResolved =
+    result.complete || nothingLeftHere || rollsThisStage >= (state.roundBudget ?? 0);
 
-  if (sessionEnded) {
-    return { closed: true, state: { ...state, status: 'ended' }, result, sessionEnded };
+  if (!stageResolved) {
+    const { roll, state: next } = issueNextRoll({ ...state, acted: [] });
+    return { closed: true, state: next, result, sessionEnded: false, stageAdvanced: false, roll };
   }
-  const { roll, state: next } = issueNextRoll({ ...state, acted: [] });
-  return { closed: true, state: next, result, sessionEnded, roll };
+
+  const stageCount = state.pictureOrder?.length ?? 1;
+  if (state.stage + 1 >= stageCount) {
+    return {
+      closed: true,
+      state: { ...state, status: 'ended' },
+      result,
+      sessionEnded: true,
+      stageAdvanced: false,
+    };
+  }
+
+  const stage = state.stage + 1;
+  const advancing: RoomState = { ...state, stage, pictureId: state.pictureOrder![stage]! };
+  const { boards, roundBudget } = stageBoards(advancing, Object.keys(state.boards), stage);
+  const { roll, state: next } = issueNextRoll({
+    ...advancing,
+    history: [...state.history, state.boards],
+    boards,
+    roundBudget,
+    stageStartRound: state.round,
+    acted: [],
+  });
+  return { closed: true, state: next, result, sessionEnded: false, stageAdvanced: true, roll };
 }
 
 /** `presence` payload / a snapshot's `players`, sorted by seat and stamped with
@@ -575,9 +767,14 @@ export function buildSnapshot(state: RoomState, conns: readonly SeatedConn[]): R
     hostId: state.hostId,
     players: presenceList(state, conns),
     status: state.status,
-    pictureId: state.pictureId,
+    packId: state.packId,
+    pictureId: state.mode === 'same-board' ? state.pictureId : null,
     roundBudget: state.roundBudget,
+    stage: state.stage,
+    stageCount: state.pictureOrder?.length ?? null,
+    stageStartRound: state.stageStartRound,
     boards: state.boards,
+    history: state.history,
     acted: state.acted,
   };
 }

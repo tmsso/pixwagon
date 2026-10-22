@@ -30,7 +30,7 @@ console.log(`tamper check against ${origin}`);
 
 // Inlined rather than imported from `@pixwagon/protocol`: the workspace root
 // doesn't depend on it. Must match PROTOCOL_VERSION.
-const PROTOCOL_VERSION = 2;
+const PROTOCOL_VERSION = 3;
 
 type Message = { type: string; [key: string]: unknown };
 

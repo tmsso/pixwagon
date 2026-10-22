@@ -22,6 +22,7 @@
     "design:check": "tsx scripts/check-design-system.ts",
     "check:screens": "tsx scripts/check-screens.tsx",
     "tamper:check": "tsx scripts/tamper-check.ts",
+    "session:check": "tsx scripts/session-check.ts",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:screens && pnpm generated:check && pnpm design:check",
     "generated:check": "pnpm tokens:build && pnpm design:build && node scripts/assert-clean.mjs apps/web/src/design/tokens.css design-system"
   },
