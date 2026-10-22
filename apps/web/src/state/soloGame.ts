@@ -20,6 +20,7 @@ import {
 } from './placement.ts';
 import { DEFAULT_SOLO_PACK_ID, loadSoloPack } from './packChoice.ts';
 import { dailyConfig } from './daily.ts';
+import { recordResult } from './history.ts';
 
 /**
  * Client state store — decided 2026-08-15 (ROADMAP.md Phase 2): zustand over a
@@ -198,6 +199,17 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
 
     if (isComplete(result.board)) {
       set({ board: result.board, pending: null, lastRejection: null, status: 'complete' });
+      // Phase 7b: completed results are kept on this device. Here, at the
+      // one moment a session completes, rather than in the Results screen,
+      // so a result counts even if that screen is never opened.
+      recordResult({
+        kind: state.daily ? 'daily' : 'solo',
+        daily: state.daily,
+        packId: state.packId,
+        pictureId: state.pictureId,
+        rounds: state.round + 1,
+        completedAt: new Date().toISOString(),
+      });
       return;
     }
 

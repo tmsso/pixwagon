@@ -5,7 +5,9 @@ import { InstallPrompt } from '../pwa/InstallPrompt.tsx';
 import { OfflineExplainer, OfflinePill } from '../pwa/OfflineNotice.tsx';
 import { useOnlineStatus } from '../pwa/useOnlineStatus.ts';
 import { getPack } from '@pixwagon/packs';
-import { dailyConfig } from '../state/daily.ts';
+import { dailyConfig, dailyKey } from '../state/daily.ts';
+import { dailyResult, loadHistory } from '../state/history.ts';
+import type { ResultEntry } from '../state/history.ts';
 import { loadSoloPack } from '../state/packChoice.ts';
 import { freshSoloConfig, useSoloGameStore } from '../state/soloGame.ts';
 
@@ -15,6 +17,11 @@ export function HomeScreen() {
   const online = useOnlineStatus();
   // Read on render, not cached: coming back from /packs remounts Home.
   const soloPack = getPack(loadSoloPack())?.name ?? '';
+  // Phase 7b: this device's completed results (state/history.ts). Read on
+  // render: Home remounts whenever the player comes back to it.
+  const history = loadHistory();
+  const todaysDaily = dailyResult(history, dailyKey(new Date()));
+  const recent = history.slice(0, 5);
 
   function handleDaily() {
     start(dailyConfig());
@@ -52,6 +59,11 @@ export function HomeScreen() {
           <Button size="lg" variant="secondary" onClick={handleDaily}>
             Daily puzzle
           </Button>
+          {todaysDaily ? (
+            <p className="text-center text-sm text-ink-muted" role="status">
+              ✓ Today&rsquo;s daily done in {todaysDaily.rounds} rounds
+            </p>
+          ) : null}
           {online ? (
             <Link to="/lobby">
               <Button size="lg" variant="secondary" className="w-full">
@@ -73,6 +85,21 @@ export function HomeScreen() {
 
       <InstallPrompt />
 
+      {recent.length > 0 ? (
+        <Panel title="Recent results" tone="sunken">
+          <ul className="grid gap-1 text-sm">
+            {recent.map((entry) => (
+              <li key={entry.completedAt} className="flex justify-between gap-3">
+                <span className="text-ink">
+                  {entry.daily ? `Daily ${entry.daily}` : 'Solo'} · {pictureName(entry)}
+                </span>
+                <span className="font-mono text-ink-muted">{entry.rounds} rounds</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+
       <Panel title="Packs" tone="sunken">
         {/* Says which pack "Solo" will play, so the choice made on /packs is
             visible where it takes effect (D7). */}
@@ -84,5 +111,11 @@ export function HomeScreen() {
         </p>
       </Panel>
     </main>
+  );
+}
+
+function pictureName(entry: ResultEntry): string {
+  return (
+    getPack(entry.packId)?.pictures.find((p) => p.id === entry.pictureId)?.name ?? entry.pictureId
   );
 }
