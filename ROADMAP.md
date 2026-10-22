@@ -11,7 +11,7 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 - When a batch makes a decision, write it in **two places**: a one-line entry under the phase in this file, and a comment at the site of the decision. Long narrative goes in `docs/delivery-log.md`, not here.
 - Decisions D1–D4 below were the project owner's call and are decided (2026-09-16). New forks of the same weight go in a fresh "Decisions needed" section here and are asked up front, once, at the start of a batch.
 
-## Status at a glance (refreshed 2026-10-08)
+## Status at a glance (refreshed 2026-10-22)
 
 | Phase | Name                                  | Code      | Accept line | Gap to Accept                                             |
 | ----- | ------------------------------------- | --------- | ----------- | --------------------------------------------------------- |
@@ -23,12 +23,14 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 | 3.5   | Cloudflare account and free-tier gate | delivered | ⏳ device   | phone on mobile data joins a room over WebSocket          |
 | 4     | Realtime skeleton                     | delivered | ⏳ device   | accept pending — device session step 4 (two real devices) |
 | 5     | Same-board multiplayer                | delivered | ⏳ device   | two phones play a full picture (device session step 4)    |
-| 6     | Own-board mode, results, rematch      | —         | —           |                                                           |
-| 7     | Daily puzzle + persistence            | —         | —           | daily seed needs no storage; see split below              |
+| 6     | Own-board mode, results, rematch      | delivered | ⏳ device   | met on the preview worker 2026-10-22; phones (step 5)     |
+| 7     | Daily puzzle + persistence            | delivered | ⏳ device   | 7a/7b seen in two browsers; phones (step 5)               |
 | 8     | Second shape pack                     | delivered | ✅ met      | Garden ships as data; pack choice is D7                   |
 | 9     | Polish                                | —         | —           |                                                           |
 
 Live (deployed 2026-10-08 from `main` at PR #36, protocol 2): web app `https://pixwagon.pages.dev` (Pages) · room worker `https://pixwagon-app.tmsso.workers.dev` (version `4a6b7e59`). Live-verified: `/health` → `protocolVersion: 2`; two headless browsers on production created and joined a room, both reached round 1 with the placement sheet working, and a closed player showed as "away" on the other — no page errors.
+
+> **Not yet live: the 2026-10-22 stack (#38–#46, protocol 3).** It deploys after it is merged, worker first, then Pages, by the rule below. Until then production stays on protocol 2. After the deploy, installed phones show "This room runs a newer version" until the update banner on Home is accepted.
 
 > Deploy rule since protocol 2: the worker and Pages always go out back to back, worker first, from a fresh `main` build with `VITE_ROOM_ORIGIN` unset (grep the bundle for the live worker origin before deploying Pages).
 
@@ -37,14 +39,15 @@ Live (deployed 2026-10-08 from `main` at PR #36, protocol 2): web app `https://p
 1. ~~Phase 4 client half, items 4–5~~ — delivered 2026-09-24 (item 5 first, then item 4). Phase 4's only remaining gap is the device session's step 4, so Phase 5 may start under CLAUDE.md §8's exception; Phase 4 stays "accept pending", not accepted.
 2. **Device verification session** (owner, ~20 min, no code) — step 1 (worker redeploy) is done; steps 2–4 flip 3, 3.5 and Phase 4's Accept lines, and step 4 needs items 4–5 above to exist first.
 3. ~~Decisions D1–D3~~ — decided 2026-09-16; Phase 5 can follow Phase 4 without a stop.
-4. ~~2026-10-08 batch~~ — Phase 5 items 3–4, protocol 2, Phase 8 and first-contact polish merged (#29–#36) and deployed 2026-10-08. Next: the device session (now also covering Phase 5), decisions D5–D7, then **Phase 6**, then **7**, then **9**.
+4. ~~2026-10-08 batch~~ — Phase 5 items 3–4, protocol 2, Phase 8 and first-contact polish merged (#29–#36) and deployed 2026-10-08.
 5. _Superseded by 4:_ **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
+6. **2026-10-22 batch** — D6 (persistent rejoin), Phase 6 (protocol 3, own-board, picture cycling, results and rematch, D7 pack choice), Phase 7a (daily) and 7b (local history), as stacked PRs #38–#46. Next: merge and deploy them, then the **device session** (now steps 2–5), then the **design pass 03 rework** of the provisional Phase 6 screens once its handoff lands (`docs/design/handoff-03/`), then **Phase 9**.
 
 ## Decisions D5–D7 — **decided 2026-10-08** (owner: D5 keep, D6 and D7 agreed)
 
 - **D5 — preview worker. Decided: keep.** The batch verified its stack on a separate worker `pixwagon-app-preview` (own room storage, shares the account's free quota) and a Pages preview branch `phase5-preview`. Recommended: keep both as the standing pre-merge check; otherwise `wrangler delete --name pixwagon-app-preview` from `apps/server/` and delete the branch deployment in the Pages dashboard.
-- **D6 — ghost players. Decided: agreed — first item of the next batch.** The rejoin token lives in `sessionStorage`, so closing and reopening a tab (or relaunching an installed iOS app) rejoins as a _new_ player; since protocol 2 the old identity stays "away" holding a seat — duplicate names in the ranking, and a six-player room can lock itself out. Recommended: move the token to `localStorage` (per room code) in Phase 6.
-- **D7 — choosing a pack. Decided: agreed — lands with Phase 6.** Garden ships but solo and rooms always play Transportation. Recommended: a pack choice in the waiting room and on the solo start, alongside Phase 6's own-board work.
+- **D6 — ghost players. Decided: agreed. Delivered 2026-10-22 (#38),** with the "newest tab wins" addendum below. The rejoin token lives in `sessionStorage`, so closing and reopening a tab (or relaunching an installed iOS app) rejoins as a _new_ player; since protocol 2 the old identity stays "away" holding a seat — duplicate names in the ranking, and a six-player room can lock itself out. Recommended: move the token to `localStorage` (per room code) in Phase 6.
+- **D7 — choosing a pack. Decided: agreed. Delivered 2026-10-22 (#39 server, #41 UI).** Garden ships but solo and rooms always play Transportation. Recommended: a pack choice in the waiting room and on the solo start, alongside Phase 6's own-board work.
 
 ## Decisions D8–D10 — **decided 2026-10-22** (owner agreed to all defaults, up front for the Phase 6 batch)
 
@@ -67,6 +70,9 @@ Everything below needs a real phone and cannot be done by Claude. Run it once an
 2. **Phase 3:** on a phone, open `https://pixwagon.pages.dev`, finish one solo picture, accept the install card ("Add to home screen"). Enable aeroplane mode, launch from the home screen, play a few rounds of solo. _Accept if it boots and plays offline._
 3. **Phase 3.5:** on the phone with Wi-Fi off (mobile data), open the browser console-free check: visit `https://pixwagon-app.tmsso.workers.dev/health`. A WebSocket join from a phone is only observable once the Phase 4 client half exists — so this item is _formally_ closed by step 4.
 4. **Phase 4 and Phase 5** (after the protocol-2 deploy): if the phone shows "This room runs a newer version", go to Home and accept the update banner — a plain reload keeps the old service-worker build. Then: **Phase 4 (client half shipped 2026-09-24):** on device one open `https://pixwagon.pages.dev/lobby`, type a name, press "Create a room"; on device two open the same page, type the four-letter code and "Join room" (or open the copied `/r/CODE` link). Both see both names; the host presses "Start round" and both see the same pair + single. Toggle aeroplane mode on one for ten seconds and back; it should show "Reconnecting…" then resync with no reload, same seat and name. (Already observed locally in two headless browsers with the worker killed and restarted — the phone run is what flips the Accept line.) **Phase 5:** keep going on both phones until one finishes the picture; both must end on "Game over" with the same ranking, and a phone switched off mid-round must show as "away" on the other.
+5. **Phase 6 and Phase 7** (after the protocol-3 deploy; accept the update banner on Home first).
+   - **Phase 6:** the host picks "Own board" and a pack in the waiting room, and the other phone sees the choice. Play until the room moves to "Picture 2 of 3". The two phones should show different pictures, and each chip shows the other's percentage. At the end, both phones show the same ranking with every picture side by side. The host presses "Rematch": both are back in the waiting room without rejoining, and "Start round" starts a new game.
+   - **Phase 7:** on both phones, the same day, press "Daily puzzle". Same picture, same first offers. On one phone, finish the daily, close the app, reopen it: Home says "✓ Today's daily done in N rounds". Once in aeroplane mode, the daily should still start.
 
 ---
 
@@ -145,6 +151,24 @@ Decided 2026-10-08 (owner, up front): Phase 5 ends on a minimal ranking computed
 
 **Accept:** two players finish different pictures from the same round-by-round offers; the results screen ranks them; rematch starts a new game without anyone rejoining.
 
+Delivered 2026-10-22: #39 (protocol 3 server: configure, own-board, cycling), #40 (rematch, whole-session ranking), #41 (D7 pack choice UI), #42 (cycling and own-board in the game screen), #43 (results, `BoardCompare`, rematch button). The UI is provisional, from pass 02 `13a`–`13c`. Design pass 03 (`docs/design/BRIEF-03.md` Part B) reworks it.
+
+Accept observed on the preview worker (2026-10-22), not yet on phones:
+
+- Bots placing real pieces (`pnpm play:check`) completed different pictures from the same offers, and the room advanced because both were complete.
+- A browser that took over one bot's identity saw the ranked results with every picture side by side, pressed Rematch, and the other bot was back in the waiting room without rejoining.
+
+Decided 2026-10-22:
+
+- **Cycling is D8 lockstep.** The round counter is global and never reset per picture (`issueRoll` keys on the round alone). This replaces the "per-player `currentPictureIndex`" wording in the bullets above.
+- **Own-board offsets are stored per player by seat rank** (`pictureOffsets`), not by seat. Seat gaps after a lobby leaver gave two players the same picture, found in review before merge.
+- **A stage's round budget is the largest of its pictures' budgets** in own-board mode.
+- **`configure` is lobby-only.** After a game, rematch returns to the lobby first.
+- **The rematch seed is `deriveSeed(baseSeed, 'rematch', n)`,** with the first seed and the count stored, never chained.
+- **D9:** opponents show completion as a percentage on their chips.
+- **`BoardCompare` is built from DOM `BoardCell`,** so it renders in the design card and the screen check.
+- **Solo plays the chosen pack's first picture,** as it always played the tram. Variety is in `IDEAS.md`.
+
 ---
 
 ## Phase 7 — Daily puzzle, then persistence
@@ -152,7 +176,12 @@ Decided 2026-10-08 (owner, up front): Phase 5 ends on a minimal ranking computed
 Split from the original single phase because the daily seed needs no storage at all.
 
 - **7a — Daily, no server.** `dailySeed(date) = 'daily-' + YYYY-MM-DD` (UTC) fed to the existing solo store with a fixed picture rotation from the pack; works offline; Home's "Daily puzzle" button goes live. The only network use is none. **Accept:** the daily puzzle is identical across two devices in different browsers.
+  - Delivered 2026-10-22 (#44).
+  - **Decided:** the rotation runs through every pack's pictures, one per day. Adding a pack shifts future dates, and nothing stored disagrees. The day turns over at midnight UTC. A finished daily offers no replay.
+  - **Observed** in two isolated Chromium contexts, one with the network off: same picture, same offers, and a reload keeps the daily. A second browser engine and real phones are device-session step 5.
 - **7b — Persistence.** Decide here: per-room SQLite inside the DO versus D1. The free tier already gives every DO SQLite storage, so D1 is only needed for cross-room data (a leaderboard). Recommended: local `localStorage` result history for solo/daily first, no server storage until a leaderboard is actually wanted. Write the decision in this file. **Accept:** a completed daily result survives a reload.
+  - **Decided 2026-10-22 (owner agreed the recommended default): local `localStorage` history.** No server storage until a leaderboard is wanted. Delivered (#45): `apps/web/src/state/history.ts`, capped at 50, a daily counted once. Home shows today's daily and recent results.
+  - **Observed:** a store-level test plays a whole daily to completion through the UI's own store actions and finds it in the history. In a browser, a stored result shows on Home and survives reloads. Finishing a daily by hand on a phone is device-session step 5.
 
 ---
 

@@ -293,3 +293,44 @@ The owner merged #29–#36 in order with merge commits (squash had been dry-run 
 ### 2026-10-15 — design pass 03 brief drafted; re-sync attempted
 
 `docs/design/BRIEF-03.md` drafted: it replaces pass 02's provisional Part C with the room model as decided (D1–D3, D6, D7) and built (Phases 4–5), asks for proper designs of the room states that shipped without one (host skip, picture complete, can't-join, crash screen, the minimal ranking), and forward-designs Phase 6 (mode and pack choice, own-board, picture cycling, room results, `BoardCompare`, rematch). `BRIEF-02.md` carries a "Part C superseded" banner. `pnpm design:build` + `design:check` were clean (19 cards, no drift), but the `/design-sync` upload did not run: the cloud session had no Claude Design authorization. The owner runs `/design-login` then `/design-sync` from an interactive session before sending the brief.
+
+### 2026-10-22 — long batch: D6, Phase 6, Phase 7 (PRs #38–#46, stacked)
+
+Run as one `/long-batch`. The owner accepted every recommended default up front:
+
+- the scope;
+- building Phase 6 now, with UI that design pass 03 reworks afterwards;
+- D8 lockstep picture cycling;
+- D9 opponents visible as completion only;
+- D10 host-only rematch back to the waiting room;
+- D6's "newest tab wins";
+- preview deploys allowed, production only on an explicit go.
+
+At the owner's request, #37 (the pass 03 brief) was merged first, and D8–D10 were folded into it (`79f4192`), so the design pass and the build follow the same rules. The owner runs `/design-sync` and the pass in parallel.
+
+- **#38 D6.** The rejoin token moved to `localStorage`. That exposed an eviction loop: two tabs share the token, the server evicts the older socket with close code 4000, and the client reconnected after any close. The server now sends `error: replaced` first, and the client treats it as terminal ("open somewhere else", **Play here**).
+- **#39 protocol 3, Phase 6 server.**
+  - `configure` (host-only, lobby-only, the pack validated so a bad id cannot throw inside the Durable Object).
+  - A seeded `pictureOrder`, whose first entry matches Phase 5's pick.
+  - Own-board offsets.
+  - Lockstep stage advance with a global round counter.
+  - A picture change is broadcast as a full `state`.
+  - Protocol-2 storage loads as a one-picture session.
+  - Review found that offsets keyed on seat collided for seats 0 and 3; they are now stored per player by seat rank.
+  - `pnpm session:check` added.
+- **#40** rematch (seed from a stored base plus a count) and a whole-session `roomRanking` with `tied` and `leftMidGame`.
+- **#41** D7: the host picks mode and pack in the waiting room; solo remembers the pack chosen on `/packs`.
+- **#42** "Picture N of M", rounds counted within the picture, opponents' completion on chips. Also `pnpm play:check`: greedy bots placing real pieces.
+- **#43** room results with a new `BoardCompare` component (design card 20) and the Rematch button.
+- **#44** Phase 7a daily: UTC seed, a rotation over every pack's pictures, offline.
+- **#45** Phase 7b: local results history, chosen over Durable Object SQLite or D1 until a leaderboard is wanted.
+
+Verified before merge on the preview worker `pixwagon-app-preview` and the `phase5-preview` Pages branch. Production was untouched and stays on protocol 2.
+
+- `session:check` passed 16/16: configure refusals, own-board, two picture changes, the global round counter, the end of the session, rematch.
+- `play:check`: in 4 of 5 rooms the bots completed different pictures and the room advanced because both were complete.
+- A browser took over the host bot's identity through its rejoin token. It saw ranked results with 6 mini boards, pressed Rematch, and the other bot was back in the waiting room with exactly one `welcome` ever, then in a new game.
+- The D6 two-tab check stayed stable for 15 s, and a closed tab mid-game came back as the same player.
+- The daily matched in two isolated contexts, one offline.
+
+One daily run timed out once after a reload, right after a deploy, and didn't reproduce. Nothing here ran on a phone yet (device-session step 5).
