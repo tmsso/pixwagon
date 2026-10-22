@@ -4,12 +4,16 @@ import { Panel } from '../components/ui/Panel.tsx';
 import { InstallPrompt } from '../pwa/InstallPrompt.tsx';
 import { OfflineExplainer, OfflinePill } from '../pwa/OfflineNotice.tsx';
 import { useOnlineStatus } from '../pwa/useOnlineStatus.ts';
+import { getPack } from '@pixwagon/packs';
+import { loadSoloPack } from '../state/packChoice.ts';
 import { freshSoloConfig, useSoloGameStore } from '../state/soloGame.ts';
 
 export function HomeScreen() {
   const navigate = useNavigate();
   const start = useSoloGameStore((state) => state.start);
   const online = useOnlineStatus();
+  // Read on render, not cached: coming back from /packs remounts Home.
+  const soloPack = getPack(loadSoloPack())?.name ?? '';
 
   function handleSolo() {
     start(freshSoloConfig());
@@ -64,9 +68,14 @@ export function HomeScreen() {
       <InstallPrompt />
 
       <Panel title="Packs" tone="sunken">
-        <Link to="/packs" className="text-accent underline">
-          Choose a shape pack
-        </Link>
+        {/* Says which pack "Solo" will play, so the choice made on /packs is
+            visible where it takes effect (D7). */}
+        <p className="text-sm text-ink-muted">
+          Solo plays <span className="font-medium text-ink">{soloPack}</span>.{' '}
+          <Link to="/packs" className="text-accent underline">
+            Choose a shape pack
+          </Link>
+        </p>
       </Panel>
     </main>
   );

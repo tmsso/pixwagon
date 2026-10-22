@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { applyMove, createBoard, isComplete, issueRoll } from '@pixwagon/game-core';
 import type { Board, CellRef, Move, MoveRejection, Roll, Seed } from '@pixwagon/game-core';
+import { getPack } from '@pixwagon/packs';
 import {
   activeCandidateCells,
   candidateCells,
@@ -17,6 +18,7 @@ import {
   toggleBlobCell as toggleBlobPendingCell,
   toMoveChoice,
 } from './placement.ts';
+import { DEFAULT_SOLO_PACK_ID, loadSoloPack } from './packChoice.ts';
 
 /**
  * Client state store — decided 2026-08-15 (ROADMAP.md Phase 2): zustand over a
@@ -84,20 +86,22 @@ export interface SoloGameState {
   passRound: () => void;
 }
 
-/** The pack/picture Phase 2 ships (Phase 8 tests adding a second pack, not
- *  this phase) and a brand-new random seed — unlike the daily puzzle (Phase
- *  7), an ordinary solo game shouldn't replay identically on reload, or on
- *  the next "Solo"/"Rematch" press. `?seed=` overrides this at session start
+/** The remembered pack (`packChoice.ts`, D7) — its first picture, as solo
+ *  has always played (Transportation's is the tram, which the achievability
+ *  witness below is about) — and a brand-new random seed. Unlike the daily
+ *  puzzle (Phase 7), an ordinary solo game shouldn't replay identically on
+ *  reload, or on the next "Solo"/"Rematch" press. `?seed=` overrides this at session start
  *  — see docs/contracts/rng.md and the Phase 1 achievability test's
  *  `achievability-0` witness, which is what a live verification pass should
  *  pass in to get a reliably completable board. A function, not a constant:
  *  a constant would freeze its `randomUUID()` at module load and every call
  *  site "starting a fresh game" would silently replay the same one seed. */
-export function freshSoloConfig(): SoloSessionConfig {
+export function freshSoloConfig(packId: string = loadSoloPack()): SoloSessionConfig {
+  const pack = getPack(packId) ?? getPack(DEFAULT_SOLO_PACK_ID)!;
   return {
     roomSeed: `solo-${crypto.randomUUID()}`,
-    packId: 'transportation',
-    pictureId: 'tram',
+    packId: pack.id,
+    pictureId: pack.pictures[0]!.id,
   };
 }
 

@@ -4,6 +4,7 @@ import type { Board, CellRef, MoveRejection, Roll } from '@pixwagon/game-core';
 import { PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type {
   PlayerPresence,
+  RoomMode,
   RoomSnapshot,
   ServerErrorCode,
   ServerMessage,
@@ -312,6 +313,13 @@ export interface RoomGameState extends RoomGameSlice {
    *  should still reclaim the same seat). */
   leave: () => void;
   requestRoll: () => void;
+  /** Host-only lobby choices (Phase 6, D7). The server answers with a
+   *  `state` broadcast; nothing is predicted locally — a refused choice
+   *  simply never shows up. */
+  configure: (change: { mode?: RoomMode; packId?: string }) => void;
+  /** Host-only, once the session ended (D10): everyone back to the waiting
+   *  room with the same settings. */
+  rematch: () => void;
   choose: (kind: 'pair' | 'fallback') => void;
   setActive: (index: number) => void;
   rotateActive: () => void;
@@ -400,6 +408,14 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
 
   requestRoll: () => {
     connection?.send({ type: 'request-roll' });
+  },
+
+  configure: (change) => {
+    connection?.send({ type: 'configure', ...change });
+  },
+
+  rematch: () => {
+    connection?.send({ type: 'rematch' });
   },
 
   choose: (kind) => {
