@@ -44,7 +44,7 @@ import { NameField } from './NameField.tsx';
  * The socket opens in an effect, never during render: `scripts/check-screens`
  * server-renders this with a pre-seeded store, and a render that dialled out
  * would try to reach a worker from Node. Leaving the route leaves the room;
- * the rejoin token in `sessionStorage` makes coming back reclaim the seat.
+ * the rejoin token in `localStorage` makes coming back reclaim the seat.
  */
 export function RoomScreen({ code }: { code: string }) {
   const joinedCode = useRoomGameStore((state) => state.code);
@@ -110,6 +110,31 @@ export function RoomScreen({ code }: { code: string }) {
 }
 
 function RoomRefused({ code, reason }: { code: string; reason: string }) {
+  if (reason === 'replaced') {
+    // D6: this tab lost its seat to another tab (or device) with the same
+    // identity. "Play here" simply joins again, which takes the seat back —
+    // the other tab then lands on this screen instead.
+    const playHere = () => {
+      const store = useRoomGameStore.getState();
+      store.join(roomSocketUrl(code), code, store.name);
+    };
+    return (
+      <main className="mx-auto grid min-h-dvh max-w-md content-center gap-4 bg-bg p-6 text-center">
+        <h1 className="text-xl font-semibold text-ink">
+          Room <span className="font-mono tracking-widest">{code}</span> is open somewhere else
+        </h1>
+        <p className="text-ink-muted">
+          You opened this room in another tab or window, so it moved there.
+        </p>
+        <Button size="lg" onClick={playHere}>
+          Play here
+        </Button>
+        <Link to="/" className="text-accent underline">
+          Back to the start
+        </Link>
+      </main>
+    );
+  }
   return (
     <main className="mx-auto grid min-h-dvh max-w-md content-center gap-4 bg-bg p-6 text-center">
       <h1 className="text-xl font-semibold text-ink">
