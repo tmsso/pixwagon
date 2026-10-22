@@ -93,6 +93,14 @@ export interface RoomState {
   roundBudget: number | null;
   /** Boards of every finished stage, oldest first (the results screen). */
   history: Record<string, Board>[];
+  /**
+   * Own-board: each board-holder's fixed offset along `pictureOrder`, given at
+   * start by seat rank (0, 1, 2, …) and to a mid-game joiner as the lowest
+   * unused one. Not the seat itself: seats can have gaps (a lobby leaver frees
+   * seat 1 while seat 3 stays), and seats 0 and 3 would land on the same
+   * picture of a three-picture pack.
+   */
+  pictureOffsets: Record<string, number>;
   /** One board per player id — kept when the player disconnects (their
    *  squares stay, pass 02 Annotation 19) and reclaimed on rejoin. */
   boards: Record<string, Board>;
@@ -139,6 +147,7 @@ export function initialRoomState(code: string): RoomState {
     stageStartRound: 0,
     roundBudget: null,
     history: [],
+    pictureOffsets: {},
     boards: {},
     acted: [],
     roundStartedAt: null,
@@ -378,17 +387,35 @@ function seatOf(state: RoomState, playerId: string): number {
   return 0;
 }
 
+/** Offsets 0..n-1 by seat order — the start of a game. */
+function offsetsBySeat(state: RoomState, playerIds: readonly string[]): Record<string, number> {
+  const offsets: Record<string, number> = {};
+  [...playerIds]
+    .sort((a, b) => seatOf(state, a) - seatOf(state, b))
+    .forEach((id, rank) => {
+      offsets[id] = rank;
+    });
+  return offsets;
+}
+
+/** The lowest offset no board-holder has — a mid-game joiner's. */
+function lowestFreeOffset(offsets: Record<string, number>): number {
+  const used = new Set(Object.values(offsets));
+  let offset = 0;
+  while (used.has(offset)) offset += 1;
+  return offset;
+}
+
 /**
  * The picture `playerId` plays at `stage`. Same-board: the stage's picture for
- * everyone. Own-board: offset along the order by seat, so seated players get
- * different pictures whenever there are no more of them than pictures (seats
- * are handed out lowest-first), and over the session each player still meets
- * every picture once.
+ * everyone. Own-board: shifted along the order by the player's stored offset,
+ * so players differ whenever there are no more of them than pictures, and
+ * over the session each player still meets every picture once.
  */
 export function pictureFor(state: RoomState, playerId: string, stage = state.stage): string {
   const order = state.pictureOrder;
   if (!order || order.length === 0) throw new Error('pictureFor called before the game started');
-  const offset = state.mode === 'own-board' ? seatOf(state, playerId) : 0;
+  const offset = state.mode === 'own-board' ? (state.pictureOffsets[playerId] ?? 0) : 0;
   return order[(stage + offset) % order.length]!;
 }
 
@@ -423,17 +450,19 @@ export type ConfigureResult =
   { ok: true; state: RoomState } | { ok: false; error: 'game-in-progress' | 'bad-config' };
 
 /**
- * The host's lobby choices (Phase 6, D7). Host-only is the glue's check. Only
- * in the lobby or after a game ended, never mid-game: a pack swap under a
- * running game would orphan every board. An unknown pack is refused here
- * rather than trusted, because `startGame` would otherwise throw inside the
- * Durable Object on the next start. Same reference when nothing changed.
+ * The host's lobby choices (Phase 6, D7). Host-only is the glue's check.
+ * Lobby only: mid-game, a pack swap would orphan every board, and after a
+ * game it would make the results screen's snapshot disagree with the
+ * finished boards it shows (rematch returns to the lobby first, D10). An
+ * unknown pack is refused here rather than trusted, because `startGame` would
+ * otherwise throw inside the Durable Object on the next start. Same reference
+ * when nothing changed.
  */
 export function configureRoom(
   state: RoomState,
   change: { mode?: RoomMode | undefined; packId?: string | undefined },
 ): ConfigureResult {
-  if (state.status === 'playing') return { ok: false, error: 'game-in-progress' };
+  if (state.status !== 'lobby') return { ok: false, error: 'game-in-progress' };
   if (change.packId !== undefined && !getPack(change.packId)) {
     return { ok: false, error: 'bad-config' };
   }
@@ -456,7 +485,13 @@ export function startGame(state: RoomState, playerIds: readonly string[]): Start
   if (state.roomSeed === null) throw new Error('startGame called before roomSeed was set');
 
   const order = pictureOrder(state.roomSeed, state.packId);
-  const ordered: RoomState = { ...state, pictureOrder: order, stage: 0, pictureId: order[0]! };
+  const ordered: RoomState = {
+    ...state,
+    pictureOrder: order,
+    stage: 0,
+    pictureId: order[0]!,
+    pictureOffsets: offsetsBySeat(state, playerIds),
+  };
   const { boards, roundBudget } = stageBoards(ordered, playerIds, 0);
 
   const started: RoomState = {
@@ -481,11 +516,21 @@ export function ensureBoard(state: RoomState, playerId: string): RoomState {
   if (state.status !== 'playing' || state.pictureOrder === null || state.boards[playerId]) {
     return state;
   }
+  const withOffset: RoomState =
+    state.pictureOffsets[playerId] === undefined
+      ? {
+          ...state,
+          pictureOffsets: {
+            ...state.pictureOffsets,
+            [playerId]: lowestFreeOffset(state.pictureOffsets),
+          },
+        }
+      : state;
   return {
-    ...state,
+    ...withOffset,
     boards: {
-      ...state.boards,
-      [playerId]: createBoard(state.packId, pictureFor(state, playerId)),
+      ...withOffset.boards,
+      [playerId]: createBoard(state.packId, pictureFor(withOffset, playerId)),
     },
   };
 }

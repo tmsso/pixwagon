@@ -598,13 +598,11 @@ describe('configureRoom', () => {
     });
   });
 
-  it('refuses mid-game, allows after the game ended', () => {
+  it('refuses mid-game and after the game ended — rematch returns to the lobby first (D10)', () => {
     const playing = started();
-    expect(configureRoom(playing, { packId: 'garden' })).toEqual({
-      ok: false,
-      error: 'game-in-progress',
-    });
-    expect(configureRoom({ ...playing, status: 'ended' }, { packId: 'garden' }).ok).toBe(true);
+    const refused = { ok: false, error: 'game-in-progress' };
+    expect(configureRoom(playing, { packId: 'garden' })).toEqual(refused);
+    expect(configureRoom({ ...playing, status: 'ended' }, { packId: 'garden' })).toEqual(refused);
   });
 
   it('the chosen pack is what the game plays', () => {
@@ -627,6 +625,16 @@ describe('own-board mode', () => {
     expect(new Set(['a', 'b', 'c'].map((id) => same.boards[id]!.pictureId)).size).toBe(1);
   });
 
+  it('players at seats 0 and 3 (a lobby leaver left a gap) still get different pictures', () => {
+    let lobby: RoomState = { ...initialRoomState('TRAM'), roomSeed: 'seed-gap' };
+    lobby = registerIdentity(lobby, 't0', { playerId: 'a', seatIndex: 0, name: 'a' });
+    lobby = registerIdentity(lobby, 't3', { playerId: 'd', seatIndex: 3, name: 'd' });
+    const own = configureRoom(lobby, { mode: 'own-board' });
+    if (!own.ok) throw new Error('fixture');
+    const game = start(own.state, ['a', 'd']);
+    expect(game.boards.a!.pictureId).not.toBe(game.boards.d!.pictureId);
+  });
+
   it("the stage budget is the largest picture's, and the snapshot names no shared picture", () => {
     const own = configureRoom(seatedLobby(['a', 'b', 'c']), { mode: 'own-board' });
     if (!own.ok) throw new Error('fixture');
@@ -638,12 +646,13 @@ describe('own-board mode', () => {
     expect(roomSnapshotSchema.safeParse(snap).success).toBe(true);
   });
 
-  it("a mid-game joiner gets their own seat's picture", () => {
+  it('a mid-game joiner takes the lowest unused offset, so a different picture', () => {
     const own = configureRoom(seatedLobby(['a', 'b']), { mode: 'own-board' });
     if (!own.ok) throw new Error('fixture');
     const game = start(own.state, ['a']);
     const joined = ensureBoard(game, 'b');
-    expect(joined.boards.b!.pictureId).toBe(pictureFor(game, 'b'));
+    expect(joined.pictureOffsets).toEqual({ a: 0, b: 1 });
+    expect(joined.boards.b!.pictureId).toBe(pictureFor(joined, 'b'));
     expect(joined.boards.b!.pictureId).not.toBe(joined.boards.a!.pictureId);
   });
 });

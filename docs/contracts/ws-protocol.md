@@ -158,8 +158,10 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   change now arrives as a `state` with new boards. A protocol-2 build would
   half-understand that, so the bump sends it to "reload to update" instead.
 - **`configure { mode?, packId? }`** (client, host-only): the room's mode
-  (`same-board` | `own-board`) and pack (D7). Allowed in the lobby and after a
-  game ended, never mid-game (`game-in-progress`). An unknown pack is
+  (`same-board` | `own-board`) and pack (D7). Lobby only; otherwise
+  `game-in-progress`. After a game, rematch returns to the lobby first (D10),
+  so the results screen never shows boards from a pack other than the
+  snapshot's. An unknown pack is
   `bad-config`: the server validates it, because a bad id would otherwise
   throw inside the Durable Object at the next start. Answered by a `state`
   broadcast.
@@ -182,10 +184,13 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   `pictureId` is the shared picture in same-board mode and `null` in
   own-board mode, where each `Board` names its own.
 
-- **Own-board pictures are offset along the order by seat.** Two or three
-  players always differ (seats are handed out lowest-first). With more players
-  than pictures, repeats are unavoidable with three-picture packs. A stage's
-  budget is the largest of its pictures' budgets.
+- **Own-board pictures are offset along the order by a stored per-player
+  offset** (`pictureOffsets`). Offsets are given at start by seat rank, and to
+  a mid-game joiner as the lowest unused one. The seat itself is not used,
+  because seats can have gaps after a lobby leaver, and seats 0 and 3 would
+  share a picture in a three-picture pack. Players differ whenever there are
+  no more of them than pictures. Beyond that, repeats are unavoidable. A
+  stage's budget is the largest of its pictures' budgets.
 - **Storage written by protocol 2** loads through `normaliseRoom`. A game in
   progress becomes a one-picture session (`pictureOrder: [pictureId]`).
 
