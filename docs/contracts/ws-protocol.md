@@ -152,6 +152,43 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
   server-to-client code, and protocol-2 clients keep their tokens per tab, so
   they never receive it. No version bump.
 
+## Decided for protocol 3 (2026-10-22, Phase 6)
+
+- **`PROTOCOL_VERSION` → `3`.** The snapshot changed shape, and a picture
+  change now arrives as a `state` with new boards. A protocol-2 build would
+  half-understand that, so the bump sends it to "reload to update" instead.
+- **`configure { mode?, packId? }`** (client, host-only): the room's mode
+  (`same-board` | `own-board`) and pack (D7). Allowed in the lobby and after a
+  game ended, never mid-game (`game-in-progress`). An unknown pack is
+  `bad-config`: the server validates it, because a bad id would otherwise
+  throw inside the Durable Object at the next start. Answered by a `state`
+  broadcast.
+- **Picture cycling (D8, lockstep).** At start the server fixes
+  `pictureOrder`, a seeded shuffle of the pack from
+  `deriveSeed(roomSeed, 'pictures')`. Its first entry is what Phase 5's single
+  `pick` chose. When the picture in play resolves (every board complete, its
+  budget spent, or nobody connected has anything left), the whole room moves
+  to the next one. The round closes with `round-result`, then a full `state`
+  (not a `roll`) carrying fresh boards. The round counter is never reset, so
+  no picture replays another's offers. After the last picture, the session
+  ends as before (`round-result.sessionEnded`).
+- **Snapshot fields:**
+  - `packId`;
+  - `stage` / `stageCount` / `stageStartRound`;
+  - `history`, every finished picture's boards, so results read
+    `[...history, boards]`;
+  - `roundBudget` now counts from `stageStartRound`.
+
+  `pictureId` is the shared picture in same-board mode and `null` in
+  own-board mode, where each `Board` names its own.
+
+- **Own-board pictures are offset along the order by seat.** Two or three
+  players always differ (seats are handed out lowest-first). With more players
+  than pictures, repeats are unavoidable with three-picture packs. A stage's
+  budget is the largest of its pictures' budgets.
+- **Storage written by protocol 2** loads through `normaliseRoom`. A game in
+  progress becomes a one-picture session (`pictureOrder: [pictureId]`).
+
 ## Not yet decided
 
 - Per-socket message rate limiting (deferred: the free tier caps rather than

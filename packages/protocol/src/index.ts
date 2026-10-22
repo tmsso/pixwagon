@@ -19,7 +19,7 @@ import { z } from 'zod';
  * join; a server seeing a version it does not speak refuses the connection with
  * a clear error rather than half-working.
  */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /*
  * Version history — bump on any change an older peer would misread:
@@ -94,6 +94,11 @@ export const cellRefSchema = z.object({
 export const gameModeSchema = z.enum(['same-board', 'own-board', 'solo', 'daily']);
 
 export type GameMode = z.infer<typeof gameModeSchema>;
+
+/** The two modes a multiplayer room can be configured to (Phase 6). */
+export const roomModeSchema = z.enum(['same-board', 'own-board']);
+
+export type RoomMode = z.infer<typeof roomModeSchema>;
 
 /**
  * The fallback die's six faces. game-core owns the canonical list
@@ -222,10 +227,32 @@ export const roomSnapshotSchema = z.object({
    * "apply the snapshot" and nothing cleverer.
    */
   status: gameStatusSchema,
+  /** The pack the next (or current) game plays — the host's choice (D7). */
+  packId: z.string(),
+  /**
+   * The picture everyone is on in a same-board game. `null` in the lobby and
+   * in own-board mode, where each board names its own picture (`Board.pictureId`).
+   */
   pictureId: z.string().nullable(),
-  /** Rolls this picture gets before the session ends (D3), fixed at start. */
+  /**
+   * Rolls the picture in play gets (D3), fixed when that picture starts. Counted
+   * from `stageStartRound`, not from round 0 — picture cycling (D8) gives every
+   * picture a fresh budget while the round counter keeps running.
+   */
   roundBudget: z.number().int().positive().nullable(),
+  /**
+   * Picture cycling (Phase 6, D8 lockstep): `stage` is the 0-based index of
+   * the picture in play, out of `stageCount` (= the pack's picture count;
+   * `null` before the first game). `stageStartRound` is the global round
+   * index the stage's first roll had.
+   */
+  stage: z.number().int().nonnegative(),
+  stageCount: z.number().int().positive().nullable(),
+  stageStartRound: z.number().int().nonnegative(),
   boards: z.record(z.string(), boardSchema),
+  /** Every finished stage's boards, oldest first — the results screen and
+   *  `BoardCompare` read the whole session from `[...history, boards]`. */
+  history: z.array(z.record(z.string(), boardSchema)),
   /** Players who have filled or passed in the round in play. */
   acted: z.array(z.string()),
 });
@@ -315,6 +342,17 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
    * guards against a skip racing the round closing on its own.
    */
   z.object({ type: z.literal('skip-waiting'), round: z.number().int().nonnegative() }),
+  /**
+   * Host-only, lobby-only (protocol 3, Phase 6 / D7): the room's mode and
+   * pack for the next game. Either field may be omitted to keep its current
+   * value. `solo` and `daily` are not room modes and are refused, and so is a
+   * pack id the server does not know (`bad-config`).
+   */
+  z.object({
+    type: z.literal('configure'),
+    mode: roomModeSchema.optional(),
+    packId: z.string().min(1).optional(),
+  }),
   z.object({ type: z.literal('rematch') }),
   /** Liveness. Kept explicit so hibernation behaviour is testable. */
   z.object({ type: z.literal('ping'), t: z.number() }),
@@ -351,6 +389,8 @@ export const serverErrorCodeSchema = z.enum([
   // shares the token since it moved to localStorage). Terminal on the client:
   // reconnecting would take the seat back and evict the newer tab in turn.
   'replaced',
+  // Protocol 3: `configure` outside the lobby, or naming an unknown pack.
+  'bad-config',
   'internal',
 ]);
 

@@ -1,11 +1,12 @@
 import { decodeClientMessage, encode, PROTOCOL_VERSION } from '@pixwagon/protocol';
-import type { ServerMessage, WireMoveChoice } from '@pixwagon/protocol';
+import type { RoomMode, ServerMessage, WireMoveChoice } from '@pixwagon/protocol';
 import type { Env } from './env.ts';
 import { sendToAll } from './fanout.ts';
 import {
   admitSocket,
   buildSnapshot,
   closeRoundIfDone,
+  configureRoom,
   ensureBoard,
   ensureSeed,
   findStaleConnection,
@@ -205,6 +206,9 @@ export class Room {
 
       case 'skip-waiting':
         return this.#handleSkipWaiting(ws, attachment, decoded.message.round);
+
+      case 'configure':
+        return this.#handleConfigure(ws, attachment, decoded.message);
 
       case 'ping':
         this.#send(ws, { type: 'pong', t: decoded.message.t });
@@ -465,7 +469,7 @@ export class Room {
         delta: { playerId: attachment.playerId, round, cells: ruling.cells },
       }),
     );
-    this.#announceClose(closing);
+    this.#announceClose(closing, conns);
   }
 
   async #handlePass(ws: WebSocket, attachment: Attachment, round: number): Promise<void> {
@@ -502,7 +506,7 @@ export class Room {
     // Protocol 2: a pass is visible to everyone, the way a fill is via its
     // `delta` — otherwise "waiting for Kim" can't tell Kim already passed.
     this.#broadcast(encode({ type: 'passed', playerId: attachment.playerId, round }));
-    this.#announceClose(closing);
+    this.#announceClose(closing, conns);
   }
 
   /** Host-only, once the round has waited long enough (`skipWaiting`). */
@@ -551,7 +555,7 @@ export class Room {
     for (const playerId of ruling.skipped) {
       this.#broadcast(encode({ type: 'passed', playerId, round }));
     }
-    this.#announceClose(closing);
+    this.#announceClose(closing, conns);
   }
 
   #sendActionError(ws: WebSocket, error: 'not-playing' | 'already-acted'): void {
@@ -565,9 +569,11 @@ export class Room {
     });
   }
 
-  /** After a round closes: everyone gets the scores, then either the next
-   *  roll or nothing more (the session ended). */
-  #announceClose(closing: ReturnType<typeof closeRoundIfDone>): void {
+  /** After a round closes: everyone gets the scores, then the next roll, or
+   *  a full `state` when the room moved on to the next picture (every board
+   *  was replaced — a roll alone would leave clients on the old picture), or
+   *  nothing more when the session ended. */
+  #announceClose(closing: ReturnType<typeof closeRoundIfDone>, conns: readonly SeatedConn[]): void {
     if (!closing.closed) return;
     this.#broadcast(
       encode({
@@ -576,7 +582,52 @@ export class Room {
         sessionEnded: closing.sessionEnded,
       }),
     );
-    if (closing.roll) this.#broadcast(encode({ type: 'roll', roll: closing.roll }));
+    if (closing.stageAdvanced) {
+      this.#broadcast(encode({ type: 'state', state: buildSnapshot(closing.state, conns) }));
+    } else if (closing.roll) {
+      this.#broadcast(encode({ type: 'roll', roll: closing.roll }));
+    }
+  }
+
+  /** Host-only mode and pack choice between games (Phase 6, D7). */
+  async #handleConfigure(
+    ws: WebSocket,
+    attachment: Attachment,
+    change: { mode?: RoomMode | undefined; packId?: string | undefined },
+  ): Promise<void> {
+    if (!attachment.joined) {
+      this.#send(ws, { type: 'error', code: 'not-joined', message: 'join before configuring' });
+      return;
+    }
+    const stored = await this.#loadExistingRoom();
+    if (!stored) {
+      this.#send(ws, { type: 'error', code: 'internal', message: 'room is not initialised' });
+      return;
+    }
+    if (stored.hostId !== attachment.playerId) {
+      this.#send(ws, {
+        type: 'error',
+        code: 'not-host',
+        message: 'only the host can choose the mode and pack',
+      });
+      return;
+    }
+    const ruling = configureRoom(stored, change);
+    if (!ruling.ok) {
+      this.#send(ws, {
+        type: 'error',
+        code: ruling.error,
+        message:
+          ruling.error === 'bad-config'
+            ? 'that pack does not exist'
+            : 'the mode and pack can only change between games',
+      });
+      return;
+    }
+    if (ruling.state === stored) return;
+    await this.#state.storage.put(ROOM_KEY, ruling.state);
+    const conns = this.#seatedConns();
+    this.#broadcast(encode({ type: 'state', state: buildSnapshot(ruling.state, conns) }));
   }
 
   /** Recompute presence and host after a disconnect, persist a host change,
@@ -600,7 +651,7 @@ export class Room {
     }
     const state = next ?? initialRoomState('');
     this.#broadcast(encode({ type: 'presence', players: presenceList(state, conns) }));
-    if (closing) this.#announceClose(closing);
+    if (closing) this.#announceClose(closing, conns);
   }
 
   // --- fan-out ---------------------------------------------------------

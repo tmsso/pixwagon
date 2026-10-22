@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   createBoard,
+  createRng,
+  deriveSeed,
   FALLBACK_BLOB_SIZES,
   fillCells,
   isComplete,
   issueRoll,
 } from '@pixwagon/game-core';
 import { FALLBACK_FACE_IDS } from '@pixwagon/game-core';
+import { getPack } from '@pixwagon/packs';
 import type { Board, CellRef, CellState, MoveRejection } from '@pixwagon/game-core';
 import {
   cellStateSchema,
@@ -32,7 +35,10 @@ import {
   newlyFilled,
   nextFreeSeat,
   normaliseRoom,
+  configureRoom,
   pickPicture,
+  pictureFor,
+  pictureOrder,
   presenceList,
   reclaimIdentity,
   registerIdentity,
@@ -214,6 +220,13 @@ describe('findStaleConnection', () => {
 // ---------------------------------------------------------------------------
 // Phase 5 item 1 — per-player boards and the round lifecycle
 // ---------------------------------------------------------------------------
+
+/** `state` moved onto its pack's last picture — where resolving ends the
+ *  session rather than cycling (D8). Boards are left as they were. */
+function onLastStage(state: RoomState): RoomState {
+  const last = state.pictureOrder!.length - 1;
+  return { ...state, stage: last, pictureId: state.pictureOrder![last]! };
+}
 
 /** A room with a seed, two seated players and the game started. */
 function started(ids: readonly string[] = ['a', 'b'], seed = 'seed-p5'): RoomState {
@@ -489,8 +502,8 @@ describe('closeRoundIfDone', () => {
     expect(closeRoundIfDone(state, [])).toEqual({ closed: false, state });
   });
 
-  it('ends the session when the round budget is spent (D3)', () => {
-    const state = { ...started(), roundBudget: 1 };
+  it("ends the session when the last picture's round budget is spent (D3)", () => {
+    const state = { ...onLastStage(started()), roundBudget: 1 };
     const a = submitPass(state, 'a', 0);
     const b = a.ok ? submitPass(a.state, 'b', 0) : a;
     if (!b.ok) throw new Error('fixture');
@@ -502,8 +515,8 @@ describe('closeRoundIfDone', () => {
     }
   });
 
-  it('ends the session when every board is complete, with a complete result', () => {
-    const state = started();
+  it('ends the session when every board on the last picture is complete', () => {
+    const state = onLastStage(started());
     const full = {
       ...state,
       boards: { a: allFilled(state.boards.a!), b: allFilled(state.boards.b!) },
@@ -514,11 +527,196 @@ describe('closeRoundIfDone', () => {
   });
 
   it('ends rather than spinning empty rounds when only an absent player is incomplete', () => {
-    const state = started();
+    const state = onLastStage(started());
     const onlyAbsentLeft = { ...state, boards: { ...state.boards, a: allFilled(state.boards.a!) } };
     const closing = closeRoundIfDone(onlyAbsentLeft, ['a']);
     expect(closing).toMatchObject({ closed: true, sessionEnded: true });
     if (closing.closed) expect(closing.result.complete).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 6 — room settings, own-board, picture cycling (D7, D8)
+// ---------------------------------------------------------------------------
+
+/** A lobby with `ids` registered at seats 0..n-1 — own-board's picture offset
+ *  reads seats from the stored identities, as the real join flow writes them. */
+function seatedLobby(ids: readonly string[], seed = 'seed-p6'): RoomState {
+  let state: RoomState = { ...initialRoomState('TRAM'), roomSeed: seed };
+  ids.forEach((id, seatIndex) => {
+    state = registerIdentity(state, `tok-${id}`, { playerId: id, seatIndex, name: id });
+  });
+  return state;
+}
+
+function start(state: RoomState, ids: readonly string[]): RoomState {
+  const result = startGame(state, ids);
+  if (!result.ok) throw new Error('fixture failed to start');
+  return result.state;
+}
+
+/** Everyone passes the round in play; returns the close. */
+function passAll(state: RoomState, ids: readonly string[]) {
+  let next = state;
+  const round = currentRoll(state)!.round;
+  for (const id of ids) {
+    const ruling = submitPass(next, id, round);
+    if (!ruling.ok) throw new Error(`fixture pass failed: ${ruling.error}`);
+    next = ruling.state;
+  }
+  return closeRoundIfDone(next, ids);
+}
+
+describe('pictureOrder', () => {
+  it('is a seeded permutation of the pack, stable per seed', () => {
+    const order = pictureOrder('seed-x', 'transportation');
+    expect([...order].sort()).toEqual(['hot-air-balloon', 'sailboat', 'tram']);
+    expect(pictureOrder('seed-x', 'transportation')).toEqual(order);
+  });
+
+  it("starts with the picture Phase 5's single pick chose for the same seed", () => {
+    for (const seed of ['a', 'b', 'c', 'd', 'e']) {
+      const pack = getPack('garden')!;
+      const phase5 = createRng(deriveSeed(seed, 'pictures')).pick(pack.pictures).id;
+      expect(pictureOrder(seed, 'garden')[0]).toBe(phase5);
+    }
+  });
+});
+
+describe('configureRoom', () => {
+  it('sets mode and pack in the lobby, and is a no-op for unchanged values', () => {
+    const lobby = initialRoomState('TRAM');
+    const changed = configureRoom(lobby, { mode: 'own-board', packId: 'garden' });
+    expect(changed).toMatchObject({ ok: true, state: { mode: 'own-board', packId: 'garden' } });
+    expect(configureRoom(lobby, { packId: 'transportation' })).toEqual({ ok: true, state: lobby });
+  });
+
+  it('refuses an unknown pack, so a client cannot make the next start throw', () => {
+    expect(configureRoom(initialRoomState('TRAM'), { packId: 'nope' })).toEqual({
+      ok: false,
+      error: 'bad-config',
+    });
+  });
+
+  it('refuses mid-game, allows after the game ended', () => {
+    const playing = started();
+    expect(configureRoom(playing, { packId: 'garden' })).toEqual({
+      ok: false,
+      error: 'game-in-progress',
+    });
+    expect(configureRoom({ ...playing, status: 'ended' }, { packId: 'garden' }).ok).toBe(true);
+  });
+
+  it('the chosen pack is what the game plays', () => {
+    const configured = configureRoom(seatedLobby(['a', 'b']), { packId: 'garden' });
+    if (!configured.ok) throw new Error('fixture');
+    const state = start(configured.state, ['a', 'b']);
+    expect(state.boards.a!.packId).toBe('garden');
+  });
+});
+
+describe('own-board mode', () => {
+  it('gives seated players different pictures, same-board gives them the same', () => {
+    const own = configureRoom(seatedLobby(['a', 'b', 'c']), { mode: 'own-board' });
+    if (!own.ok) throw new Error('fixture');
+    const ownGame = start(own.state, ['a', 'b', 'c']);
+    const pictures = ['a', 'b', 'c'].map((id) => ownGame.boards[id]!.pictureId);
+    expect(new Set(pictures).size).toBe(3);
+
+    const same = start(seatedLobby(['a', 'b', 'c']), ['a', 'b', 'c']);
+    expect(new Set(['a', 'b', 'c'].map((id) => same.boards[id]!.pictureId)).size).toBe(1);
+  });
+
+  it("the stage budget is the largest picture's, and the snapshot names no shared picture", () => {
+    const own = configureRoom(seatedLobby(['a', 'b', 'c']), { mode: 'own-board' });
+    if (!own.ok) throw new Error('fixture');
+    const state = start(own.state, ['a', 'b', 'c']);
+    const budgets = ['a', 'b', 'c'].map((id) => roundBudgetFor(state.boards[id]!));
+    expect(state.roundBudget).toBe(Math.max(...budgets));
+    const snap = buildSnapshot(state, [conn('a', 0), conn('b', 1), conn('c', 2)]);
+    expect(snap.pictureId).toBeNull();
+    expect(roomSnapshotSchema.safeParse(snap).success).toBe(true);
+  });
+
+  it("a mid-game joiner gets their own seat's picture", () => {
+    const own = configureRoom(seatedLobby(['a', 'b']), { mode: 'own-board' });
+    if (!own.ok) throw new Error('fixture');
+    const game = start(own.state, ['a']);
+    const joined = ensureBoard(game, 'b');
+    expect(joined.boards.b!.pictureId).toBe(pictureFor(game, 'b'));
+    expect(joined.boards.b!.pictureId).not.toBe(joined.boards.a!.pictureId);
+  });
+});
+
+describe('picture cycling (D8 lockstep)', () => {
+  it('moves the whole room to the next picture when the budget is spent, keeping the round counter', () => {
+    const state = { ...start(seatedLobby(['a', 'b']), ['a', 'b']), roundBudget: 1 };
+    const stage0Boards = state.boards;
+    const closing = passAll(state, ['a', 'b']);
+    expect(closing).toMatchObject({ closed: true, sessionEnded: false, stageAdvanced: true });
+    if (!closing.closed) return;
+    const next = closing.state;
+    expect(next.stage).toBe(1);
+    expect(next.history).toEqual([stage0Boards]);
+    expect(next.boards.a).toEqual(createBoard('transportation', next.pictureOrder![1]!));
+    // The round keeps counting: picture 2 must not replay picture 1's offers.
+    expect(next.stageStartRound).toBe(1);
+    expect(closing.roll!.round).toBe(1);
+    expect(closing.roll).toEqual(issueRoll('seed-p6', 1));
+    expect(next.status).toBe('playing');
+  });
+
+  it('counts the budget from the stage start, not from round 0', () => {
+    let state = start(seatedLobby(['a', 'b']), ['a', 'b']);
+    // Picture 2 started at round 10 with a budget of 3: round 12 is still in budget.
+    state = { ...state, stage: 1, round: 12, stageStartRound: 10, roundBudget: 3 };
+    const closing = passAll(state, ['a', 'b']);
+    expect(closing).toMatchObject({ closed: true, stageAdvanced: false, sessionEnded: false });
+  });
+
+  it('advances when every board on the picture is complete', () => {
+    const state = start(seatedLobby(['a', 'b']), ['a', 'b']);
+    const full = {
+      ...state,
+      boards: { a: allFilled(state.boards.a!), b: allFilled(state.boards.b!) },
+    };
+    expect(closeRoundIfDone(full, ['a', 'b'])).toMatchObject({ closed: true, stageAdvanced: true });
+  });
+
+  it('gives an away player a board for the new picture too, so a rejoin lands on it', () => {
+    const state = { ...start(seatedLobby(['a', 'b']), ['a', 'b']), roundBudget: 1 };
+    const round = currentRoll(state)!.round;
+    const passed = submitPass(state, 'a', round);
+    if (!passed.ok) throw new Error('fixture');
+    const closing = closeRoundIfDone(passed.state, ['a']); // b is away
+    expect(closing).toMatchObject({ closed: true, stageAdvanced: true });
+    if (closing.closed) expect(closing.state.boards.b!.pictureId).toBe(closing.state.pictureId);
+  });
+
+  it('ends after the last picture, and the snapshot carries the whole session', () => {
+    let state: RoomState = { ...start(seatedLobby(['a', 'b']), ['a', 'b']) };
+    for (let stage = 0; stage < 3; stage += 1) {
+      const closing = passAll({ ...state, roundBudget: 1 }, ['a', 'b']);
+      if (!closing.closed) throw new Error('fixture');
+      expect(closing.sessionEnded).toBe(stage === 2);
+      state = closing.state;
+    }
+    expect(state.status).toBe('ended');
+    const snap = buildSnapshot(state, [conn('a', 0), conn('b', 1)]);
+    expect(snap).toMatchObject({ stage: 2, stageCount: 3 });
+    expect(snap.history).toHaveLength(2);
+    expect(roomSnapshotSchema.safeParse(snap).success).toBe(true);
+  });
+
+  it('a protocol-2 game in storage loads as a one-picture session and still ends', () => {
+    const p5 = started();
+    // What a Phase 5 room wrote: no order, stage or history fields.
+    const { pictureOrder: _o, stage: _s, stageStartRound: _r, history: _h, ...stored } = p5;
+    const room = normaliseRoom(stored);
+    expect(room.pictureOrder).toEqual([p5.pictureId]);
+    expect(room).toMatchObject({ stage: 0, stageStartRound: 0, history: [] });
+    const closing = passAll({ ...room, roundBudget: 1 }, ['a', 'b']);
+    expect(closing).toMatchObject({ closed: true, sessionEnded: true });
   });
 });
 
