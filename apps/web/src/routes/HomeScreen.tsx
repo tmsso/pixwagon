@@ -5,6 +5,7 @@ import { InstallPrompt } from '../pwa/InstallPrompt.tsx';
 import { OfflineExplainer, OfflinePill } from '../pwa/OfflineNotice.tsx';
 import { useOnlineStatus } from '../pwa/useOnlineStatus.ts';
 import { getPack } from '@pixwagon/packs';
+import { dailyConfig } from '../state/daily.ts';
 import { loadSoloPack } from '../state/packChoice.ts';
 import { freshSoloConfig, useSoloGameStore } from '../state/soloGame.ts';
 
@@ -14,6 +15,11 @@ export function HomeScreen() {
   const online = useOnlineStatus();
   // Read on render, not cached: coming back from /packs remounts Home.
   const soloPack = getPack(loadSoloPack())?.name ?? '';
+
+  function handleDaily() {
+    start(dailyConfig());
+    navigate('/r/daily');
+  }
 
   function handleSolo() {
     start(freshSoloConfig());
@@ -41,9 +47,9 @@ export function HomeScreen() {
           <Button size="lg" onClick={handleSolo}>
             Solo
           </Button>
-          {/* Daily puzzle needs a shared deterministic seed distribution —
-              Phase 7, not built yet. */}
-          <Button size="lg" variant="secondary" disabled>
+          {/* Phase 7a: the same puzzle for everyone today, derived from the
+              UTC date alone — so it works offline too. */}
+          <Button size="lg" variant="secondary" onClick={handleDaily}>
             Daily puzzle
           </Button>
           {online ? (

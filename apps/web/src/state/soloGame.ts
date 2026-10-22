@@ -19,6 +19,7 @@ import {
   toMoveChoice,
 } from './placement.ts';
 import { DEFAULT_SOLO_PACK_ID, loadSoloPack } from './packChoice.ts';
+import { dailyConfig } from './daily.ts';
 
 /**
  * Client state store — decided 2026-08-15 (ROADMAP.md Phase 2): zustand over a
@@ -36,6 +37,8 @@ export interface SoloSessionConfig {
   roomSeed: Seed;
   packId: string;
   pictureId: string;
+  /** Set for the daily puzzle (Phase 7a): its UTC date, `YYYY-MM-DD`. */
+  daily?: string;
 }
 
 export type SoloStatus = 'playing' | 'complete';
@@ -45,6 +48,8 @@ export type SoloStatus = 'playing' | 'complete';
 export const SOLO_PLAYER_ID = 'solo';
 
 export interface SoloGameState {
+  /** The daily puzzle's date when this session is the daily, else `null`. */
+  daily: string | null;
   packId: string;
   pictureId: string;
   roomSeed: Seed;
@@ -107,6 +112,7 @@ export function freshSoloConfig(packId: string = loadSoloPack()): SoloSessionCon
 
 function sessionFromConfig(config: SoloSessionConfig) {
   return {
+    daily: config.daily ?? null,
     packId: config.packId,
     pictureId: config.pictureId,
     roomSeed: config.roomSeed,
@@ -138,7 +144,13 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
     // Module-scope `window` access would break under `renderToStaticMarkup`
     // (scripts/check-screens.tsx runs this store in Node); guard it so the
     // default config still wins server-side.
-    typeof window === 'undefined' ? freshSoloConfig() : initialSoloConfig(window.location.search),
+    typeof window === 'undefined'
+      ? freshSoloConfig()
+      : window.location.pathname === '/r/daily'
+        ? // A reload (or a bookmark) on the daily must land on today's daily,
+          // not on a random solo game.
+          dailyConfig()
+        : initialSoloConfig(window.location.search),
   ),
 
   start: (config) => set(sessionFromConfig(config)),

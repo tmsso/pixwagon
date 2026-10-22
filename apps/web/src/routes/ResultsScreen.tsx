@@ -26,6 +26,7 @@ export function ResultsScreen() {
   const pictureId = useSoloGameStore((state) => state.pictureId);
   const round = useSoloGameStore((state) => state.round);
   const status = useSoloGameStore((state) => state.status);
+  const daily = useSoloGameStore((state) => state.daily);
   const start = useSoloGameStore((state) => state.start);
   const onPictureCompleted = usePwaStore((state) => state.onPictureCompleted);
 
@@ -48,6 +49,7 @@ export function ResultsScreen() {
     <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
       <div className="grid gap-1 text-center">
         <span className="text-xs uppercase tracking-wide text-ink-muted">
+          {daily ? `Daily puzzle · ${daily} · ` : ''}
           {status === 'complete' ? 'Picture complete' : 'Still in progress'}
         </span>
         <h1 className="text-2xl font-semibold text-ink">{picture?.name ?? 'Picture'}</h1>
@@ -77,9 +79,20 @@ export function ResultsScreen() {
         </p>
       </Panel>
 
-      <Button size="lg" onClick={handleRematch}>
-        Rematch
-      </Button>
+      {daily ? (
+        // One daily per day: no rematch, which would only replay the same
+        // offers. Tomorrow's is the next one.
+        <div className="grid gap-2 text-center">
+          <p className="text-sm text-ink-muted">A new daily puzzle arrives at midnight UTC.</p>
+          <Button size="lg" onClick={() => navigate('/')}>
+            Back home
+          </Button>
+        </div>
+      ) : (
+        <Button size="lg" onClick={handleRematch}>
+          Rematch
+        </Button>
+      )}
 
       <InstallPrompt />
     </main>
