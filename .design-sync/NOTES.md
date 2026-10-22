@@ -69,7 +69,8 @@ lives beside the cards: `surfaces/`, `design_handoff_pass02/`,
 - deletes a card only when it is removed from `cards.tsx`, path by path, after
   looking at it, and never with a glob.
 
-Done 2026-10-22 from `main` (19 cards; 21 files written, nothing deleted;
-the remote `manifest.json` was read back and matches). Sync again after the
-2026-10-22 stack merges: #43 adds `components/board-compare/` (card 20) and
-#42 adds PlayerChip's "Progress" variant.
+Done twice on 2026-10-22, both from `main`. First with 19 cards, before the
+Phase 6 stack merged. Then with 20 cards after it merged (`954762a`): 22
+files written, nothing deleted, adding `components/board-compare/` and the
+PlayerChip "Progress" variant. Both times the remote file was read back and
+matched.
