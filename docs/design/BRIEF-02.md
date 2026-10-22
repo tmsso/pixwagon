@@ -1,5 +1,10 @@
 # Claude Design brief — Pixwagon, pass 02 (mechanic-accurate + forward-design)
 
+> **Part C superseded — read `BRIEF-03.md` for multiplayer.** Pass 03 replaces
+> this brief's Part C (provisional multiplayer) with the room model as decided
+> (D1–D3, D6, D7) and built (Phases 4–5), plus Phase 6's screens. Parts A and B
+> below remain the live brief for solo and the PWA surfaces.
+
 **This supersedes `docs/design/BRIEF.md`.** That brief describes a "dice/combo"
 mechanic the game no longer has (see _The mechanic_ below). `docs/design/README.md`
 says this directory is safe to hand-edit, and a brief is an _instruction_, not a
