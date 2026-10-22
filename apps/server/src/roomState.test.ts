@@ -39,6 +39,7 @@ import {
   pickPicture,
   pictureFor,
   pictureOrder,
+  rematch,
   presenceList,
   reclaimIdentity,
   registerIdentity,
@@ -726,6 +727,59 @@ describe('picture cycling (D8 lockstep)', () => {
     expect(room).toMatchObject({ stage: 0, stageStartRound: 0, history: [] });
     const closing = passAll({ ...room, roundBudget: 1 }, ['a', 'b']);
     expect(closing).toMatchObject({ closed: true, sessionEnded: true });
+  });
+});
+
+describe('rematch (D10)', () => {
+  /** A finished own-board Garden game between a and b. */
+  function ended(): RoomState {
+    const own = configureRoom(seatedLobby(['a', 'b']), { mode: 'own-board', packId: 'garden' });
+    if (!own.ok) throw new Error('fixture');
+    return { ...start(own.state, ['a', 'b']), status: 'ended' };
+  }
+
+  it('returns everyone to the lobby with the same settings and a new, derived seed', () => {
+    const before = ended();
+    const result = rematch(before);
+    if (!result.ok) throw new Error(result.error);
+    const next = result.state;
+    expect(next).toMatchObject({
+      status: 'lobby',
+      mode: 'own-board',
+      packId: 'garden',
+      round: 0,
+      boards: {},
+      history: [],
+      pictureOrder: null,
+      pictureOffsets: {},
+      rematchCount: 1,
+      baseSeed: 'seed-p6',
+      roomSeed: deriveSeed('seed-p6', 'rematch', 1),
+    });
+    // Identities survive: nobody rejoins.
+    expect(next.players).toEqual(before.players);
+  });
+
+  it('derives every rematch from the base seed, never by chaining', () => {
+    const first = rematch(ended());
+    if (!first.ok) throw new Error('fixture');
+    const second = rematch({ ...start(first.state, ['a', 'b']), status: 'ended' });
+    if (!second.ok) throw new Error('fixture');
+    expect(second.state.roomSeed).toBe(deriveSeed('seed-p6', 'rematch', 2));
+  });
+
+  it('the next game plays different offers', () => {
+    const before = ended();
+    const result = rematch(before);
+    if (!result.ok) throw new Error('fixture');
+    const next = start(result.state, ['a', 'b']);
+    expect(currentRoll(next)).not.toEqual(issueRoll('seed-p6', 0));
+    expect(currentRoll(next)).toEqual(issueRoll(deriveSeed('seed-p6', 'rematch', 1), 0));
+  });
+
+  it('is refused mid-game and before any game', () => {
+    expect(rematch(started())).toEqual({ ok: false, error: 'game-in-progress' });
+    expect(rematch(seatedLobby(['a']))).toEqual({ ok: false, error: 'not-ended' });
   });
 });
 

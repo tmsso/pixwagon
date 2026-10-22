@@ -10,7 +10,9 @@
  * picture's budget, so the room cycles through every picture (D8 lockstep)
  * until the session ends. Checked along the way: the players get different
  * pictures, each new picture arrives as a full `state` with fresh boards, and
- * the round counter keeps running across pictures.
+ * the round counter keeps running across pictures. Finally the host's
+ * rematch (D10) returns the room to the lobby with its settings, a guest's
+ * is refused, and the rematch starts with the same players.
  *
  * The rules themselves are unit-tested in `apps/server/src/roomState.test.ts`;
  * this proves the Durable Object glue sends what clients need. Not in CI: it
@@ -185,6 +187,45 @@ check(stageStates === 2, `two picture changes for a three-picture pack (saw ${st
 check(
   new Set(seenPictures).size === 3,
   `the host met every picture once (${seenPictures.join(', ')})`,
+);
+
+// --- rematch (D10) ------------------------------------------------------------
+
+mark = guest.messages.length;
+guest.send({ type: 'rematch' });
+const guestRematch = await waitFor(guest, (m) => m.type === 'error', 'a refusal', mark);
+check(
+  guestRematch.code === 'not-host',
+  `a guest's rematch is refused (${String(guestRematch.code)})`,
+);
+
+mark = guest.messages.length;
+hostClient.send({ type: 'rematch' });
+const lobby = (await waitFor(
+  guest,
+  (m) => isState(m) && m.state.status === 'lobby',
+  'the rematch lobby',
+  mark,
+)) as { state: Snapshot };
+check(
+  lobby.state.mode === 'own-board' &&
+    lobby.state.packId === 'garden' &&
+    lobby.state.round === 0 &&
+    lobby.state.history.length === 0,
+  'rematch: back to the waiting room, same mode and pack, nothing carried over',
+);
+
+mark = guest.messages.length;
+hostClient.send({ type: 'request-roll' });
+const again = (await waitFor(
+  guest,
+  (m) => isState(m) && m.state.status === 'playing',
+  'the rematch to start',
+  mark,
+)) as { state: Snapshot };
+check(
+  Object.keys(again.state.boards).sort().join() === [hostId, guestId].sort().join(),
+  'the rematch starts with the same two players, nobody rejoined',
 );
 
 hostClient.ws.close();

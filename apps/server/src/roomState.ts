@@ -43,7 +43,8 @@ export interface RoomState {
    *  differ only in which picture each player gets (D1). */
   mode: RoomMode;
   /**
-   * Set exactly once, on the first join. `issueRoll(roomSeed, round)` — which
+   * Set on the first join, and replaced only by a rematch (`rematch`, D10).
+   * `issueRoll(roomSeed, round)` — which
    * calls `deriveSeed(roomSeed, round)` and nothing else — drives every round's
    * offer, so a late joiner reconstructs round N without replaying 0..N-1
    * (docs/contracts/rng.md).
@@ -101,6 +102,15 @@ export interface RoomState {
    * picture of a three-picture pack.
    */
   pictureOffsets: Record<string, number>;
+  /**
+   * Rematch (Phase 6, D10). `roomSeed` used to be set exactly once; a rematch
+   * replaces it with `deriveSeed(baseSeed, 'rematch', rematchCount)`, where
+   * `baseSeed` is the room's first seed. Deriving from the base, not chaining
+   * from the previous seed, keeps every game reproducible from two stored
+   * values, and the seed string stays short (`deriveSeed` concatenates).
+   */
+  baseSeed: string | null;
+  rematchCount: number;
   /** One board per player id — kept when the player disconnects (their
    *  squares stay, pass 02 Annotation 19) and reclaimed on rejoin. */
   boards: Record<string, Board>;
@@ -148,6 +158,8 @@ export function initialRoomState(code: string): RoomState {
     roundBudget: null,
     history: [],
     pictureOffsets: {},
+    baseSeed: null,
+    rematchCount: 0,
     boards: {},
     acted: [],
     roundStartedAt: null,
@@ -531,6 +543,43 @@ export function ensureBoard(state: RoomState, playerId: string): RoomState {
     boards: {
       ...withOffset.boards,
       [playerId]: createBoard(state.packId, pictureFor(withOffset, playerId)),
+    },
+  };
+}
+
+export type RematchResult =
+  { ok: true; state: RoomState } | { ok: false; error: 'game-in-progress' | 'not-ended' };
+
+/**
+ * The host's rematch (D10): only once the session ended. Everyone returns to
+ * the lobby with the same mode and pack, under a new seed, so the next game
+ * plays new offers and a new picture order. Identities and seats are kept,
+ * and nobody rejoins. Host-only is the glue's check.
+ */
+export function rematch(state: RoomState): RematchResult {
+  if (state.status === 'playing') return { ok: false, error: 'game-in-progress' };
+  if (state.status !== 'ended' || state.roomSeed === null) return { ok: false, error: 'not-ended' };
+  const baseSeed = state.baseSeed ?? state.roomSeed;
+  const rematchCount = state.rematchCount + 1;
+  return {
+    ok: true,
+    state: {
+      ...state,
+      status: 'lobby',
+      baseSeed,
+      rematchCount,
+      roomSeed: deriveSeed(baseSeed, 'rematch', rematchCount),
+      round: 0,
+      pictureOrder: null,
+      stage: 0,
+      pictureId: null,
+      stageStartRound: 0,
+      roundBudget: null,
+      history: [],
+      pictureOffsets: {},
+      boards: {},
+      acted: [],
+      roundStartedAt: null,
     },
   };
 }

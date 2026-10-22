@@ -7,6 +7,7 @@ import {
   buildSnapshot,
   closeRoundIfDone,
   configureRoom,
+  rematch,
   ensureBoard,
   ensureSeed,
   findStaleConnection,
@@ -219,14 +220,8 @@ export class Room {
         // webSocketClose fires and reconciles presence + host.
         return;
 
-      // Rematch is Phase 6.
       case 'rematch':
-        this.#send(ws, {
-          type: 'error',
-          code: 'internal',
-          message: `"${decoded.message.type}" is not implemented yet — see Phase 6 in ROADMAP.md`,
-        });
-        return;
+        return this.#handleRematch(ws, attachment);
     }
   }
 
@@ -587,6 +582,45 @@ export class Room {
     } else if (closing.roll) {
       this.#broadcast(encode({ type: 'roll', roll: closing.roll }));
     }
+  }
+
+  /** Host-only, once the session ended (D10): back to the lobby, new seed. */
+  async #handleRematch(ws: WebSocket, attachment: Attachment): Promise<void> {
+    if (!attachment.joined) {
+      this.#send(ws, { type: 'error', code: 'not-joined', message: 'join before a rematch' });
+      return;
+    }
+    const stored = await this.#loadExistingRoom();
+    if (!stored) {
+      this.#send(ws, { type: 'error', code: 'internal', message: 'room is not initialised' });
+      return;
+    }
+    if (stored.hostId !== attachment.playerId) {
+      this.#send(ws, {
+        type: 'error',
+        code: 'not-host',
+        message: 'only the host can start a rematch',
+      });
+      return;
+    }
+    const ruling = rematch(stored);
+    if (!ruling.ok) {
+      this.#send(ws, {
+        type: 'error',
+        code: ruling.error === 'game-in-progress' ? 'game-in-progress' : 'not-playing',
+        message:
+          ruling.error === 'game-in-progress'
+            ? 'finish this game before a rematch'
+            : 'there is no finished game to rematch',
+      });
+      return;
+    }
+    // A rematch is the one place the room's mind changes about who holds a
+    // seat: back in the lobby, away players no longer keep theirs (as in any
+    // lobby), so presence must be rebuilt along with the snapshot.
+    await this.#state.storage.put(ROOM_KEY, ruling.state);
+    const conns = this.#seatedConns();
+    this.#broadcast(encode({ type: 'state', state: buildSnapshot(ruling.state, conns) }));
   }
 
   /** Host-only mode and pack choice between games (Phase 6, D7). */
