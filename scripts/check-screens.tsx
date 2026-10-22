@@ -16,7 +16,7 @@ import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 // Relative, not `@pixwagon/game-core`: the workspace root doesn't depend on
 // the package (the type-only protocol import below is erased at runtime).
-import { createBoard, fillCells } from '../packages/game-core/src/index.ts';
+import { createBoard, fillCells, issueRoll } from '../packages/game-core/src/index.ts';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { GameRoute } from '../apps/web/src/routes/GameRoute.tsx';
 import { HomeScreen } from '../apps/web/src/routes/HomeScreen.tsx';
@@ -24,6 +24,8 @@ import { LobbyScreen } from '../apps/web/src/routes/LobbyScreen.tsx';
 import { PackPickerScreen } from '../apps/web/src/routes/PackPickerScreen.tsx';
 import { ResultsScreen } from '../apps/web/src/routes/ResultsScreen.tsx';
 import { useRoomGameStore } from '../apps/web/src/state/roomGame.ts';
+import { dailyConfig } from '../apps/web/src/state/daily.ts';
+import { useSoloGameStore } from '../apps/web/src/state/soloGame.ts';
 
 /**
  * A room as the server would describe it (Phase 4). The room screens read
@@ -99,6 +101,19 @@ function seedRoom(
     rejoinToken: 'fixture-token',
     lastError: null,
     fatalError: null,
+  });
+}
+
+function seedSolo(config: ReturnType<typeof dailyConfig>, status: 'playing' | 'complete'): void {
+  Object.assign(useSoloGameStore.getInitialState(), {
+    daily: config.daily ?? null,
+    packId: config.packId,
+    pictureId: config.pictureId,
+    roomSeed: config.roomSeed,
+    round: 0,
+    board: createBoard(config.packId, config.pictureId),
+    roll: issueRoll(config.roomSeed, 0),
+    status,
   });
 }
 
@@ -265,6 +280,27 @@ const screens: ScreenCase[] = [
       'Garden',
       'Pictures in Transportation',
       'Play solo with Transportation',
+    ],
+  },
+  // Last on purpose: these seed the solo store's *initial* state (see
+  // `seedRoom`'s note), which every later solo case would then inherit.
+  {
+    name: 'Game (daily)',
+    path: '/r/daily',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedSolo(dailyConfig(new Date('2026-10-22T12:00:00Z')), 'playing'),
+    expect: ['DAILY', 'Round 1', 'The pair', 'The single'],
+  },
+  {
+    name: 'Results (daily)',
+    path: '/results',
+    element: <ResultsScreen />,
+    setup: () => seedSolo(dailyConfig(new Date('2026-10-22T12:00:00Z')), 'complete'),
+    expect: [
+      'Daily puzzle · 2026-10-22',
+      'A new daily puzzle arrives at midnight UTC.',
+      'Back home',
     ],
   },
 ];
