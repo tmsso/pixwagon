@@ -4,7 +4,6 @@ import { Link } from 'react-router';
 import type { CellRef, PieceId } from '@pixwagon/game-core';
 import { MAX_PLAYERS, SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
-import { getPack } from '@pixwagon/packs';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
 import { HudFrame } from '../components/game/HudFrame.tsx';
 import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
@@ -35,6 +34,7 @@ import {
   waitingStatus,
 } from '../state/roomView.ts';
 import { NameField } from './NameField.tsx';
+import { RoomSettings } from './RoomSettings.tsx';
 
 /**
  * A networked room at `/r/CODE` (ROADMAP.md Phase 4 item 4, design pass 02
@@ -195,7 +195,6 @@ function WaitingRoom({ snapshot }: { snapshot: RoomSnapshot }) {
   const [copied, setCopied] = useState(false);
   const blocked = startBlockedReason(snapshot, me);
   const status = waitingStatus(snapshot);
-  const pack = getPack('transportation');
 
   async function copyLink() {
     try {
@@ -226,15 +225,7 @@ function WaitingRoom({ snapshot }: { snapshot: RoomSnapshot }) {
         {status ? <p className="mt-3 text-sm text-ink-muted">{status}</p> : null}
       </Panel>
 
-      {/* Mode and pack are fixed until Phase 6 adds own-board mode and more
-          than one pack; shown so the room says what it will play. */}
-      <Panel title="Boards" tone="sunken">
-        <p className="font-medium">Same board</p>
-        <p className="text-sm text-ink-muted">
-          Everyone fills the same picture from the same offers.
-          {pack ? ` ${pack.name} · ${pack.pictures.length} pictures.` : ''}
-        </p>
-      </Panel>
+      <RoomSettings snapshot={snapshot} isHost={me?.isHost ?? false} />
 
       <div className="grid gap-2 text-center">
         <Button size="lg" disabled={blocked !== null} onClick={requestRoll}>

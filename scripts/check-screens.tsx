@@ -86,13 +86,16 @@ const playingSnapshot: RoomSnapshot = {
   acted: [],
 };
 
-function seedRoom(snapshot: RoomSnapshot): void {
+function seedRoom(
+  snapshot: RoomSnapshot,
+  me: { playerId: string; isHost: boolean } = { playerId: 'p-alex', isHost: true },
+): void {
   Object.assign(useRoomGameStore.getInitialState(), {
     code: snapshot.code,
     name: 'Alex',
     connection: 'online',
     snapshot,
-    me: { playerId: 'p-alex', isHost: true },
+    me,
     rejoinToken: 'fixture-token',
     lastError: null,
     fatalError: null,
@@ -117,7 +120,7 @@ const screens: ScreenCase[] = [
     name: 'Home',
     path: '/',
     element: <HomeScreen />,
-    expect: ['Pixwagon', 'Solo', 'Daily puzzle'],
+    expect: ['Pixwagon', 'Solo', 'Daily puzzle', 'Solo plays', 'Transportation'],
   },
   {
     name: 'Lobby',
@@ -140,6 +143,26 @@ const screens: ScreenCase[] = [
     element: <GameRoute />,
     setup: () => seedRoom(waitingSnapshot),
     expect: ['TRAM', 'Players · 2 of 6', 'Alex', 'Sam', 'host', 'Start round'],
+  },
+  {
+    name: 'Room (waiting, host picks own-board + Garden)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedRoom({ ...waitingSnapshot, mode: 'own-board', packId: 'garden' }),
+    expect: ['Same board', 'Own board', 'Pack', 'Garden', 'Transportation'],
+  },
+  {
+    name: 'Room (waiting, guest sees the choice)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom(
+        { ...waitingSnapshot, mode: 'own-board', packId: 'garden' },
+        { playerId: 'p-sam', isHost: false },
+      ),
+    expect: ['Own board', 'Garden · 3 pictures', 'The host chooses the mode and the pack.'],
   },
   {
     name: 'Room (game)',
@@ -182,7 +205,13 @@ const screens: ScreenCase[] = [
     name: 'PackPicker',
     path: '/packs',
     element: <PackPickerScreen />,
-    expect: ['Shape packs', 'Transportation', 'pictures'],
+    expect: [
+      'Shape packs',
+      'Transportation',
+      'Garden',
+      'Pictures in Transportation',
+      'Play solo with Transportation',
+    ],
   },
 ];
 
