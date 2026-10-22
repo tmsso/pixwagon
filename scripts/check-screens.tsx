@@ -209,7 +209,44 @@ const screens: ScreenCase[] = [
         status: 'ended',
         boards: { 'p-alex': tramHalf, 'p-sam': tramDone, 'p-kim': tram },
       }),
-    expect: ['Game over', 'Final ranking', '1.', 'Sam', '1 complete', 'Alex (you)', 'squares'],
+    expect: [
+      'Game over',
+      'Final ranking',
+      '1.',
+      'Sam',
+      '1 complete',
+      'Alex (you)',
+      'squares',
+      'Rematch',
+    ],
+  },
+  {
+    name: 'Room (results, own-board, guest)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom(
+        {
+          ...playingSnapshot,
+          mode: 'own-board',
+          status: 'ended',
+          stage: 1,
+          stageCount: 2,
+          history: [{ 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram }],
+          boards: { 'p-alex': tramHalf, 'p-sam': tramDone, 'p-kim': tram },
+        },
+        { playerId: 'p-sam', isHost: false },
+      ),
+    // Alex and Sam each completed one picture; the half boards tie them on
+    // squares too. Kim is away, so flagged as having left.
+    expect: [
+      'Own board · 2 pictures',
+      'tied',
+      'left',
+      '✓ complete',
+      'The host can start a rematch for everyone here.',
+    ],
   },
   {
     name: 'Results',
