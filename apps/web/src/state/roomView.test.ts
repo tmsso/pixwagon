@@ -8,6 +8,8 @@ import {
   connectionPill,
   roomPhase,
   roomRanking,
+  pictureProgress,
+  boardCompletion,
   startBlockedReason,
   waitingLine,
   waitingOn,
@@ -123,6 +125,33 @@ describe('in-game views (Phase 5 item 3)', () => {
     expect(canSkipWaiting(waitingForP1, guest, t, t + SKIP_WAITING_AFTER_MS)).toBe(false);
     // Only the host themself left to act: nothing to skip.
     expect(canSkipWaiting({ ...g, acted: ['p1'] }, host, t, t + SKIP_WAITING_AFTER_MS)).toBe(false);
+  });
+
+  it('progress counts rounds within the picture in play, and flags a new picture once', () => {
+    const second: RoomSnapshot = {
+      ...game,
+      stage: 1,
+      stageCount: 3,
+      round: 11,
+      stageStartRound: 10,
+      roundBudget: 25,
+    };
+    expect(pictureProgress(second)).toEqual({
+      picture: 2,
+      pictures: 3,
+      round: 1,
+      rounds: 25,
+      isNewPicture: true,
+    });
+    expect(pictureProgress({ ...second, round: 12 })!.isNewPicture).toBe(false);
+    expect(pictureProgress({ ...second, stage: 0, stageStartRound: 0 })!.isNewPicture).toBe(false);
+    expect(pictureProgress(waiting)).toBeNull();
+  });
+
+  it("an opponent's completion is a fraction of their current picture (D9)", () => {
+    expect(boardCompletion(game, 'p3')).toBe(1);
+    expect(boardCompletion(game, 'p0')).toBe(0);
+    expect(boardCompletion(game, 'nobody')).toBeNull();
   });
 
   it('ranks complete pictures first, then filled squares; ties share a rank', () => {

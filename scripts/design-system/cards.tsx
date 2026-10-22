@@ -454,6 +454,7 @@ export const cards: Card[] = [
             <PlayerChip name="Idle" colorIndex={1} />
             <PlayerChip name="Away" colorIndex={2} connected={false} />
             <PlayerChip name="Scored" colorIndex={3} score={38} />
+            <PlayerChip name="Progress" colorIndex={4} completion={0.42} />
           </Row>
         </Variant>
         <Variant label="all seats">
