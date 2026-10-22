@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router';
 import { useSoloGameStore } from '../state/soloGame.ts';
 import { Button } from '../components/ui/Button.tsx';
-import { RefreshIcon } from './icons.tsx';
+import { RefreshIcon } from '../components/ui/icons.tsx';
 import { usePwaStore } from './usePwaStore.ts';
 
 /**
