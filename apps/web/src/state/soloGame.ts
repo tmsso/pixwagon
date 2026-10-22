@@ -126,11 +126,14 @@ function sessionFromConfig(config: SoloSessionConfig) {
   };
 }
 
-/** Reads `?seed=` from the current URL, if any — see `freshSoloConfig`'s note. */
+/** Reads `?seed=` from the current URL, if any — see `freshSoloConfig`'s note.
+ *  A seeded run is pinned to the default pack's first picture (the tram),
+ *  whatever pack this device last chose (D7): seeds like `achievability-0`
+ *  are witnesses for that picture, and a verification link must replay the
+ *  same board on any device. */
 export function initialSoloConfig(search: string): SoloSessionConfig {
   const seed = new URLSearchParams(search).get('seed');
-  const config = freshSoloConfig();
-  return seed ? { ...config, roomSeed: seed } : config;
+  return seed ? { ...freshSoloConfig(DEFAULT_SOLO_PACK_ID), roomSeed: seed } : freshSoloConfig();
 }
 
 function updatePending(

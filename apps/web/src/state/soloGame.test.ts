@@ -17,6 +17,20 @@ describe('initialSoloConfig', () => {
     const config = initialSoloConfig('?seed=achievability-0');
     expect(config.roomSeed).toBe('achievability-0');
   });
+
+  it('pins a seeded run to the tram even when another pack is remembered (D7)', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => (key === 'pixwagon.soloPack' ? 'garden' : null),
+      setItem: () => {},
+    });
+    expect(initialSoloConfig('')).toMatchObject({ packId: 'garden', pictureId: 'tulip' });
+    expect(initialSoloConfig('?seed=achievability-0')).toMatchObject({
+      packId: 'transportation',
+      pictureId: 'tram',
+      roomSeed: 'achievability-0',
+    });
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('useSoloGameStore', () => {
