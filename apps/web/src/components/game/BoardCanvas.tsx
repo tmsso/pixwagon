@@ -203,8 +203,14 @@ export function BoardCanvas({
         aria-label={`Board, ${width} by ${height}`}
         aria-describedby={interactive ? 'board-keys-hint' : undefined}
         tabIndex={interactive ? 0 : undefined}
-        onFocus={() => {
-          if (interactive) setCursor((current) => current ?? initialCursor(board));
+        onFocus={(event) => {
+          // The cursor is for keyboard users. A tap focuses the canvas too (it
+          // is a tab stop), and so does `focusWhen` after a tap on an offer;
+          // neither matches `:focus-visible`, which is the browser's own
+          // "this focus came from the keyboard" test, so touch never sees it.
+          if (interactive && event.currentTarget.matches(':focus-visible')) {
+            setCursor((current) => current ?? initialCursor(board));
+          }
         }}
         onBlur={() => setCursor(null)}
         onKeyDown={(event) => {

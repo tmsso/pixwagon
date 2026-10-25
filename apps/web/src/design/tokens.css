@@ -188,6 +188,15 @@
 }
 
 @layer base {
+  /* The page colour sits on html and body, not only on each screen: the safe-
+     area padding is outside every screen's own background, and without this it
+     would be the browser's default white — a white bar at the notch and the
+     home indicator in dark mode. */
+  html,
+  body {
+    background-color: var(--color-bg);
+  }
+
   body {
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
       env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
