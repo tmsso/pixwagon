@@ -157,7 +157,9 @@ const screens: ScreenCase[] = [
     name: 'Home',
     path: '/',
     element: <HomeScreen />,
-    expect: ['Pixwagon', 'Solo', 'Daily puzzle', 'Solo plays', 'Transportation'],
+    // `01d`: Solo carries its pack and a Change button, replacing the old
+    // "Solo plays …" panel.
+    expect: ['Pixwagon', 'Solo', 'Transportation · 3 pictures', 'Change', 'Daily puzzle'],
   },
   {
     name: 'Lobby',
@@ -446,11 +448,15 @@ const screens: ScreenCase[] = [
     path: '/packs',
     element: <PackPickerScreen />,
     expect: [
-      'Shape packs',
+      'Packs',
+      'Pick the pack Solo plays.',
       'Transportation',
       'Garden',
-      'Pictures in Transportation',
-      'Play solo with Transportation',
+      '3 pictures · Tulip, Watering can, Mushroom',
+      'In Transportation',
+      'Play Transportation',
+      'Solo will play Transportation from now on.',
+      'role="radiogroup"',
     ],
   },
   // Last on purpose: these seed the solo store's *initial* state (see

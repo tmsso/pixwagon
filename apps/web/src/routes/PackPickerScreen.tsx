@@ -4,15 +4,19 @@ import { getPack, packs } from '@pixwagon/packs';
 import { PackCard } from '../components/game/PackCard.tsx';
 import { PicturePreview } from '../components/game/PicturePreview.tsx';
 import { Button } from '../components/ui/Button.tsx';
+import { BackIcon } from '../components/ui/icons.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
 import { loadSoloPack, saveSoloPack } from '../state/packChoice.ts';
 import { freshSoloConfig, useSoloGameStore } from '../state/soloGame.ts';
 
 /**
- * The pack picker (pass 02 `06`). Since D7 (2026-10-22) choosing a pack is
- * real: the choice is remembered and "Solo" on Home plays it. Rooms pick
- * their pack in the waiting room instead. Provisional placement of the
- * choice — design pass 03 Part B may move it.
+ * The pack picker (pass 02 `06`, pass 03 `06a`). Choosing a pack is real
+ * since D7: the choice is remembered, "Solo" on Home carries it, and the
+ * primary button plays it. Rooms pick their pack in the waiting room instead.
+ *
+ * Deviation from pass 03 Annotation 31 ("picking a pack returns to Home"):
+ * note 17 wins — the button plays *and* remembers — so a pick stays here and
+ * is saved as it is made, which means Back keeps it too.
  */
 export function PackPickerScreen() {
   const navigate = useNavigate();
@@ -32,11 +36,23 @@ export function PackPickerScreen() {
   }
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-start gap-6 bg-bg p-6">
-      <h1 className="text-2xl font-semibold text-ink">Shape packs</h1>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4">
+      <header className="flex items-center gap-2">
+        <Link
+          to="/"
+          aria-label="Back to the start"
+          className="grid size-touch place-items-center rounded-lg text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <BackIcon />
+        </Link>
+        <h1 className="text-2xl font-semibold text-ink">Packs</h1>
+      </header>
+      <p className="text-sm text-ink-muted">
+        Pick the pack Solo plays. A room&rsquo;s host picks theirs in the waiting room.
+      </p>
 
       {/* Rendered straight from packages/packs — proving a pack is data, not code. */}
-      <div className="grid gap-3">
+      <div className="grid gap-3" role="radiogroup" aria-label="Pack">
         {packs.map((pack) => {
           const first = pack.pictures[0];
           return (
@@ -45,6 +61,7 @@ export function PackPickerScreen() {
               name={pack.name}
               description={pack.description}
               pictureCount={pack.pictures.length}
+              detail={`${pack.pictures.length} pictures · ${pack.pictures.map((p) => p.name).join(', ')}`}
               selected={pack.id === selected.id}
               onSelect={() => choose(pack.id)}
               {...(first ? { preview: { rows: first.rows, palette: first.palette } } : {})}
@@ -53,10 +70,10 @@ export function PackPickerScreen() {
         })}
       </div>
 
-      <Panel title={`Pictures in ${selected.name}`} tone="sunken">
-        <div className="flex flex-wrap items-end gap-4">
+      <Panel title={`In ${selected.name}`} tone="sunken">
+        <div className="flex flex-wrap items-end justify-around gap-4">
           {selected.pictures.map((picture) => (
-            <figure key={picture.id} className="grid gap-1">
+            <figure key={picture.id} className="grid justify-items-center gap-1">
               <PicturePreview
                 rows={picture.rows}
                 palette={picture.palette}
@@ -69,16 +86,16 @@ export function PackPickerScreen() {
         </div>
       </Panel>
 
+      <div className="flex-1" />
+
       <div className="grid gap-2 text-center">
         <Button size="lg" onClick={playSolo}>
-          Play solo with {selected.name}
+          Play {selected.name}
         </Button>
-        <p className="text-sm text-ink-muted">Solo on the home screen remembers this pack.</p>
+        <p className="text-xs text-ink-muted">
+          Solo will play {selected.name} from now on. Packs are free and come with updates.
+        </p>
       </div>
-
-      <Link to="/" className="text-center text-sm text-accent underline">
-        Back home
-      </Link>
     </main>
   );
 }
