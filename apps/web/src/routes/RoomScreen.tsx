@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import type { CellRef, PieceId } from '@pixwagon/game-core';
-import { MAX_PLAYERS, SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
+import { SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
 import { BoardCompare } from '../components/game/BoardCompare.tsx';
 import { HudFrame } from '../components/game/HudFrame.tsx';
 import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
-import { PlayerChip } from '../components/game/PlayerChip.tsx';
 import { RollControl } from '../components/game/RollControl.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
@@ -24,23 +23,20 @@ import {
   pendingCellCount,
 } from '../state/placement.ts';
 import { myBoard, useRoomGameStore } from '../state/roomGame.ts';
-import type { RoomPlayerIdentity } from '../state/roomGame.ts';
 import {
-  boardCompletion,
   canSkipWaiting,
   connectionPill,
   pictureProgress,
   roomPhase,
   roomRanking,
-  startBlockedReason,
   waitingLine,
-  waitingStatus,
 } from '../state/roomView.ts';
-import { RoomSettings } from './RoomSettings.tsx';
 import { CantJoin } from './room/CantJoin.tsx';
 import type { CantJoinReason } from './room/CantJoin.tsx';
 import { JoinGate } from './room/JoinGate.tsx';
 import { JoiningBoard, JoiningRoom } from './room/Joining.tsx';
+import { RoomPlayers } from './room/RoomPlayers.tsx';
+import { WaitingRoom } from './room/WaitingRoom.tsx';
 
 /**
  * A networked room at `/r/CODE` (ROADMAP.md Phase 4 item 4, design pass 02
@@ -69,6 +65,8 @@ export function RoomScreen({ code }: { code: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, ready]);
 
+  // The Lobby marks a code the player typed (note 18 / Annotation 27).
+  const arrivedByCode = (useLocation().state as { byCode?: boolean } | null)?.byCode === true;
   const snapshot = useRoomGameStore((state) => state.snapshot);
   const fatalError = useRoomGameStore((state) => state.fatalError);
 
@@ -87,7 +85,7 @@ export function RoomScreen({ code }: { code: string }) {
     case 'joining':
       return <JoiningRoom code={code} />;
     case 'waiting':
-      return <WaitingRoom snapshot={snapshot!} />;
+      return <WaitingRoom snapshot={snapshot!} arrivedByCode={arrivedByCode} />;
     case 'playing':
       return <RoomGame snapshot={snapshot!} />;
     case 'ended':
@@ -106,103 +104,6 @@ function RoomRefused({ code, reason }: { code: string; reason: string }) {
   const known: CantJoinReason =
     reason === 'room-full' || reason === 'replaced' ? reason : 'protocol-version-mismatch';
   return <CantJoin code={code} reason={known} onPlayHere={playHere} />;
-}
-
-function RoomPlayers({
-  snapshot,
-  me,
-  inGame,
-}: {
-  snapshot: RoomSnapshot;
-  me: RoomPlayerIdentity | null;
-  inGame: boolean;
-}) {
-  return (
-    <>
-      {/* Seat order, not arrival order: the server lists live sockets in
-          whatever order the runtime returns them, and chips reshuffling on
-          every reconnect would make "who is who" harder, not easier. */}
-      {[...snapshot.players]
-        .sort((x, y) => x.seatIndex - y.seatIndex)
-        .map((player) => (
-          <PlayerChip
-            key={player.id}
-            // In-game the design names yourself "You" (`12a`); in the waiting
-            // room everyone sees the same names (`02c`–`02e`).
-            name={inGame && player.id === me?.playerId ? 'You' : player.name}
-            colorIndex={player.seatIndex}
-            host={!inGame && player.isHost}
-            active={player.id === me?.playerId}
-            // Away players keep their seat and squares (protocol 2); the
-            // chip dims and says "away" rather than vanishing (pass 02 `12c`).
-            connected={player.connected}
-            // D9: mid-game, other players show how far along they are —
-            // a number on the chip, never their board.
-            {...(inGame && player.id !== me?.playerId
-              ? completionProp(boardCompletion(snapshot, player.id))
-              : {})}
-          />
-        ))}
-    </>
-  );
-}
-
-function completionProp(completion: number | null): { completion?: number } {
-  return completion === null ? {} : { completion };
-}
-
-function WaitingRoom({ snapshot }: { snapshot: RoomSnapshot }) {
-  const me = useRoomGameStore((state) => state.me);
-  const connection = useRoomGameStore((state) => state.connection);
-  const requestRoll = useRoomGameStore((state) => state.requestRoll);
-  const [copied, setCopied] = useState(false);
-  const blocked = startBlockedReason(snapshot, me);
-  const status = waitingStatus(snapshot);
-
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/r/${snapshot.code}`);
-      setCopied(true);
-    } catch {
-      // Clipboard needs a secure context and permission; the code on screen
-      // is the fallback, which is why it is the biggest thing on the page.
-    }
-  }
-
-  return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-ink-muted">Room code</p>
-          <p className="font-mono text-4xl font-bold tracking-widest text-ink">{snapshot.code}</p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={copyLink}>
-          {copied ? 'Link copied' : 'Copy link'}
-        </Button>
-      </header>
-
-      <Panel title={`Players · ${snapshot.players.length} of ${MAX_PLAYERS}`}>
-        <div className="flex flex-wrap gap-2">
-          <RoomPlayers snapshot={snapshot} me={me} inGame={false} />
-        </div>
-        {status ? <p className="mt-3 text-sm text-ink-muted">{status}</p> : null}
-      </Panel>
-
-      <RoomSettings snapshot={snapshot} isHost={me?.isHost ?? false} />
-
-      <div className="grid gap-2 text-center">
-        <Button size="lg" disabled={blocked !== null} onClick={requestRoll}>
-          Start round
-        </Button>
-        {blocked ? <p className="text-sm text-ink-muted">{blocked}</p> : null}
-        {connection === 'reconnecting' ? (
-          <p className="text-sm text-ink-muted" role="status">
-            Reconnecting…
-          </p>
-        ) : null}
-      </div>
-    </main>
-  );
 }
 
 /** The local clock, refreshed once when `at` (ms) passes — for UI that

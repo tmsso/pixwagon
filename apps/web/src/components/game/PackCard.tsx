@@ -1,3 +1,4 @@
+import { TickIcon } from '../ui/icons.tsx';
 import { PicturePreview } from './PicturePreview.tsx';
 
 export interface PackCardProps {
@@ -29,7 +30,10 @@ export function PackCard({
     <button
       type="button"
       onClick={onSelect}
-      aria-pressed={selected}
+      // One of a set of choices, so a radio, not a toggle — it sits inside a
+      // `radiogroup` wherever packs are listed.
+      role="radio"
+      aria-checked={selected}
       className={[
         'flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors duration-fast',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
@@ -46,20 +50,22 @@ export function PackCard({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <h3 className="truncate font-semibold text-ink">{name}</h3>
+          <h3 className="font-semibold text-ink">{name}</h3>
           {difficulty ? (
             <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-xs text-ink-muted">
               {DIFFICULTY_LABEL[difficulty]}
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 truncate text-sm text-ink-muted">{description}</p>
-        <p className="mt-1 font-mono text-xs text-ink-muted">{pictureCount} pictures</p>
+        {/* One wrapping line, so a longer description never gets cut off. */}
+        <p className="mt-0.5 text-sm text-ink-muted">
+          {description.replace(/\.$/, '')} · {pictureCount} pictures
+        </p>
       </div>
 
       {/* Selection is marked by a glyph as well as by colour and border. */}
       <span aria-hidden className={selected ? 'text-accent' : 'text-transparent'}>
-        ✓
+        <TickIcon size={18} strokeWidth={2.2} />
       </span>
     </button>
   );

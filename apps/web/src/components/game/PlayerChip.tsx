@@ -15,6 +15,10 @@ export interface PlayerChipProps {
   /** The room's host (design pass 02, `02c`–`02e`) — a text label, not a
    *  colour or icon alone. */
   host?: boolean;
+  /** Marks the viewer's own chip in the waiting room (pass 03 `02c`–`02e`):
+   *  the tag reads "you", "host" or "you · host". In-game the viewer's chip
+   *  is named "You" instead. */
+  you?: boolean;
 }
 
 export function PlayerChip({
@@ -25,6 +29,7 @@ export function PlayerChip({
   completion,
   active = false,
   host = false,
+  you = false,
 }: PlayerChipProps) {
   const color = playerColor(colorIndex);
 
@@ -43,7 +48,11 @@ export function PlayerChip({
         style={patternStyle(color.pattern, color.hex)}
       />
       <span className="font-medium text-ink">{name}</span>
-      {host ? <span className="text-xs text-ink-muted">host</span> : null}
+      {host || you ? (
+        <span className="text-xs text-ink-muted">
+          {[you ? 'you' : null, host ? 'host' : null].filter(Boolean).join(' · ')}
+        </span>
+      ) : null}
       {score !== undefined ? <span className="font-mono text-ink-muted">{score}</span> : null}
       {completion !== undefined ? (
         <span className="font-mono text-xs text-ink-muted">{Math.round(completion * 100)}%</span>

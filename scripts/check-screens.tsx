@@ -21,6 +21,7 @@ import type { RoomSnapshot } from '@pixwagon/protocol';
 import { GameRoute } from '../apps/web/src/routes/GameRoute.tsx';
 import { HomeScreen } from '../apps/web/src/routes/HomeScreen.tsx';
 import { LobbyScreen } from '../apps/web/src/routes/LobbyScreen.tsx';
+import { GameSheet } from '../apps/web/src/routes/room/GameSettings.tsx';
 import { JoiningBoard, JoiningRoom } from '../apps/web/src/routes/room/Joining.tsx';
 import { PackPickerScreen } from '../apps/web/src/routes/PackPickerScreen.tsx';
 import { ResultsScreen } from '../apps/web/src/routes/ResultsScreen.tsx';
@@ -102,6 +103,7 @@ function seedRoom(
     rejoinToken: 'fixture-token',
     lastError: null,
     fatalError: null,
+    configChange: null,
   });
 }
 
@@ -120,6 +122,7 @@ function seedUnjoined(partial: {
     rejoinToken: null,
     lastError: null,
     fatalError: partial.fatalError ?? null,
+    configChange: null,
   });
 }
 
@@ -176,7 +179,52 @@ const screens: ScreenCase[] = [
     routePath: '/r/:code',
     element: <GameRoute />,
     setup: () => seedRoom(waitingSnapshot),
-    expect: ['TRAM', 'Players · 2 of 6', 'Alex', 'Sam', 'host', 'Start round'],
+    expect: [
+      'TRAM',
+      'Players · 2 of 6',
+      'Alex',
+      'Sam',
+      'you · host',
+      'This game',
+      'Same board · Transportation',
+      '3 pictures, played in turn',
+      'Change',
+      'Start game',
+    ],
+  },
+  {
+    // `02c`: the host alone. Starting needs two, and the status says how to
+    // get one.
+    name: 'Room (waiting, host alone)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedRoom({ ...waitingSnapshot, players: [waitingSnapshot.players[0]!] }),
+    expect: [
+      'Players · 1 of 6',
+      'Send them the link, or read out the code.',
+      'Needs one more player',
+      'Copy link',
+    ],
+  },
+  {
+    // `02e`: six seats, with the player-facing reason for the cap.
+    name: 'Room (waiting, full)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom({
+        ...waitingSnapshot,
+        players: ['Alex', 'Sam', 'Jo', 'Ravi', 'Mia', 'Kim'].map((name, seatIndex) => ({
+          id: `p-${name.toLowerCase()}`,
+          name,
+          seatIndex,
+          isHost: seatIndex === 0,
+          connected: true,
+        })),
+      }),
+    expect: ['Players · 6 of 6', 'Room is full', 'Kim', 'Start game'],
   },
   {
     name: 'Room (waiting, host picks own-board + Garden)',
@@ -184,7 +232,26 @@ const screens: ScreenCase[] = [
     routePath: '/r/:code',
     element: <GameRoute />,
     setup: () => seedRoom({ ...waitingSnapshot, mode: 'own-board', packId: 'garden' }),
-    expect: ['Same board', 'Own board', 'Pack', 'Garden', 'Transportation'],
+    expect: ['Own board · Garden', 'A different picture each, 3 in turn', 'Change'],
+  },
+  {
+    // `02h`: the host's sheet. Local state in `WaitingRoom`, so rendered
+    // directly rather than through the route.
+    name: 'Room (host sheet: This game)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameSheet snapshot={{ ...waitingSnapshot, packId: 'garden' }} onClose={() => {}} />,
+    expect: [
+      'This game',
+      'Same board',
+      'Own board',
+      'Everyone fills the same picture from the same offers.',
+      'Transportation',
+      'Garden',
+      'role="radiogroup"',
+      'aria-checked="true"',
+      'Done',
+    ],
   },
   {
     name: 'Room (waiting, guest sees the choice)',
@@ -196,7 +263,25 @@ const screens: ScreenCase[] = [
         { ...waitingSnapshot, mode: 'own-board', packId: 'garden' },
         { playerId: 'p-sam', isHost: false },
       ),
-    expect: ['Own board', 'Garden · 3 pictures', 'The host chooses the mode and the pack.'],
+    // A guest gets no Start button and no Change — one line saying who decides.
+    expect: ['Own board · Garden', 'Alex picks', 'Alex starts the game when everyone'],
+  },
+  {
+    // `02i`: the host changed it while the guest was watching.
+    name: 'Room (waiting, guest sees what changed)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom(
+        { ...waitingSnapshot, mode: 'own-board', packId: 'garden' },
+        { playerId: 'p-sam', isHost: false },
+      );
+      Object.assign(useRoomGameStore.getInitialState(), {
+        configChange: { from: { mode: 'same-board', packId: 'transportation' } },
+      });
+    },
+    expect: ['Alex changed this from Same board · Transportation.'],
   },
   {
     // Pass 03 `02f`: a shared link on a device with no saved name.

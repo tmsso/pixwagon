@@ -22,9 +22,12 @@ export function LobbyScreen() {
   const [creating, setCreating] = useState(false);
   const [createFailed, setCreateFailed] = useState(false);
 
-  function enter(roomCode: string) {
+  function enter(roomCode: string, typed = false) {
     saveDisplayName(normaliseName(name));
-    navigate(`/r/${roomCode}`);
+    // `typed` reaches the waiting room through navigation state, so a player
+    // alone in a room they typed the code of can be asked to check it
+    // (pass 03 Annotation 27). A created room never sets it.
+    navigate(`/r/${roomCode}`, typed ? { state: { byCode: true } } : undefined);
   }
 
   function handleJoin(event?: FormEvent) {
@@ -36,7 +39,7 @@ export function LobbyScreen() {
       setCodeInvalid(true);
       return;
     }
-    enter(code);
+    enter(code, true);
   }
 
   async function handleCreate() {

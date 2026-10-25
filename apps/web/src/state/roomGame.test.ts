@@ -43,6 +43,47 @@ const state0: RoomSnapshot = {
   acted: [],
 };
 
+describe('configChange (pass 03 `02i`)', () => {
+  const me = { playerId: 'p2', isHost: false };
+  const lobby = { ...state0, players: [alex, bella] };
+  const ownGarden: RoomSnapshot = { ...lobby, mode: 'own-board', packId: 'garden' };
+  const apply = (
+    held: RoomSnapshot | null,
+    next: RoomSnapshot,
+    configChange: ReturnType<typeof applyServerMessage>['configChange'] = null,
+  ) => applyServerMessage({ snapshot: held, me, configChange }, { type: 'state', state: next });
+
+  it('remembers what the host changed from when a lobby snapshot differs', () => {
+    expect(apply(lobby, ownGarden).configChange).toEqual({
+      from: { mode: 'same-board', packId: 'transportation' },
+    });
+  });
+
+  it('has nothing to say about a first snapshot or an unchanged one', () => {
+    expect(apply(null, ownGarden).configChange).toBeNull();
+    expect(apply(lobby, lobby).configChange).toBeNull();
+  });
+
+  it('keeps the first baseline through further changes, and drops it if changed back', () => {
+    const change = { from: { mode: 'same-board' as const, packId: 'transportation' } };
+    const joined = { ...ownGarden, players: [alex, bella, { ...bella, id: 'p3', seatIndex: 2 }] };
+    // An unrelated lobby update (someone joined) keeps it.
+    expect(apply(ownGarden, joined, change).configChange).toEqual(change);
+    // A second change (mode, then pack) still reads "from what you first saw".
+    const ownTransport = { ...lobby, mode: 'own-board' as const };
+    expect(apply(ownTransport, ownGarden, change).configChange).toEqual(change);
+    // Changed all the way back: nothing to announce.
+    expect(apply(ownGarden, lobby, change).configChange).toBeNull();
+  });
+
+  it('is cleared when the game starts', () => {
+    const playing = { ...ownGarden, status: 'playing' as const };
+    expect(
+      apply(ownGarden, playing, { from: { mode: 'same-board', packId: 'x' } }).configChange,
+    ).toBeNull();
+  });
+});
+
 describe('applyServerMessage', () => {
   it('welcome sets me from playerId, keeping isHost unknown (false) until state confirms it', () => {
     const patch = applyServerMessage(

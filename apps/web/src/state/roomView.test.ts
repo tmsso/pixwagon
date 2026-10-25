@@ -75,7 +75,9 @@ describe('startBlockedReason', () => {
 
 describe('waitingStatus', () => {
   it('names the empty and full rooms and says nothing in between', () => {
-    expect(waitingStatus(waiting)).toBe('Waiting for someone to join.');
+    expect(waitingStatus(waiting)).toBe(
+      'Waiting for someone to join. Send them the link, or read out the code.',
+    );
     expect(waitingStatus({ ...waiting, players: [seat(0), seat(1)] })).toBeNull();
     const full = { ...waiting, players: [0, 1, 2, 3, 4, 5].map(seat) };
     expect(waitingStatus(full)).toMatch(/Room is full/);
