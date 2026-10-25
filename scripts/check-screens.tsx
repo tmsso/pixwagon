@@ -485,8 +485,69 @@ const screens: ScreenCase[] = [
         history: [{ 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram }],
       }),
     // The header marker is squares plus "2 of 3", with the full phrase as
-    // its accessible name (pass 03 note 8).
-    expect: ['aria-label="Picture 2 of 3"', '2 of 3', 'Round 1 of 40', 'On to picture 2 of 3'],
+    // its accessible name (pass 03 note 8); the strip above the board reports
+    // the picture just played, in words (`12i`, note 9).
+    expect: [
+      'aria-label="Picture 2 of 3"',
+      '2 of 3',
+      'Round 1 of 40',
+      'Picture 1 · Tram',
+      'Complete · 100 points',
+      'a fresh board and 40 rounds.',
+    ],
+  },
+  {
+    // `12i`, second frame: the last picture ran out of rounds.
+    name: 'Room (picture 2 of 3, the last one was unfinished, own board)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom({
+        ...playingSnapshot,
+        mode: 'own-board',
+        stage: 1,
+        round: 11,
+        stageStartRound: 10,
+        currentRoll: { ...playingSnapshot.currentRoll!, round: 10 },
+        history: [{ 'p-alex': tramHalf, 'p-sam': tramDone, 'p-kim': tram }],
+      }),
+    expect: [
+      'Unfinished · scores nothing',
+      'Nothing fitted those last',
+      'a fresh board. 40 rounds for everyone this picture.',
+    ],
+  },
+  {
+    // `12f`: your picture is complete and the room waits for the others.
+    name: 'Room (your picture is complete, next one waits for the room)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom({
+        ...playingSnapshot,
+        boards: { 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram },
+      }),
+    expect: [
+      'Picture 1 of 3 complete',
+      'Tram · 100 points',
+      'Picture 2 starts for everyone when Sam is done with this one.',
+      'finished',
+    ],
+  },
+  {
+    name: 'Room (your picture is complete, one-picture session)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () =>
+      seedRoom({
+        ...playingSnapshot,
+        stageCount: 1,
+        boards: { 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram },
+      }),
+    expect: ['Picture complete', 'Sam is still placing. The results open when they&#x27;re done.'],
   },
   {
     name: 'Room (acted, waiting for others)',

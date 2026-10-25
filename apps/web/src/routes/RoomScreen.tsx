@@ -5,8 +5,10 @@ import type { CellRef, PieceId } from '@pixwagon/game-core';
 import { SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
+import { getPack } from '@pixwagon/packs';
 import { BoardCompare } from '../components/game/BoardCompare.tsx';
 import { HudFrame } from '../components/game/HudFrame.tsx';
+import { PictureStrip } from '../components/game/PictureStrip.tsx';
 import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
 import { RollControl } from '../components/game/RollControl.tsx';
 import { Button } from '../components/ui/Button.tsx';
@@ -31,6 +33,9 @@ import {
   roomPhase,
   roomRanking,
   joinNames,
+  lastSquaresPhrase,
+  boardOutcome,
+  previousPicture,
   waitingLine,
   waitingNames,
 } from '../state/roomView.ts';
@@ -107,6 +112,16 @@ function RoomRefused({ code, reason }: { code: string; reason: string }) {
   const known: CantJoinReason =
     reason === 'room-full' || reason === 'replaced' ? reason : 'protocol-version-mismatch';
   return <CantJoin code={code} reason={known} onPlayHere={playHere} />;
+}
+
+/** What the finished-picture card says the room is waiting for (`12f`):
+ *  which picture comes next, or that the results do. */
+function doneLine(waitingFor: readonly string[], nextPicture: number | null): string {
+  const who = waitingFor.length > 0 ? joinNames(waitingFor) : 'everyone';
+  const be = waitingFor.length > 1 ? 'are' : 'is';
+  return nextPicture !== null
+    ? `Picture ${nextPicture} starts for everyone when ${who} ${be} done with this one.`
+    : `${who} ${be} still placing. The results open when they're done.`;
 }
 
 /** The local clock, refreshed once when `at` (ms) passes — for UI that
@@ -192,17 +207,23 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
 
   const morePictures = progress !== null && progress.picture < progress.pictures;
 
-  let status: string | null = null;
-  if (done) {
-    status = morePictures
-      ? 'Your picture is complete! The room moves on when everyone is done.'
-      : 'Your picture is complete!';
-  } else if (acted) status = 'Done for this round.';
-  else if (progress?.isNewPicture) {
-    // D8: the whole room moved on together. Said on the new picture's first
-    // round only; the finished one is kept for the results screen.
-    status = `On to picture ${progress.picture} of ${progress.pictures} — your last one is kept for the results.`;
-  }
+  // Everything else the player needs to know is said by something with a
+  // shape of its own: the held sheet and the line under the board while the
+  // referee rules, the finished-picture card (`12f`) and the strip above a
+  // new picture's board (`12i`).
+  const status: string | null = acted && !done ? 'Done for this round.' : null;
+
+  // The picture just played, reported until this player's first action on the
+  // new one (note 9); and, once their own is complete, the card that replaces
+  // the offers while the room waits (note 10).
+  const lastPicture =
+    progress?.isNewPicture && !acted && me ? previousPicture(snapshot, me.playerId) : null;
+  const lastPictureData = lastPicture
+    ? getPack(lastPicture.packId)?.pictures.find((p) => p.id === lastPicture.pictureId)
+    : undefined;
+  const nowPicture = getPack(board.packId)?.pictures.find((p) => p.id === board.pictureId);
+  const outcome = done && me ? boardOutcome(me.playerId, board) : null;
+  const waitingForOthers = waitingNames(snapshot, me?.playerId ?? null);
 
   // Who "Move on without …" names, and what happens to them (pass 03 note 4).
   const skipNames = showSkip ? waitingNames(snapshot, me?.playerId ?? null) : [];
@@ -259,19 +280,40 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
               Those squares didn&rsquo;t fit — try another spot.
             </p>
           ) : null}
-          <RollControl
-            pair={[pieceOfferView(pair[0]), pieceOfferView(pair[1])]}
-            fallbackFace={fallbackFaceView(roll.fallback)}
-            onChoose={store.choose}
-            // `03f`: offers dim while the referee rules on a sent fill/pass.
-            awaitingServer={awaitingServer}
-            disabled={!canAct}
-          />
-          {canPass ? (
-            <Button variant="secondary" size="lg" onClick={store.pass}>
-              Pass the round
-            </Button>
-          ) : null}
+          {outcome && nowPicture ? (
+            // `12f`: nothing left to place, so the offers give way to the
+            // finished picture — and what the room is waiting for.
+            <PictureStrip
+              rows={nowPicture.rows}
+              palette={nowPicture.palette}
+              label={nowPicture.name}
+              cellSize={6}
+              eyebrow={
+                morePictures
+                  ? `Picture ${progress.picture} of ${progress.pictures} complete`
+                  : 'Picture complete'
+              }
+              title={`${nowPicture.name} · ${outcome.points} points`}
+            >
+              {doneLine(waitingForOthers, morePictures ? progress.picture + 1 : null)}
+            </PictureStrip>
+          ) : (
+            <>
+              <RollControl
+                pair={[pieceOfferView(pair[0]), pieceOfferView(pair[1])]}
+                fallbackFace={fallbackFaceView(roll.fallback)}
+                onChoose={store.choose}
+                // `03f`: offers dim while the referee rules on a sent fill/pass.
+                awaitingServer={awaitingServer}
+                disabled={!canAct}
+              />
+              {canPass ? (
+                <Button variant="secondary" size="lg" onClick={store.pass}>
+                  Pass the round
+                </Button>
+              ) : null}
+            </>
+          )}
           {connection === 'reconnecting' ? (
             // `12c`: the offers are disabled while the socket is down; say
             // that nothing is lost, so waiting doesn't feel like a failure.
@@ -286,7 +328,7 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
               {status}
             </p>
           ) : null}
-          {(acted || done) && waiting ? (
+          {acted && !done && waiting ? (
             <p className="text-center text-sm text-ink-muted">{waiting}</p>
           ) : null}
           {showSkip && skipNames.length > 0 ? (
@@ -308,6 +350,28 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
       }
     >
       <div className="grid justify-items-center gap-3">
+        {lastPicture && lastPictureData ? (
+          // `12i`: the picture just played, in its own colours, until the
+          // first move on the new one.
+          <div className="w-full max-w-sm">
+            <PictureStrip
+              rows={lastPictureData.rows}
+              palette={lastPictureData.palette}
+              label={lastPictureData.name}
+              cellSize={5}
+              eyebrow={`Picture ${(progress?.picture ?? 2) - 1} · ${lastPictureData.name}`}
+              title={
+                lastPicture.complete
+                  ? `Complete · ${lastPicture.points} points`
+                  : 'Unfinished · scores nothing'
+              }
+            >
+              {lastPicture.complete
+                ? null
+                : `Nothing fitted ${lastSquaresPhrase(lastPicture.remaining)}.`}
+            </PictureStrip>
+          </div>
+        ) : null}
         <BoardCanvas
           board={board}
           cellSize={cellSize}
@@ -325,6 +389,15 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
         <p className="min-h-5 text-center text-sm text-ink-muted" role="status">
           {awaitingServer ? (
             'Checking with the room…'
+          ) : lastPicture && nowPicture ? (
+            // The new picture, named, and what it gets (`12i`). Own board: the
+            // budget is shared even though the pictures differ.
+            <>
+              <b className="font-semibold text-ink">{nowPicture.name}</b>
+              {ownBoard
+                ? ` — a fresh board. ${snapshot.roundBudget} rounds for everyone this picture.`
+                : ` — a fresh board and ${snapshot.roundBudget} rounds.`}
+            </>
           ) : canAct && !pending ? (
             ownBoard ? (
               'Your own picture — everyone gets the same offers.'
