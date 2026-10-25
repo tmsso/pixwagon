@@ -21,6 +21,7 @@ import type { RoomSnapshot } from '@pixwagon/protocol';
 import { GameRoute } from '../apps/web/src/routes/GameRoute.tsx';
 import { HomeScreen } from '../apps/web/src/routes/HomeScreen.tsx';
 import { LobbyScreen } from '../apps/web/src/routes/LobbyScreen.tsx';
+import { JoiningBoard, JoiningRoom } from '../apps/web/src/routes/room/Joining.tsx';
 import { PackPickerScreen } from '../apps/web/src/routes/PackPickerScreen.tsx';
 import { ResultsScreen } from '../apps/web/src/routes/ResultsScreen.tsx';
 import { useRoomGameStore } from '../apps/web/src/state/roomGame.ts';
@@ -104,6 +105,24 @@ function seedRoom(
   });
 }
 
+/** A room the player is in but the server hasn't described yet, or has turned
+ *  them away from — `code: null` is "not in any room" (the join gate). */
+function seedUnjoined(partial: {
+  code: string | null;
+  fatalError?: 'room-full' | 'protocol-version-mismatch' | 'replaced';
+}): void {
+  Object.assign(useRoomGameStore.getInitialState(), {
+    code: partial.code,
+    name: 'Alex',
+    connection: 'connecting',
+    snapshot: null,
+    me: null,
+    rejoinToken: null,
+    lastError: null,
+    fatalError: partial.fatalError ?? null,
+  });
+}
+
 function seedSolo(config: ReturnType<typeof dailyConfig>, status: 'playing' | 'complete'): void {
   Object.assign(useSoloGameStore.getInitialState(), {
     daily: config.daily ?? null,
@@ -178,6 +197,73 @@ const screens: ScreenCase[] = [
         { playerId: 'p-sam', isHost: false },
       ),
     expect: ['Own board', 'Garden · 3 pictures', 'The host chooses the mode and the pack.'],
+  },
+  {
+    // Pass 03 `02f`: a shared link on a device with no saved name.
+    name: 'Room (join gate, link opened with no name)',
+    path: '/r/KM4T',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedUnjoined({ code: null }),
+    expect: [
+      'Join the game',
+      'What should the others call you?',
+      'No sign-up. Your name is only used in this room.',
+      'role="img"',
+    ],
+  },
+  {
+    // `12h`, first: joined the socket, no `state` yet. Rendered through the
+    // room route with the delay off (a server render has no 400 ms to wait).
+    name: 'Room (joining, before the room answers)',
+    path: '/r/KM4T',
+    routePath: '/r/:code',
+    element: <JoiningRoom code="KM4T" delayMs={0} />,
+    expect: ['Room code', 'KM4T', 'Players', 'Joining room'],
+  },
+  {
+    // `12h`, second: connected mid-game, own board not in the snapshot yet.
+    name: 'Room (joining mid-game, getting your board)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: (
+      <JoiningBoard
+        delayMs={0}
+        hud={{ roomCode: 'TRAM', round: 3, roundOf: 40, connection: 'online' }}
+      />
+    ),
+    expect: ['TRAM', 'Round 3 of 40', 'Getting your board…'],
+  },
+  {
+    name: "Room (can't join: full)",
+    path: '/r/KM4T',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedUnjoined({ code: 'KM4T', fatalError: 'room-full' }),
+    expect: ['This room is full', 'Room KM4T', 'Back to the lobby'],
+  },
+  {
+    name: "Room (can't join: newer version)",
+    path: '/r/KM4T',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedUnjoined({ code: 'KM4T', fatalError: 'protocol-version-mismatch' }),
+    // The static picture of the banner carries the live banner's real words.
+    expect: [
+      'This room needs an update',
+      'On the start screen, look for this:',
+      'A new version is ready.',
+      'Update',
+      'Back to the start',
+    ],
+  },
+  {
+    name: "Room (can't join: open in another tab)",
+    path: '/r/KM4T',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedUnjoined({ code: 'KM4T', fatalError: 'replaced' }),
+    expect: ['Open somewhere else', 'Play here', 'Nothing is lost either way.'],
   },
   {
     name: 'Room (game)',

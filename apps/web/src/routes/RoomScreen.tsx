@@ -36,8 +36,11 @@ import {
   waitingLine,
   waitingStatus,
 } from '../state/roomView.ts';
-import { NameField } from './NameField.tsx';
 import { RoomSettings } from './RoomSettings.tsx';
+import { CantJoin } from './room/CantJoin.tsx';
+import type { CantJoinReason } from './room/CantJoin.tsx';
+import { JoinGate } from './room/JoinGate.tsx';
+import { JoiningBoard, JoiningRoom } from './room/Joining.tsx';
 
 /**
  * A networked room at `/r/CODE` (ROADMAP.md Phase 4 item 4, design pass 02
@@ -77,32 +80,12 @@ export function RoomScreen({ code }: { code: string }) {
       saveDisplayName(normaliseName(name));
       setReady(true);
     };
-    return (
-      <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
-        <h1 className="text-center text-2xl font-semibold text-ink">
-          Joining room <span className="font-mono tracking-widest">{code}</span>
-        </h1>
-        <Panel>
-          <form className="grid gap-4" onSubmit={handleEnter}>
-            <NameField value={name} onChange={setName} />
-            <Button type="submit" size="lg">
-              Join room
-            </Button>
-          </form>
-        </Panel>
-      </main>
-    );
+    return <JoinGate code={code} name={name} onNameChange={setName} onSubmit={handleEnter} />;
   }
 
   switch (roomPhase(snapshot)) {
     case 'joining':
-      return (
-        <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
-          <p className="text-ink-muted" role="status">
-            Joining room <span className="font-mono tracking-widest text-ink">{code}</span>…
-          </p>
-        </main>
-      );
+      return <JoiningRoom code={code} />;
     case 'waiting':
       return <WaitingRoom snapshot={snapshot!} />;
     case 'playing':
@@ -113,48 +96,16 @@ export function RoomScreen({ code }: { code: string }) {
 }
 
 function RoomRefused({ code, reason }: { code: string; reason: string }) {
-  if (reason === 'replaced') {
-    // D6: this tab lost its seat to another tab (or device) with the same
-    // identity. "Play here" simply joins again, which takes the seat back —
-    // the other tab then lands on this screen instead.
-    const playHere = () => {
-      const store = useRoomGameStore.getState();
-      store.join(roomSocketUrl(code), code, store.name);
-    };
-    return (
-      <main className="mx-auto grid min-h-dvh max-w-md content-center gap-4 bg-bg p-6 text-center">
-        <h1 className="text-xl font-semibold text-ink">
-          Room <span className="font-mono tracking-widest">{code}</span> is open somewhere else
-        </h1>
-        <p className="text-ink-muted">
-          You opened this room in another tab or window, so it moved there.
-        </p>
-        <Button size="lg" onClick={playHere}>
-          Play here
-        </Button>
-        <Link to="/" className="text-accent underline">
-          Back to the start
-        </Link>
-      </main>
-    );
-  }
-  return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-4 bg-bg p-6 text-center">
-      <h1 className="text-xl font-semibold text-ink">
-        Can&rsquo;t join <span className="font-mono tracking-widest">{code}</span>
-      </h1>
-      <p className="text-ink-muted">
-        {reason === 'room-full'
-          ? 'Room is full — six is the most we can tell apart on a board.'
-          : // `registerType: 'prompt'` (vite.config.ts): a reload alone keeps
-            // serving the old build until the update banner is accepted.
-            'This room runs a newer version of Pixwagon. Go back to the start and accept the update when it’s offered.'}
-      </p>
-      <Link to={reason === 'room-full' ? '/lobby' : '/'} className="text-accent underline">
-        {reason === 'room-full' ? 'Back to the lobby' : 'Back to the start'}
-      </Link>
-    </main>
-  );
+  const playHere = () => {
+    const store = useRoomGameStore.getState();
+    store.join(roomSocketUrl(code), code, store.name);
+  };
+  // `fatalError` is a server error code or the client's own `replaced`; only
+  // `room-full` and `replaced` have screens of their own, and anything else
+  // terminal is the version mismatch, as it was before pass 03.
+  const known: CantJoinReason =
+    reason === 'room-full' || reason === 'replaced' ? reason : 'protocol-version-mismatch';
+  return <CantJoin code={code} reason={known} onPlayHere={playHere} />;
 }
 
 function RoomPlayers({
@@ -294,16 +245,22 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   // strings are real piece ids; the brand is a compile-time tag.
   const pair = [roll.pair[0] as PieceId, roll.pair[1] as PieceId] as const;
 
-  if (!board) {
-    // A joiner's board arrives in the `state` that follows `welcome`.
-    return (
-      <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
-        <p className="text-ink-muted" role="status">
-          Getting your board…
-        </p>
-      </main>
-    );
-  }
+  const progress = pictureProgress(snapshot);
+  // Shared by the real game and its loading skeleton, so the header and the
+  // chips are already in place when a mid-game joiner waits for their board.
+  const hud = {
+    roomCode: snapshot.code,
+    // Counted within the picture in play (D8: a fresh budget per picture),
+    // not the global 0-based `roll.round` (docs/contracts/rng.md).
+    round: progress?.round ?? roll.round + 1,
+    ...(progress?.rounds ? { roundOf: progress.rounds } : {}),
+    ...(progress ? { picture: { index: progress.picture, count: progress.pictures } } : {}),
+    connection: connectionPill(connection),
+    players: <RoomPlayers snapshot={snapshot} me={me} inGame />,
+  };
+
+  // A joiner's board arrives in the `state` that follows `welcome` (pass 03 `12h`).
+  if (!board) return <JoiningBoard hud={hud} />;
 
   const acted = me !== null && snapshot.acted.includes(me.playerId);
   const awaitingServer = prediction !== null || passPending;
@@ -329,7 +286,6 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   const pendingCount = pending ? pendingCellCount(pending) : 0;
   const overlay = pending ? candidateCells(pending) : (prediction?.cells ?? []);
 
-  const progress = pictureProgress(snapshot);
   const morePictures = progress !== null && progress.picture < progress.pictures;
 
   let status: string | null = null;
@@ -347,14 +303,7 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
 
   return (
     <HudFrame
-      roomCode={snapshot.code}
-      // Counted within the picture in play (D8: a fresh budget per picture),
-      // not the global 0-based `roll.round` (docs/contracts/rng.md).
-      round={progress?.round ?? roll.round + 1}
-      {...(progress?.rounds ? { roundOf: progress.rounds } : {})}
-      {...(progress ? { picture: { index: progress.picture, count: progress.pictures } } : {})}
-      connection={connectionPill(connection)}
-      players={<RoomPlayers snapshot={snapshot} me={me} inGame />}
+      {...hud}
       sheet={
         pending ? (
           <PlacementEditor
