@@ -38,7 +38,7 @@ export function App() {
           <Route
             path="*"
             element={
-              <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
+              <main className="grid min-h-app place-items-center bg-bg p-6 text-center">
                 <div>
                   <h1 className="text-2xl font-semibold text-ink">No such page</h1>
                   <Link to="/" className="mt-3 inline-block text-accent underline">

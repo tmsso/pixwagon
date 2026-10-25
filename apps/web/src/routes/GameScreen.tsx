@@ -128,6 +128,7 @@ export function GameScreen() {
         activeCandidateCells={pending ? activeCandidateCells(pending) : []}
         invalid={lastRejection !== null}
         onCellPress={handleCellPress}
+        focusWhen={pending !== null}
       />
     </HudFrame>
   );

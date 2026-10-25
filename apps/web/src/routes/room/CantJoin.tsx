@@ -27,7 +27,7 @@ function Layout({
   footer: ReactNode;
 }) {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-bg p-4">
+    <main className="mx-auto flex min-h-app max-w-md flex-col bg-bg p-4">
       <div className="flex-1" />
       <div className="grid justify-items-start gap-3">
         <span className="grid size-14 place-items-center rounded-full bg-surface-sunken text-ink-muted">

@@ -30,7 +30,7 @@ export class CrashBoundary extends Component<{ children: ReactNode }, { crashed:
     return (
       <main
         role="alert"
-        className="mx-auto grid min-h-dvh max-w-md content-center gap-4 bg-bg p-6 text-center"
+        className="mx-auto grid min-h-app max-w-md content-center gap-4 bg-bg p-6 text-center"
       >
         <h1 className="text-2xl font-semibold text-ink">Something went wrong</h1>
         <p className="text-ink-muted">

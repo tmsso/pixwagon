@@ -21,11 +21,18 @@ export interface HudFrameProps {
    *  above it and never changes size. Mutually exclusive with `controls` in
    *  practice — the offers footer is gone while the sheet is up. */
   sheet?: ReactNode;
+  /** How many rows of player chips to reserve: 1 for a pair of players (their
+   *  chips share a row even at 320 px), 2 otherwise. Reserved up front so a
+   *  chip's tag changing width never moves the board (pass 03 note 6). */
+  playerRows?: 1 | 2;
 }
 
 /** 34% of an 844px reference viewport — fixed so switching offers, or going
- *  from 0 to 2 pieces placed, never resizes the sheet or shifts the board. */
-const SHEET_HEIGHT = 284;
+ *  from 0 to 2 pieces placed, never resizes the sheet or shifts the board.
+ *  Capped at 44% of the viewport height (Phase 9, small phones): on a 568px
+ *  screen 284px would leave no room for the board, so the sheet shrinks, scrolls
+ *  inside itself, and keeps its commit row pinned to the bottom. */
+const SHEET_HEIGHT = 'min(284px, 44dvh)';
 
 const CONNECTION_LABEL = {
   online: 'Connected',
@@ -52,11 +59,20 @@ export function HudFrame({
   children,
   controls,
   sheet,
+  playerRows = 2,
 }: HudFrameProps) {
+  // With the sheet up the frame is exactly the screen tall and `main` scrolls, so on a
+  // short phone the sheet (and its Place button) stays on screen instead of landing
+  // below the fold with the board above it.
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-bg">
+    <div
+      className={[
+        'relative flex flex-col overflow-hidden bg-bg',
+        sheet ? 'h-app' : 'min-h-app',
+      ].join(' ')}
+    >
       <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-        <div className="flex items-baseline gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3">
           {roomCode ? (
             <span className="font-mono text-lg tracking-widest text-ink">{roomCode}</span>
           ) : null}
@@ -69,7 +85,7 @@ export function HudFrame({
             <span
               role="img"
               aria-label={`Picture ${picture.index} of ${picture.count}`}
-              className="inline-flex items-center gap-1.5 font-mono text-xs font-medium text-ink"
+              className="inline-flex items-center gap-1.5 font-mono text-xs font-medium whitespace-nowrap text-ink"
             >
               <span aria-hidden className="flex gap-[3px]">
                 {Array.from({ length: picture.count }, (_, i) => (
@@ -88,7 +104,7 @@ export function HudFrame({
             </span>
           ) : null}
           {round !== undefined ? (
-            <span className="text-sm text-ink-muted">
+            <span className="text-sm whitespace-nowrap text-ink-muted">
               Round {round}
               {roundOf !== undefined ? ` of ${roundOf}` : ''}
             </span>
@@ -98,7 +114,7 @@ export function HudFrame({
           <span
             role="status"
             className={[
-              'rounded-full px-2 py-0.5 text-xs',
+              'shrink-0 rounded-full px-2 py-0.5 text-xs',
               connection === 'online' ? 'text-ink-muted' : 'bg-warning/20 text-ink',
             ].join(' ')}
           >
@@ -112,14 +128,27 @@ export function HudFrame({
           round must never push the board down. 5.5rem = two 2rem chips, the
           gap, and the padding. */}
       {players ? (
-        <div className="flex min-h-22 flex-wrap content-start gap-2 px-4 py-2">{players}</div>
+        <div
+          className={[
+            'flex flex-wrap content-start gap-2 px-4 py-2',
+            playerRows === 2 ? 'min-h-22' : 'min-h-12',
+          ].join(' ')}
+        >
+          {players}
+        </div>
       ) : null}
 
       <main
-        className="grid flex-1 place-items-center p-4"
+        className={
+          sheet
+            ? 'flex min-h-0 flex-1 flex-col overflow-y-auto p-4'
+            : 'grid flex-1 place-items-center p-4'
+        }
         style={sheet ? { paddingBottom: SHEET_HEIGHT } : undefined}
       >
-        {children}
+        {/* `m-auto` centres like `place-items-center` but, unlike it, never
+            pushes the top of an overflowing board out of reach of the scroll. */}
+        {sheet ? <div className="m-auto">{children}</div> : children}
       </main>
 
       {sheet ? (
@@ -132,7 +161,7 @@ export function HudFrame({
               slate-950/20 is the closest utility and matches `Dialog`. */}
           <div className="pointer-events-none absolute inset-0 z-10 bg-slate-950/20" aria-hidden />
           <div
-            className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-3 rounded-t-xl border-t border-border bg-surface px-4 pb-4 pt-2.5 shadow-lg"
+            className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-3 overflow-y-auto rounded-t-xl border-t border-border bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2.5 shadow-lg"
             style={{ height: SHEET_HEIGHT }}
           >
             <span className="mx-auto h-1 w-9 rounded-full bg-border" aria-hidden />

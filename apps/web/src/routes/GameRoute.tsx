@@ -37,7 +37,7 @@ export function GameRoute() {
   // which the transport would retry forever — so turn it away here.
   if (!roomCodeSchema.safeParse(code).success) {
     return (
-      <main className="grid min-h-dvh place-items-center bg-bg p-6 text-center">
+      <main className="grid min-h-app place-items-center bg-bg p-6 text-center">
         <div>
           <h1 className="text-2xl font-semibold text-ink">That isn&rsquo;t a room code</h1>
           <Link to="/lobby" className="mt-3 inline-block text-accent underline">

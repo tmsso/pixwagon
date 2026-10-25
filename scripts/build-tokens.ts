@@ -122,6 +122,26 @@ ${Object.keys(duration)
   height: var(--spacing-touch);
 }
 
+/* Safe areas (Phase 9). index.html asks for viewport-fit=cover, so on a phone
+   with a notch or a home indicator the page runs under them unless something
+   pads it. The body takes the insets, and a full-height screen is the screen
+   minus them (min-h-app), so padding never makes a page scroll by itself. env()
+   is 0 everywhere without a cutout, so this changes nothing there. */
+@utility min-h-app {
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+@utility h-app {
+  height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+@layer base {
+  body {
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  }
+}
+
 /* One global honouring of prefers-reduced-motion, rather than each component
    re-checking. Anything animating through the duration tokens stops here. */
 @media (prefers-reduced-motion: reduce) {

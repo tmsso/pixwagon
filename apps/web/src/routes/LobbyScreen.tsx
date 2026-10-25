@@ -57,7 +57,7 @@ export function LobbyScreen() {
   }
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
+    <main className="mx-auto grid min-h-app max-w-md content-center gap-6 bg-bg p-6">
       <h1 className="text-center text-2xl font-semibold text-ink">Play with friends</h1>
 
       <Panel>

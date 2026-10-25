@@ -34,7 +34,7 @@ export function HomeScreen() {
   }
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
+    <main className="mx-auto grid min-h-app max-w-md content-center gap-6 bg-bg p-6">
       <header className="text-center">
         <div className="flex items-center justify-center gap-3">
           <h1 className="font-mono text-3xl font-bold tracking-tight text-ink">Pixwagon</h1>

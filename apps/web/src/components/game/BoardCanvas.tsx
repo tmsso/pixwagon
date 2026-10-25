@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Board, CellRef } from '@pixwagon/game-core';
 import { paintCellFill } from '../../design/canvasPatterns.ts';
 import { playerColor } from '../../design/tokens.ts';
+import { describeCell, initialCursor, moveCursor } from '../../state/boardCursor.ts';
 
 export interface BoardCanvasProps {
   board: Board;
@@ -23,6 +24,10 @@ export interface BoardCanvasProps {
    *  cells before they clear — the `invalid` state. */
   invalid?: boolean;
   onCellPress?: (cell: CellRef) => void;
+  /** Moves keyboard focus onto the board when this turns true — choosing an
+   *  offer removes the button that had focus, and the next thing to do is
+   *  place it on the board. */
+  focusWhen?: boolean;
 }
 
 /**
@@ -44,9 +49,18 @@ export function BoardCanvas({
   activeCandidateCells = [],
   invalid = false,
   onCellPress,
+  focusWhen = false,
 }: BoardCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const { width, height } = board.size;
+  // Keyboard: the canvas is one tab stop with a roving cursor (Phase 9). The
+  // cursor only shows while the board has focus, so a tap never draws it.
+  const interactive = onCellPress !== undefined;
+  const [cursor, setCursor] = useState<CellRef | null>(null);
+
+  useEffect(() => {
+    if (focusWhen) ref.current?.focus();
+  }, [focusWhen]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -145,21 +159,85 @@ export function BoardCanvas({
       }
       ctx.setLineDash([]);
     }
-  }, [board, width, height, cellSize, colorIndex, candidateCells, activeCandidateCells, invalid]);
+
+    // The keyboard cursor, last so nothing hides it: a dark outline with a
+    // light one inside it, so it reads on every square colour and in both
+    // themes (never colour alone — it is also the only thick outline).
+    if (cursor) {
+      const ink = styles.getPropertyValue('--color-ink').trim() || '#171c21';
+      const surface = styles.getPropertyValue('--color-surface').trim() || '#ffffff';
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = ink;
+      ctx.strokeRect(cursor.x * cellSize + 1, cursor.y * cellSize + 1, cellSize - 2, cellSize - 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = surface;
+      ctx.strokeRect(
+        cursor.x * cellSize + 2.5,
+        cursor.y * cellSize + 2.5,
+        cellSize - 5,
+        cellSize - 5,
+      );
+    }
+  }, [
+    board,
+    width,
+    height,
+    cellSize,
+    colorIndex,
+    candidateCells,
+    activeCandidateCells,
+    invalid,
+    cursor,
+  ]);
 
   return (
-    <canvas
-      ref={ref}
-      className="touch-manipulation rounded-lg border border-border"
-      role="grid"
-      aria-label={`Board, ${width} by ${height}`}
-      onPointerDown={(event) => {
-        if (!onCellPress) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / cellSize);
-        const y = Math.floor((event.clientY - rect.top) / cellSize);
-        if (x >= 0 && y >= 0 && x < width && y < height) onCellPress({ x, y });
-      }}
-    />
+    <>
+      <canvas
+        ref={ref}
+        className="touch-manipulation rounded-lg border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        // `application`, not `grid`: a canvas has no cells for a grid to
+        // contain, and this one handles its own arrow keys.
+        role="application"
+        aria-roledescription="board"
+        aria-label={`Board, ${width} by ${height}`}
+        aria-describedby={interactive ? 'board-keys-hint' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        onFocus={() => {
+          if (interactive) setCursor((current) => current ?? initialCursor(board));
+        }}
+        onBlur={() => setCursor(null)}
+        onKeyDown={(event) => {
+          if (!onCellPress || !cursor) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onCellPress(cursor);
+            return;
+          }
+          const next = moveCursor(cursor, event.key, board);
+          if (next) {
+            event.preventDefault();
+            setCursor(next);
+          }
+        }}
+        onPointerDown={(event) => {
+          if (!onCellPress) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const x = Math.floor((event.clientX - rect.left) / cellSize);
+          const y = Math.floor((event.clientY - rect.top) / cellSize);
+          if (x >= 0 && y >= 0 && x < width && y < height) onCellPress({ x, y });
+        }}
+      />
+      {interactive ? (
+        <>
+          <span id="board-keys-hint" className="sr-only">
+            Arrow keys move around the board. Enter or Space places on the highlighted square.
+          </span>
+          <span role="status" className="sr-only">
+            {cursor ? describeCell(board, cursor) : ''}
+          </span>
+        </>
+      ) : null}
+    </>
   );
 }

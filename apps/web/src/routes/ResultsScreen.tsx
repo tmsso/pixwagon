@@ -46,7 +46,7 @@ export function ResultsScreen() {
   }
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
+    <main className="mx-auto grid min-h-app max-w-md content-center gap-6 bg-bg p-6">
       <div className="grid gap-1 text-center">
         <span className="text-xs uppercase tracking-wide text-ink-muted">
           {daily ? `Daily puzzle · ${daily} · ` : ''}

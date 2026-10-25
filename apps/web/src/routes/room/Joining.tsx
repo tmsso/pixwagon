@@ -42,7 +42,7 @@ function Skel({ className }: { className: string }) {
 export function JoiningRoom({ code, delayMs = SHOW_AFTER_MS }: { code: string; delayMs?: number }) {
   const shown = useAfterDelay(delayMs);
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4">
+    <main className="mx-auto flex min-h-app max-w-md flex-col gap-4 bg-bg p-4">
       {shown ? (
         <>
           <div className="grid justify-items-center gap-2 pt-3">
