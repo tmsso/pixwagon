@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { Button } from '../components/ui/Button.tsx';
+import { Button, buttonClasses } from '../components/ui/Button.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
 import { InstallPrompt } from '../pwa/InstallPrompt.tsx';
 import { OfflineExplainer, OfflinePill } from '../pwa/OfflineNotice.tsx';
@@ -16,7 +16,7 @@ export function HomeScreen() {
   const start = useSoloGameStore((state) => state.start);
   const online = useOnlineStatus();
   // Read on render, not cached: coming back from /packs remounts Home.
-  const soloPack = getPack(loadSoloPack())?.name ?? '';
+  const soloPack = getPack(loadSoloPack());
   // Phase 7b: this device's completed results (state/history.ts). Read on
   // render: Home remounts whenever the player comes back to it.
   const history = loadHistory();
@@ -51,9 +51,24 @@ export function HomeScreen() {
 
       <Panel title="Play">
         <div className="grid gap-2">
-          <Button size="lg" onClick={handleSolo}>
-            Solo
-          </Button>
+          {/* Solo carries the pack it will play, with Change beside it (pass 03
+              `01d`, note 17): one tap to replay the usual pack, two to switch,
+              and nothing standing between Solo and the board. */}
+          <div className="flex gap-2">
+            <Button size="lg" className="flex-1" onClick={handleSolo}>
+              <span className="grid text-center leading-tight">
+                <span>Solo</span>
+                {soloPack ? (
+                  <span className="text-xs font-normal">
+                    {soloPack.name} · {soloPack.pictures.length} pictures
+                  </span>
+                ) : null}
+              </span>
+            </Button>
+            <Link to="/packs" className={buttonClasses({ size: 'lg', variant: 'secondary' })}>
+              Change
+            </Link>
+          </div>
           {/* Phase 7a: the same puzzle for everyone today, derived from the
               UTC date alone — so it works offline too. */}
           <Button size="lg" variant="secondary" onClick={handleDaily}>
@@ -99,17 +114,6 @@ export function HomeScreen() {
           </ul>
         </Panel>
       ) : null}
-
-      <Panel title="Packs" tone="sunken">
-        {/* Says which pack "Solo" will play, so the choice made on /packs is
-            visible where it takes effect (D7). */}
-        <p className="text-sm text-ink-muted">
-          Solo plays <span className="font-medium text-ink">{soloPack}</span>.{' '}
-          <Link to="/packs" className="text-accent underline">
-            Choose a shape pack
-          </Link>
-        </p>
-      </Panel>
     </main>
   );
 }

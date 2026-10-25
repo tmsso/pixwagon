@@ -5,6 +5,9 @@ export interface PackCardProps {
   name: string;
   description: string;
   pictureCount: number;
+  /** Replaces the default second line ("description · N pictures") — the pack
+   *  picker lists the pictures' names instead (pass 03 `06a`). */
+  detail?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   selected?: boolean;
   /** Optional thumbnail drawn from one of the pack's pictures. */
@@ -21,6 +24,7 @@ export function PackCard({
   name,
   description,
   pictureCount,
+  detail,
   difficulty,
   selected = false,
   preview,
@@ -59,7 +63,7 @@ export function PackCard({
         </div>
         {/* One wrapping line, so a longer description never gets cut off. */}
         <p className="mt-0.5 text-sm text-ink-muted">
-          {description.replace(/\.$/, '')} · {pictureCount} pictures
+          {detail ?? `${description.replace(/\.$/, '')} · ${pictureCount} pictures`}
         </p>
       </div>
 
