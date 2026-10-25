@@ -33,3 +33,5 @@ Loose backlog. Nothing here is scheduled; `ROADMAP.md` is the plan. Pick things 
 - Haptics on fill, on mobile.
 - Shareable result card (image) for a completed daily — the one social feature that needs no accounts.
 - Colour-vision simulation in Storybook-equivalent form, so the Phase 9 check becomes a permanent regression guard rather than a one-off review.
+- **A permanent small-phone and greyscale guard.** The 2026-10-25 audit (overflow, 44 px targets, Place on screen, a `grayscale(1)` render of a six-player game) was a scratch browser script. A browser-test dependency in the repo would turn it into a regression check; the repo has none today.
+- **Tablet and desktop layouts for the room screens.** Pass 03 drew phones only; `BoardCompare` has 8 and 12 px steps and nothing else does.

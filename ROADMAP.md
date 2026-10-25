@@ -11,22 +11,22 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 - When a batch makes a decision, write it in **two places**: a one-line entry under the phase in this file, and a comment at the site of the decision. Long narrative goes in `docs/delivery-log.md`, not here.
 - Decisions D1–D4 below were the project owner's call and are decided (2026-09-16). New forks of the same weight go in a fresh "Decisions needed" section here and are asked up front, once, at the start of a batch.
 
-## Status at a glance (refreshed 2026-10-22)
+## Status at a glance (refreshed 2026-10-25)
 
-| Phase | Name                                  | Code      | Accept line | Gap to Accept                                             |
-| ----- | ------------------------------------- | --------- | ----------- | --------------------------------------------------------- |
-| 0     | Repo and sync-ready scaffold          | delivered | ✅ met      | —                                                         |
-| 0.5   | Design interlude (owner-driven)       | n/a       | ✅ met      | —                                                         |
-| 1     | `game-core` rules engine              | delivered | ✅ met      | —                                                         |
-| 2     | Local solo playable                   | delivered | ✅ met      | —                                                         |
-| 3     | PWA shell                             | delivered | ⏳ device   | real-phone install + aeroplane-mode solo                  |
-| 3.5   | Cloudflare account and free-tier gate | delivered | ⏳ device   | phone on mobile data joins a room over WebSocket          |
-| 4     | Realtime skeleton                     | delivered | ⏳ device   | accept pending — device session step 4 (two real devices) |
-| 5     | Same-board multiplayer                | delivered | ⏳ device   | two phones play a full picture (device session step 4)    |
-| 6     | Own-board mode, results, rematch      | delivered | ⏳ device   | met on the preview worker 2026-10-22; phones (step 5)     |
-| 7     | Daily puzzle + persistence            | delivered | ⏳ device   | 7a/7b seen in two browsers; phones (step 5)               |
-| 8     | Second shape pack                     | delivered | ✅ met      | Garden ships as data; pack choice is D7                   |
-| 9     | Polish                                | —         | —           |                                                           |
+| Phase | Name                                  | Code      | Accept line | Gap to Accept                                                                                                       |
+| ----- | ------------------------------------- | --------- | ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| 0     | Repo and sync-ready scaffold          | delivered | ✅ met      | —                                                                                                                   |
+| 0.5   | Design interlude (owner-driven)       | n/a       | ✅ met      | —                                                                                                                   |
+| 1     | `game-core` rules engine              | delivered | ✅ met      | —                                                                                                                   |
+| 2     | Local solo playable                   | delivered | ✅ met      | —                                                                                                                   |
+| 3     | PWA shell                             | delivered | ⏳ device   | real-phone install + aeroplane-mode solo                                                                            |
+| 3.5   | Cloudflare account and free-tier gate | delivered | ⏳ device   | phone on mobile data joins a room over WebSocket                                                                    |
+| 4     | Realtime skeleton                     | delivered | ⏳ device   | accept pending — device session step 4 (two real devices)                                                           |
+| 5     | Same-board multiplayer                | delivered | ⏳ device   | two phones play a full picture (device session step 4)                                                              |
+| 6     | Own-board mode, results, rematch      | delivered | ⏳ device   | met on the preview worker 2026-10-22; phones (step 5)                                                               |
+| 7     | Daily puzzle + persistence            | delivered | ⏳ device   | 7a/7b seen in two browsers; phones (step 5)                                                                         |
+| 8     | Second shape pack                     | delivered | ✅ met      | Garden ships as data; pack choice is D7                                                                             |
+| 9     | Polish                                | partly    | ⏳ device   | keyboard, safe areas, iOS hint, small-phone fixes shipped (#54); phone check is device step 6; round timer deferred |
 
 Live (deployed 2026-10-22 from `main` at PR #46, protocol 3): web app `https://pixwagon.pages.dev` (Pages) · room worker `https://pixwagon-app.tmsso.workers.dev` (version `a34dba09`). Live-verified: `/health` → `protocolVersion: 3`. On production, two headless browsers: the host picked Own board + Garden and the guest saw it live; after Start, both were on "Picture 1 of 3" with different pictures and the opponent's completion on the chip. The daily puzzle started. No page errors.
 
@@ -42,6 +42,7 @@ Live (deployed 2026-10-22 from `main` at PR #46, protocol 3): web app `https://p
 4. ~~2026-10-08 batch~~ — Phase 5 items 3–4, protocol 2, Phase 8 and first-contact polish merged (#29–#36) and deployed 2026-10-08.
 5. _Superseded by 4:_ **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
 6. **2026-10-22 batch** — D6 (persistent rejoin), Phase 6 (protocol 3, own-board, picture cycling, results and rematch, D7 pack choice), Phase 7a (daily) and 7b (local history), as stacked PRs #38–#46. Next: merge and deploy them, then the **device session** (now steps 2–5), then the **design pass 03 rework** of the provisional Phase 6 screens — the handoff has landed (`docs/design/handoff-03/`, 2026-10-22; its README's 19 engineering notes are the work list), then **Phase 9**.
+7. **2026-10-25 batch** — the pass-03 rework (all 19 engineering notes, PRs #48–#53, client only, no protocol change) and the Phase 9 items that need no phone (#54). Needs the merge and a Pages-only deploy (the worker stays `a34dba09`), then the device session (steps 2–6) and a `/design-sync` re-sync (BoardCompare and PlayerChip cards changed). Remaining after that: the round timer (an owner call, see Phase 9) and any pass-03 follow-ups from the device session.
 
 ## Decisions D5–D7 — **decided 2026-10-08** (owner: D5 keep, D6 and D7 agreed)
 
@@ -60,6 +61,24 @@ Phase 6 is built in parallel with design pass 03 (`docs/design/BRIEF-03.md`). Th
 
 ---
 
+## Pass 03 rework — built 2026-10-25 (#48–#53)
+
+Every engineering note in `docs/design/handoff-03/README.md` is built, as a stacked chain, client only (no protocol change; the live worker stays at protocol 3): A1 can't-join screens, join gate, joining skeletons (notes 14–16) · A2 waiting room, "This game" sheet, "Start game" (1–3, 18) · A3 Solo's pack on Home and the picker (17) · B in-game round UI (4–8) · C finished-picture card and previous-picture strip (9, 10) · D results headline, aligned `BoardCompare`, rematch return (11–13). Note 19 (no `ConnectionPill`) needs no code. Observed on the preview worker with two real browsers; not yet on phones.
+
+### Decisions D11–D15
+
+Found while building. **D11 and D12 were decided 2026-10-25** (the owner agreed the defaults to the deviations asked up front). **D13–D15 are built defaults, owner to confirm** — each the reversible choice the evidence supports.
+
+- **D11 — decided 2026-10-25: the update banner says "Update", not "Reload".** The static picture of the banner on `02g2` has to match what the player finds, and a plain reload never applied the update (`registerType: 'prompt'`).
+- **D12 — decided 2026-10-25: a pack picked on the picker stays there.** Annotation 31 says picking returns to Home; note 17 says the button plays and remembers. Note 17 wins, and a pick is saved as it is made, so Back keeps it.
+- **D13 — `13d` (a one-picture session) uses the same single-column `BoardCompare`**, not a separate list layout; no shipped pack has one picture.
+- **D14 — "N fewer squares" shows only when it decided a rank**, as the `BoardCompare` spec text says. The own-board frame (`13a`) shows absolute squares instead; the written rule was followed everywhere.
+- **D15 — the first player into an empty room gets the "check the code" hint** if they typed the code in the Lobby (note 18). They are the host of an empty room, so the hint is not gated on being a guest.
+
+Already decided: completion % on chips is **own-board only** (`12b` against `12d`); an own-board stage's round budget is the **largest** of its pictures' budgets.
+
+---
+
 ## Device verification session (owner-owned, no code)
 
 Everything below needs a real phone and cannot be done by Claude. Run it once and paste results back; the session that receives them flips the Accept lines here.
@@ -73,6 +92,10 @@ Everything below needs a real phone and cannot be done by Claude. Run it once an
 5. **Phase 6 and Phase 7** (after the protocol-3 deploy; accept the update banner on Home first).
    - **Phase 6:** the host picks "Own board" and a pack in the waiting room, and the other phone sees the choice. Play until the room moves to "Picture 2 of 3". The two phones should show different pictures, and each chip shows the other's percentage. At the end, both phones show the same ranking with every picture side by side. The host presses "Rematch": both are back in the waiting room without rejoining, and "Start round" starts a new game.
    - **Phase 7:** on both phones, the same day, press "Daily puzzle". Same picture, same first offers. On one phone, finish the daily, close the app, reopen it: Home says "✓ Today's daily done in N rounds". Once in aeroplane mode, the daily should still start.
+
+6. **Pass 03 and Phase 9** (after the Pages deploy of the 2026-10-25 batch; accept the update banner on Home first — it now says "Update"):
+   - **Look and feel:** a room end to end on two phones — waiting room (host's "This game" sheet, the guest's "changed from" line), chips saying placing / done / finished / away, "Move on without …" after 30 s, picture 2 strip, results and Rematch. Say anything that looks different from `docs/design/handoff-03/`.
+   - **Phase 9 Accept:** play a whole game **one-handed on the smallest phone you have**, then again with the phone in greyscale (iOS: Settings → Accessibility → Display & Text Size → Colour Filters → Grayscale; Android: Digital Wellbeing or Developer options → Simulate colour space → Monochromacy). On an iPhone, check the install card says "Tap the Share button, then Add to Home Screen" and the installed app doesn't draw under the notch or the home bar. _Accept if the board, the sheet's Place button and the chips are all usable._
 
 ---
 
@@ -162,10 +185,10 @@ Decided 2026-10-22:
 
 - **Cycling is D8 lockstep.** The round counter is global and never reset per picture (`issueRoll` keys on the round alone). This replaces the "per-player `currentPictureIndex`" wording in the bullets above.
 - **Own-board offsets are stored per player by seat rank** (`pictureOffsets`), not by seat. Seat gaps after a lobby leaver gave two players the same picture, found in review before merge.
-- **A stage's round budget is the largest of its pictures' budgets** in own-board mode.
+- **A stage's round budget is the largest of its pictures' budgets** in own-board mode (a built default, confirmed by the owner when pass 03 landed).
 - **`configure` is lobby-only.** After a game, rematch returns to the lobby first.
 - **The rematch seed is `deriveSeed(baseSeed, 'rematch', n)`,** with the first seed and the count stored, never chained.
-- **D9:** opponents show completion as a percentage on their chips.
+- **D9:** opponents show completion as a percentage on their chips — in own-board games only (pass 03 `12b` against `12d`, 2026-10-25); same-board chips say "placing" or "done".
 - **`BoardCompare` is built from DOM `BoardCell`,** so it renders in the design card and the screen check.
 - **Solo plays the chosen pack's first picture,** as it always played the tram. Variety is in `IDEAS.md`.
 
@@ -199,7 +222,18 @@ Delivered 2026-10-08 (PR #33, Garden: tulip, watering can, mushroom). Findings: 
 
 - Reduced motion end to end; colour-vision simulation against real boards (hatches carry the distinction alone); small-phone layout, one-handed reach, safe-area insets; keyboard navigation and focus order across all surfaces; sound hooks off by default; the iOS Safari manual-install hint (no `beforeinstallprompt` there); optional round timer.
 
-**Accept:** a full game is playable one-handed on a small phone, and playable in greyscale.
+Delivered 2026-10-25 (#54), the parts that need no phone:
+
+- **Reduced motion:** already held globally — `tokens.css` zeroes the duration tokens and the iteration counts under `prefers-reduced-motion`. Verified, unchanged.
+- **Greyscale / colour vision:** a six-player game and results rendered with `filter: grayscale(1)`: all six seats are distinguishable by hatch alone. A one-off browser review; a permanent guard is in `IDEAS.md`.
+- **Keyboard:** the board canvas had no keyboard path. It is now one tab stop with a roving cursor (arrows, Home/End, Enter/Space), a dark-and-light outline and a spoken description of the square; choosing an offer moves focus to the board (the cursor shows only for keyboard focus, never after a tap); the host's sheet traps Tab.
+- **Safe areas:** `body` takes `env(safe-area-inset-*)`; `min-h-app` / `h-app` replace `min-h-dvh`; `html` and `body` carry the page colour so the padding is never default white.
+- **iOS install hint:** the card (and the ghost button) explain Share → Add to Home Screen on iOS only.
+- **Small phones:** an audit at 320×568, 360×640 and 390×844 over every room screen found Place below the fold on 568 px and a 40×20 px target; both fixed. Known limit: on a 568 px-tall phone the board sits partly under the placement sheet at scroll 0 (it scrolls); 640 px and up is clear.
+
+**Not done:** the **round timer** (it contradicts D2's "no timer" and needs server enforcement — an owner call, left out); **sound hooks** (nothing would call them yet).
+
+**Accept:** a full game is playable one-handed on a small phone, and playable in greyscale. _Accept pending — device session step 6._
 
 ---
 

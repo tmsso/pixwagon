@@ -361,3 +361,24 @@ Phase 6 and 7 stay "accept pending" until device-session step 5.
 - **Annotations:** 21–34 new; 18–20 marked superseded.
 
 The canvas was reconciled with the evening's merged stack (#38–#46) before landing: `HudFrame`'s picture marker, `PlayerChip.completion` and the shipped `BoardCompare` are treated as existing. The README's "Notes for engineering" (19 items) is the work list for the pass-03 rework. Owner approved the canvas before the PR. Light theme only; dark mode is still undesigned, as in pass 02.
+
+### 2026-10-25 — pass 03 rework and Phase 9 polish (PRs #48–#54)
+
+Built the whole of `docs/design/handoff-03/README.md`'s engineering list as a stacked chain, one PR per area, each `pnpm verify` green and each with new `check:screens` cases (the screen check grew from 21 to 36 cases). All client-side: the snapshot already carried `history`; a skip shows as a `passed` the player didn't send; the rematch return is an `ended → lobby` the client sees live. So no protocol change and no worker deploy is needed.
+
+- **#48 A1:** can't-join screens share one layout; `02g2` shows a static picture of the update banner built from the live banner's own content; join gate for a shared link; joining skeletons that stay invisible for 400 ms.
+- **#49 A2:** waiting room, "This game" summary and the host's bottom sheet, "Start game", guests get a line instead of a button. The server only sends the current choice, so the store remembers the first one a guest saw to say "changed this from …".
+- **#50 A3:** Solo carries its pack on Home, the picker plays and remembers.
+- **#51 B:** chip status (a word and a glyph each), "Move on without Jo", the placement sheet held inert at 55% while the referee rules (the sheet's choice rides on `Prediction.sheet`, so it closes exactly when the prediction clears), one always-present line under the board.
+- **#52 C:** the finished-picture card and the previous-picture strip.
+- **#53 D:** results headline, `BoardCompare` rebuilt as aligned columns (card rebuilt), rematch return notice.
+- **#54 Phase 9 (non-device):** keyboard board, focus trap, safe areas, iOS install hint, small-phone fixes.
+
+Things worth knowing:
+
+- Verification was two real browsers driving the dev server against the separate preview worker (host created, guest typed the code, a 30 s wait for "Move on without …"), screenshots set beside the reference frames. The ended and picture-2 states were advanced in the page, not by playing to the end; `pnpm play:check` (bots, both modes) covers the server's end of game and passed.
+- Small-phone audit: Place was **below the fold at 568 px** (the 284 px sheet sat at the bottom of a frame taller than the screen). Fixed by making the frame screen-tall while the sheet is up.
+- The board canvas had **no keyboard path at all**.
+- The generated design bundle changes whenever new Tailwind classes appear, so each PR regenerated it before `pnpm verify`.
+- Deviations D11–D15 are in `ROADMAP.md`: D11 and D12 decided, D13–D15 built defaults awaiting the owner.
+- A review before merging caught two things the first Phase 9 pass missed: the new board cursor was drawn for touch players too (any tap focuses the canvas; now `:focus-visible` only), and the safe-area padding would have shown the browser's default white around a notch in dark mode (html/body now carry the page colour). Chromium can't show `env()` insets, so neither was visible in the audit runs.
