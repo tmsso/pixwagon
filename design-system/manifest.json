@@ -95,10 +95,10 @@
       "name": "PlayerChip",
       "path": "components/player-chip/index.html",
       "group": "Components",
-      "subtitle": "Active, idle, away, scored — across all six seats",
+      "subtitle": "Round status (placing, done, finished, away), tags, progress — across all six seats",
       "viewport": {
         "width": 800,
-        "height": 380
+        "height": 480
       }
     },
     {
@@ -185,10 +185,10 @@
       "name": "BoardCompare",
       "path": "components/board-compare/index.html",
       "group": "Board",
-      "subtitle": "Finished boards side by side, ranked — own-board, a tie, a leaver, a late joiner",
+      "subtitle": "The session side by side: a row per player, a column per picture",
       "viewport": {
-        "width": 700,
-        "height": 620
+        "width": 520,
+        "height": 900
       }
     },
     {

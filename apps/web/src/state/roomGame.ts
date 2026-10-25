@@ -189,6 +189,18 @@ function configChangeAfter(
   return change;
 }
 
+/** The room went from the results back to the waiting room while this client
+ *  was watching — the host pressed Rematch (D10, pass 03 note 13). Only seen
+ *  live: a player who reconnects straight into a waiting room has no "back"
+ *  to announce. Held until the next game starts. */
+function returnedFromResultsAfter(
+  state: Pick<RoomGameSlice, 'snapshot'> & Partial<Pick<RoomGameSlice, 'returnedFromResults'>>,
+  next: RoomSnapshot,
+): boolean {
+  if (next.status !== 'lobby') return false;
+  return state.snapshot?.status === 'ended' || (state.returnedFromResults ?? false);
+}
+
 /**
  * The pure state-transition function: given what the store currently holds
  * and one inbound server message, what changes. No side effects (no storage,
@@ -196,7 +208,9 @@ function configChangeAfter(
  */
 export function applyServerMessage(
   state: Pick<RoomGameSlice, 'snapshot' | 'me'> &
-    Partial<Pick<RoomGameSlice, 'prediction' | 'configChange' | 'passPending'>>,
+    Partial<
+      Pick<RoomGameSlice, 'prediction' | 'configChange' | 'passPending' | 'returnedFromResults'>
+    >,
   message: ServerMessage,
 ): Partial<RoomGameSlice> {
   const meId = state.me?.playerId;
@@ -221,6 +235,7 @@ export function applyServerMessage(
         prediction: null,
         passPending: false,
         configChange: configChangeAfter(state, message.state),
+        returnedFromResults: returnedFromResultsAfter(state, message.state),
       };
 
     case 'presence':
@@ -347,6 +362,8 @@ interface RoomGameSlice {
   /** The host moved the room on past this player (a `passed` they didn't send,
    *  pass 03 note 4). Shown on their next round until their first action. */
   skipped: boolean;
+  /** Everyone was sent back to the waiting room by a rematch (`13c`). */
+  returnedFromResults: boolean;
   /** The host's latest waiting-room change, for guests (`02i`); `null` when
    *  there is none to show. */
   configChange: ConfigChange | null;
@@ -412,6 +429,7 @@ const initialSlice: RoomGameSlice = {
   roundSeenAt: null,
   configChange: null,
   skipped: false,
+  returnedFromResults: false,
 };
 
 function updatePending(

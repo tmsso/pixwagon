@@ -1,7 +1,7 @@
 import { isComplete, scoreBoard } from '@pixwagon/game-core';
 import type { Board } from '@pixwagon/game-core';
 import { MAX_PLAYERS, SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
-import type { RoomSnapshot } from '@pixwagon/protocol';
+import type { GameMode, RoomSnapshot } from '@pixwagon/protocol';
 import type { PlayerStatus } from '../components/game/PlayerChip.tsx';
 import type { RoomConnectionState, RoomPlayerIdentity } from './roomGame.ts';
 
@@ -134,6 +134,10 @@ export interface RankedPlayer {
   points: number;
   /** Squares filled across every picture — the tiebreak. */
   filled: number;
+  /** How many squares fewer than the player ranked just above, shown only when
+   *  that gap is what put them below (same pictures finished, different
+   *  squares); `null` otherwise (pass 03 note 11, "4 fewer squares"). */
+  tieBreak: number | null;
   total: number;
   /** One entry per picture of the session, oldest first, for `BoardCompare`.
    *  `null` for a picture played before this player joined. */
@@ -180,8 +184,11 @@ export function roomRanking(snapshot: RoomSnapshot): RankedPlayer[] {
     const next = rows[index + 1];
     // A tie shares the rank of the first player in it ("1, 1, 3").
     const tiedWithPrev = prev !== undefined && sameScore(prev, row);
+    const decidedBySquares =
+      prev !== undefined && !tiedWithPrev && prev.completedPictures === row.completedPictures;
     ranked.push({
       ...row,
+      tieBreak: decidedBySquares ? prev.filled - row.filled : null,
       rank: tiedWithPrev ? prev.rank : index + 1,
       tied: tiedWithPrev || (next !== undefined && sameScore(row, next)),
     });
@@ -254,7 +261,7 @@ export function previousPicture(snapshot: RoomSnapshot, playerId: string): Pictu
   return board ? boardOutcome(playerId, board) : null;
 }
 
-const NUMBER_WORDS = [
+export const NUMBER_WORDS = [
   'zero',
   'one',
   'two',
@@ -275,4 +282,41 @@ const NUMBER_WORDS = [
 export function lastSquaresPhrase(remaining: number): string {
   if (remaining === 1) return 'that last square';
   return `those last ${NUMBER_WORDS[remaining] ?? remaining} squares`;
+}
+
+/** The results screen's headline and the line under it (pass 03 note 12,
+ *  `13a`–`13d`): who won in words, never just a table. Ties name everyone
+ *  they cover, the viewer first as "You". */
+export function resultsHeadline(
+  ranking: readonly RankedPlayer[],
+  meId: string | null,
+  mode: GameMode,
+  pictures: number,
+): { title: string; sub: string } {
+  const top = ranking.filter((r) => r.rank === 1);
+  const rule = 'Ranked by pictures finished, then squares.';
+  if (top.length === 0) return { title: 'Game over', sub: rule };
+  if (top.length > 1) {
+    const names = [...top]
+      .sort((a, b) => Number(b.playerId === meId) - Number(a.playerId === meId))
+      .map((r) => (r.playerId === meId ? 'You' : r.name));
+    return {
+      title: 'It’s a tie',
+      sub: `${joinNames(names)} finished the same pictures with the same number of squares.`,
+    };
+  }
+  const winner = top[0]!;
+  const title = winner.playerId === meId ? 'You win' : `${winner.name} wins`;
+  if (pictures === 1) {
+    return {
+      title,
+      sub: 'One picture this time. A finished picture scores 100; an unfinished one scores nothing.',
+    };
+  }
+  if (mode === 'own-board') return { title, sub: `Same offers, different pictures. ${rule}` };
+  if (winner.completedPictures === pictures) {
+    const word = NUMBER_WORDS[pictures] ?? String(pictures);
+    return { title, sub: `All ${word} pictures finished. ${rule}` };
+  }
+  return { title, sub: rule };
 }
