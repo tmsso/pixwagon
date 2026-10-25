@@ -11,7 +11,10 @@ import {
   pictureProgress,
   boardCompletion,
   startBlockedReason,
+  boardOutcome,
   joinNames,
+  lastSquaresPhrase,
+  previousPicture,
   playerStatus,
   waitingLine,
   waitingNames,
@@ -133,6 +136,28 @@ describe('in-game views (Phase 5 item 3)', () => {
     expect(playerStatus({ ...game, acted: ['p3'] }, 'p3')).toBe('finished');
     // Away beats everything: their squares are kept but the round doesn't wait.
     expect(playerStatus({ ...game, acted: ['p2'] }, 'p2')).toBe('away');
+  });
+
+  it('reports how the previous picture ended, from history, for this player only', () => {
+    const second: RoomSnapshot = { ...game, stage: 1, history: [{ p0: some, p1: full }] };
+    expect(previousPicture(second, 'p1')).toMatchObject({
+      complete: true,
+      points: 100,
+      remaining: 0,
+    });
+    const unfinished = previousPicture(second, 'p0')!;
+    expect(unfinished).toMatchObject({ complete: false, points: 0, pictureId: 'tram' });
+    expect(unfinished.remaining).toBe(fillable.length - 5);
+    // Joined after it, or nothing finished yet: nothing to report.
+    expect(previousPicture(second, 'p9')).toBeNull();
+    expect(previousPicture(game, 'p0')).toBeNull();
+    expect(boardOutcome('p0', full).complete).toBe(true);
+  });
+
+  it('says the leftover squares in words', () => {
+    expect(lastSquaresPhrase(1)).toBe('that last square');
+    expect(lastSquaresPhrase(6)).toBe('those last six squares');
+    expect(lastSquaresPhrase(30)).toBe('those last 30 squares');
   });
 
   it('joins names the way a sentence would', () => {

@@ -221,3 +221,58 @@ export function connectionPill(
 ): 'online' | 'connecting' | 'reconnecting' | 'offline' {
   return connection === 'idle' ? 'offline' : connection;
 }
+
+/** How one board of the session ended, for the strips that report it (pass 03
+ *  notes 9 and 10): which picture, whether it was finished, what it scored and
+ *  how many squares were left. Scoring is all-or-nothing, so an unfinished
+ *  picture scores nothing however close it got. */
+export interface PictureOutcome {
+  packId: string;
+  pictureId: string;
+  complete: boolean;
+  points: number;
+  /** Squares still unfilled — "Nothing fitted those last six squares". */
+  remaining: number;
+}
+
+export function boardOutcome(playerId: string, board: Board): PictureOutcome {
+  const score = scoreBoard(playerId, board);
+  return {
+    packId: board.packId,
+    pictureId: board.pictureId,
+    complete: isComplete(board),
+    points: score.points,
+    remaining: score.total - score.filled,
+  };
+}
+
+/** The picture this player played just before the one in play, or `null` for
+ *  the first picture, or when they joined after it (no board of theirs in
+ *  `history`). Read from the snapshot, so a reconnecting player sees it too. */
+export function previousPicture(snapshot: RoomSnapshot, playerId: string): PictureOutcome | null {
+  const board = snapshot.history.at(-1)?.[playerId] as Board | undefined;
+  return board ? boardOutcome(playerId, board) : null;
+}
+
+const NUMBER_WORDS = [
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+];
+
+/** "that last square" / "those last six squares" — small numbers in words,
+ *  because the line is read, not scanned. */
+export function lastSquaresPhrase(remaining: number): string {
+  if (remaining === 1) return 'that last square';
+  return `those last ${NUMBER_WORDS[remaining] ?? remaining} squares`;
+}
