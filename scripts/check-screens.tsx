@@ -104,7 +104,19 @@ function seedRoom(
     lastError: null,
     fatalError: null,
     configChange: null,
+    // In-game transients: every case starts from a quiet, undisturbed round.
+    pending: null,
+    prediction: null,
+    passPending: false,
+    lastRejection: null,
+    roundSeenAt: null,
+    skipped: false,
   });
+}
+
+/** Layers store fields (a held sheet, a skip notice…) over a seeded room. */
+function seedGame(extra: Record<string, unknown>): void {
+  Object.assign(useRoomGameStore.getInitialState(), extra);
 }
 
 /** A room the player is in but the server hasn't described yet, or has turned
@@ -358,8 +370,105 @@ const screens: ScreenCase[] = [
     routePath: '/r/:code',
     element: <GameRoute />,
     setup: () => seedRoom(playingSnapshot),
-    // Kim dropped mid-game: listed, dimmed, labelled "away" (pass 02 `12c`).
-    expect: ['TRAM', 'Round 3', 'Connected', 'The pair', 'The single', 'You', 'Kim', 'away'],
+    // `12b` + `12c`: you are still placing; Kim dropped and is dimmed, labelled
+    // "away"; every chip says where its player is, in words.
+    expect: [
+      'TRAM',
+      'Round 3',
+      'Connected',
+      'The pair',
+      'The single',
+      'You',
+      'Kim',
+      'placing',
+      'away',
+      'the pair</b> or',
+    ],
+  },
+  {
+    // `12d`: own board — opponents as completion only, and why.
+    name: 'Room (game, own board: completion on chips)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => seedRoom({ ...playingSnapshot, mode: 'own-board' }),
+    expect: ['Sam', '0%', 'Your own picture — everyone gets the same offers.'],
+  },
+  {
+    // `12g`: after Place, the sheet stays up, held and disabled, "Placing…".
+    name: 'Room (game, checking with the room: sheet held)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom(playingSnapshot);
+      seedGame({
+        prediction: {
+          round: 2,
+          cells: [{ x: 4, y: 4 }],
+          sheet: {
+            kind: 'fallback',
+            blobs: [{ size: 1, cells: [{ x: 4, y: 4 }] }],
+            active: 0,
+          },
+        },
+      });
+    },
+    expect: ['Placing…', 'inert', 'Checking with the room…', 'Take back'],
+  },
+  {
+    // `03g`: the referee said no. Never scolding.
+    name: 'Room (game, move refused)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom(playingSnapshot);
+      seedGame({ lastRejection: 'cell-already-filled' });
+    },
+    expect: ['Those squares didn’t fit — try another spot.', 'role="alert"'],
+  },
+  {
+    // `12c`: reconnecting says the board is safe.
+    name: 'Room (game, reconnecting)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom(playingSnapshot);
+      seedGame({ connection: 'reconnecting' });
+    },
+    expect: ['Reconnecting…', 'Your board is safe.'],
+  },
+  {
+    // `12e`: a round open 30 s — the host can move on, in words that help.
+    name: 'Room (game, host can move on)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom({ ...playingSnapshot, acted: ['p-alex'] });
+      seedGame({ roundSeenAt: Date.now() - 60_000 });
+    },
+    expect: [
+      'Done for this round.',
+      'Waiting for Sam — the next round starts by itself.',
+      'Move on without Sam',
+      'Sam keeps their board and plays the next round.',
+      'Only you see this.',
+    ],
+  },
+  {
+    // `12e`, second frame: the skipped player's next round.
+    name: 'Room (game, you were moved on without)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom(playingSnapshot, { playerId: 'p-sam', isHost: false });
+      seedGame({ skipped: true });
+    },
+    expect: ['The room moved on to a new round. Your board is just as you left it.'],
   },
   {
     name: 'Room (picture 2 of 3, first round)',
@@ -375,8 +484,9 @@ const screens: ScreenCase[] = [
         currentRoll: { ...playingSnapshot.currentRoll!, round: 10 },
         history: [{ 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram }],
       }),
-    // D9: opponents show completion on their chips (Sam and Kim: 0%).
-    expect: ['Picture 2 of 3', 'Round 1 of 40', 'On to picture 2 of 3', '0%'],
+    // The header marker is squares plus "2 of 3", with the full phrase as
+    // its accessible name (pass 03 note 8).
+    expect: ['aria-label="Picture 2 of 3"', '2 of 3', 'Round 1 of 40', 'On to picture 2 of 3'],
   },
   {
     name: 'Room (acted, waiting for others)',
@@ -384,7 +494,7 @@ const screens: ScreenCase[] = [
     routePath: '/r/:code',
     element: <GameRoute />,
     setup: () => seedRoom({ ...playingSnapshot, acted: ['p-alex'] }),
-    expect: ['Done for this round.', 'Waiting for Sam'],
+    expect: ['Done for this round.', 'Waiting for Sam — the next round starts by itself.'],
   },
   {
     name: 'Room (ended)',

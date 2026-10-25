@@ -2,6 +2,7 @@ import { isComplete, scoreBoard } from '@pixwagon/game-core';
 import type { Board } from '@pixwagon/game-core';
 import { MAX_PLAYERS, SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
+import type { PlayerStatus } from '../components/game/PlayerChip.tsx';
 import type { RoomConnectionState, RoomPlayerIdentity } from './roomGame.ts';
 
 /**
@@ -35,15 +36,38 @@ export function waitingOn(snapshot: RoomSnapshot): string[] {
     .map((p) => p.id);
 }
 
-/** "Waiting for Kim and Sam" — names in seat order, the viewer excluded. */
-export function waitingLine(snapshot: RoomSnapshot, meId: string | null): string | null {
-  const names = waitingOn(snapshot)
+/** "Jo", "Jo and Ravi", "Jo, Kim and Ravi". */
+export function joinNames(names: readonly string[]): string {
+  return names.length <= 1
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+}
+
+/** Names of the connected players the round still waits on, in seat order, the
+ *  viewer excluded — the people "Waiting for …" and "Move on without …" name. */
+export function waitingNames(snapshot: RoomSnapshot, meId: string | null): string[] {
+  return waitingOn(snapshot)
     .filter((id) => id !== meId)
     .map((id) => snapshot.players.find((p) => p.id === id)?.name ?? 'someone');
+}
+
+/** "Waiting for Jo and Ravi — the next round starts by itself." Says what
+ *  happens next so nobody hunts for a button (pass 03 note 7, Annotation 21). */
+export function waitingLine(snapshot: RoomSnapshot, meId: string | null): string | null {
+  const names = waitingNames(snapshot, meId);
   if (names.length === 0) return null;
-  const list =
-    names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-  return `Waiting for ${list}`;
+  return `Waiting for ${joinNames(names)} — the next round starts by itself.`;
+}
+
+/** Where `playerId` is this round, for their chip (pass 03 note 6): away
+ *  beats everything (their board is kept, the round doesn't wait on them),
+ *  then a complete picture, then having acted, else still placing. */
+export function playerStatus(snapshot: RoomSnapshot, playerId: string): PlayerStatus {
+  const player = snapshot.players.find((p) => p.id === playerId);
+  if (!player?.connected) return 'away';
+  const board = snapshot.boards[playerId] as Board | undefined;
+  if (board && isComplete(board)) return 'finished';
+  return snapshot.acted.includes(playerId) ? 'done' : 'placing';
 }
 
 /** Whether the host's "Skip waiting players" button shows (owner decision

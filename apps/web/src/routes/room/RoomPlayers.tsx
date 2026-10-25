@@ -1,7 +1,7 @@
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { PlayerChip } from '../../components/game/PlayerChip.tsx';
 import type { RoomPlayerIdentity } from '../../state/roomGame.ts';
-import { boardCompletion } from '../../state/roomView.ts';
+import { boardCompletion, playerStatus } from '../../state/roomView.ts';
 
 export function RoomPlayers({
   snapshot,
@@ -33,9 +33,14 @@ export function RoomPlayers({
             // Away players keep their seat and squares (protocol 2); the
             // chip dims and says "away" rather than vanishing (pass 02 `12c`).
             connected={player.connected}
-            // D9: mid-game, other players show how far along they are —
-            // a number on the chip, never their board.
-            {...(inGame && player.id !== me?.playerId
+            // Where they are this round: a word and a glyph (pass 03 note 6).
+            {...(inGame ? { status: playerStatus(snapshot, player.id) } : {})}
+            // D9: in an own-board game other players show how far along they
+            // are — a number on the chip, never their board. In a same-board
+            // game everyone fills the same picture, so the number would only
+            // repeat what "placing" and "done" already say (pass 03 `12b`
+            // against `12d`).
+            {...(inGame && snapshot.mode === 'own-board' && player.id !== me?.playerId
               ? completionProp(boardCompletion(snapshot, player.id))
               : {})}
           />
