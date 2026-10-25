@@ -115,6 +115,11 @@ function isHostAmong(players: readonly PlayerPresence[], playerId: string): bool
 export interface Prediction {
   round: number;
   cells: CellRef[];
+  /** The choice as composed when it was sent. The sheet stays up, held and
+   *  disabled, until the referee rules (pass 03 note 5, `12g`), and this is
+   *  what it shows meanwhile — so it closes exactly when the prediction does,
+   *  and there is no second flag to forget to clear. */
+  sheet?: PendingChoice;
 }
 
 /** The player's own board as the server last confirmed it. */
@@ -191,7 +196,7 @@ function configChangeAfter(
  */
 export function applyServerMessage(
   state: Pick<RoomGameSlice, 'snapshot' | 'me'> &
-    Partial<Pick<RoomGameSlice, 'prediction' | 'configChange'>>,
+    Partial<Pick<RoomGameSlice, 'prediction' | 'configChange' | 'passPending'>>,
   message: ServerMessage,
 ): Partial<RoomGameSlice> {
   const meId = state.me?.playerId;
@@ -283,7 +288,15 @@ export function applyServerMessage(
       const patch: Partial<RoomGameSlice> = {
         snapshot: { ...state.snapshot, acted: withActed(state.snapshot.acted, message.playerId) },
       };
-      if (message.playerId === meId) patch.passPending = false;
+      if (message.playerId === meId) {
+        patch.passPending = false;
+        // A pass this client didn't send, for a round it hadn't acted in, can
+        // only be the host's skip: it needs saying on the next round, or the
+        // board looks like it skipped a turn by itself.
+        if (!state.passPending && !state.snapshot.acted.includes(message.playerId)) {
+          patch.skipped = true;
+        }
+      }
       return patch;
     }
 
@@ -331,6 +344,9 @@ interface RoomGameSlice {
    *  after this; it can only be later than the server's own stamp, so the
    *  button never shows before the server would accept the skip. */
   roundSeenAt: number | null;
+  /** The host moved the room on past this player (a `passed` they didn't send,
+   *  pass 03 note 4). Shown on their next round until their first action. */
+  skipped: boolean;
   /** The host's latest waiting-room change, for guests (`02i`); `null` when
    *  there is none to show. */
   configChange: ConfigChange | null;
@@ -395,6 +411,7 @@ const initialSlice: RoomGameSlice = {
   lastRejection: null,
   roundSeenAt: null,
   configChange: null,
+  skipped: false,
 };
 
 function updatePending(
@@ -506,7 +523,12 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
         });
       }
     });
-    set({ pending: null, lastRejection: null, prediction: { round, cells } });
+    set({
+      pending: null,
+      lastRejection: null,
+      skipped: false,
+      prediction: { round, cells, sheet: state.pending },
+    });
     // game-core's `MoveChoice` marks its arrays `readonly`; the wire type does
     // not. Same data, so the cast only drops the modifier.
     connection?.send({ type: 'fill', round, choice: choice as WireMoveChoice });
@@ -515,7 +537,7 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
   pass: () => {
     const ready = actable(get());
     if (!ready) return;
-    set({ pending: null, lastRejection: null, passPending: true });
+    set({ pending: null, lastRejection: null, passPending: true, skipped: false });
     connection?.send({ type: 'pass', round: ready.roll.round });
   },
 

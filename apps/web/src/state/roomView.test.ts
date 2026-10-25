@@ -11,7 +11,10 @@ import {
   pictureProgress,
   boardCompletion,
   startBlockedReason,
+  joinNames,
+  playerStatus,
   waitingLine,
+  waitingNames,
   waitingOn,
   waitingStatus,
 } from './roomView.ts';
@@ -113,9 +116,29 @@ describe('in-game views (Phase 5 item 3)', () => {
   it('waits on connected, unacted, unfinished players only', () => {
     // p1 acted, p2 is away, p3's picture is complete.
     expect(waitingOn(game)).toEqual(['p0']);
-    expect(waitingLine(game, 'p1')).toBe('Waiting for P0');
+    expect(waitingLine(game, 'p1')).toBe('Waiting for P0 — the next round starts by itself.');
     expect(waitingLine(game, 'p0')).toBeNull();
-    expect(waitingLine({ ...game, acted: [] }, 'p3')).toBe('Waiting for P0 and P1');
+    expect(waitingLine({ ...game, acted: [] }, 'p3')).toBe(
+      'Waiting for P0 and P1 — the next round starts by itself.',
+    );
+    expect(waitingNames({ ...game, acted: [] }, 'p3')).toEqual(['P0', 'P1']);
+  });
+
+  it('says where each player is, away first and a finished picture before acted', () => {
+    expect(playerStatus(game, 'p0')).toBe('placing');
+    expect(playerStatus(game, 'p1')).toBe('done');
+    expect(playerStatus(game, 'p2')).toBe('away');
+    expect(playerStatus(game, 'p3')).toBe('finished');
+    // A finished picture stays "finished" even if the player also acted.
+    expect(playerStatus({ ...game, acted: ['p3'] }, 'p3')).toBe('finished');
+    // Away beats everything: their squares are kept but the round doesn't wait.
+    expect(playerStatus({ ...game, acted: ['p2'] }, 'p2')).toBe('away');
+  });
+
+  it('joins names the way a sentence would', () => {
+    expect(joinNames(['Jo'])).toBe('Jo');
+    expect(joinNames(['Jo', 'Kim'])).toBe('Jo and Kim');
+    expect(joinNames(['Jo', 'Kim', 'Ravi'])).toBe('Jo, Kim and Ravi');
   });
 
   it('offers the host a skip only after the wait, and only for someone else', () => {

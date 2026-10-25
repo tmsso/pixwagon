@@ -61,8 +61,30 @@ export function HudFrame({
             <span className="font-mono text-lg tracking-widest text-ink">{roomCode}</span>
           ) : null}
           {picture && picture.count > 1 ? (
-            <span className="text-sm text-ink">
-              Picture {picture.index} of {picture.count}
+            // Three small squares and "2 of 3": the full "Picture 2 of 3"
+            // doesn't fit beside the code, the round and the pill at 390 px
+            // (pass 03 note 8), so it lives on as the accessible name. The
+            // filled squares are the pictures reached so far; the number says
+            // it in text too.
+            <span
+              role="img"
+              aria-label={`Picture ${picture.index} of ${picture.count}`}
+              className="inline-flex items-center gap-1.5 font-mono text-xs font-medium text-ink"
+            >
+              <span aria-hidden className="flex gap-[3px]">
+                {Array.from({ length: picture.count }, (_, i) => (
+                  <i
+                    key={i}
+                    className={[
+                      'block size-2 rounded-[2px] border border-ink-muted',
+                      i < picture.index ? 'bg-ink-muted' : '',
+                    ].join(' ')}
+                  />
+                ))}
+              </span>
+              <span aria-hidden>
+                {picture.index} of {picture.count}
+              </span>
             </span>
           ) : null}
           {round !== undefined ? (
@@ -85,7 +107,13 @@ export function HudFrame({
         ) : null}
       </header>
 
-      {players ? <div className="flex flex-wrap gap-2 px-4 py-2">{players}</div> : null}
+      {/* Two rows are reserved from the first frame (pass 03 note 6): six chips
+          with tags wrap to two rows at 390 px, and a tag changing width mid-
+          round must never push the board down. 5.5rem = two 2rem chips, the
+          gap, and the padding. */}
+      {players ? (
+        <div className="flex min-h-22 flex-wrap content-start gap-2 px-4 py-2">{players}</div>
+      ) : null}
 
       <main
         className="grid flex-1 place-items-center p-4"

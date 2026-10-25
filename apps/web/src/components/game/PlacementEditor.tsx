@@ -25,6 +25,11 @@ export interface PlacementEditorProps {
    *  discoverable second entry point to it. */
   onCancel: () => void;
   onCommit: () => void;
+  /** The choice has been sent and the referee hasn't ruled yet (pass 03 note
+   *  5, `12g`). The sheet stays up so the board doesn't move mid-wait, but
+   *  nothing in it can be touched: `inert` removes it from the tab order and
+   *  the accessibility tree, and the commit reads "Placing…". */
+  busy?: boolean;
 }
 
 /**
@@ -48,6 +53,7 @@ export function PlacementEditor({
   onTakeBack,
   onCancel,
   onCommit,
+  busy = false,
 }: PlacementEditorProps) {
   const isPair = pending.kind === 'pair';
   const anythingPlaced = isPair
@@ -55,7 +61,11 @@ export function PlacementEditor({
     : pending.blobs.some((blob) => blob.cells.length > 0);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      className={['flex flex-col gap-3', busy ? 'opacity-55' : ''].join(' ')}
+      inert={busy}
+      aria-busy={busy || undefined}
+    >
       <ChosenOfferBar pending={pending} onSwitch={onCancel} />
 
       {isPair ? (
@@ -135,8 +145,8 @@ export function PlacementEditor({
       )}
 
       <div className="flex gap-2">
-        <Button size="lg" className="flex-1" disabled={commitDisabled} onClick={onCommit}>
-          {commitLabel}
+        <Button size="lg" className="flex-1" disabled={commitDisabled || busy} onClick={onCommit}>
+          {busy ? 'Placing…' : commitLabel}
         </Button>
         <Button size="lg" variant="secondary" onClick={onCancel}>
           Cancel

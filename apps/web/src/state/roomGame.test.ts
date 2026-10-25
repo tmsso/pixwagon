@@ -84,6 +84,36 @@ describe('configChange (pass 03 `02i`)', () => {
   });
 });
 
+describe('being skipped (pass 03 note 4)', () => {
+  const me = { playerId: 'p2', isHost: false };
+  const held: RoomSnapshot = {
+    ...state0,
+    players: [alex, bella],
+    status: 'playing',
+    acted: ['p1'],
+  };
+  const passedMe = { type: 'passed' as const, playerId: 'p2', round: 0 };
+
+  it('a pass the player did not send is the host moving on without them', () => {
+    const patch = applyServerMessage({ snapshot: held, me, passPending: false }, passedMe);
+    expect(patch.skipped).toBe(true);
+    expect(patch.passPending).toBe(false);
+  });
+
+  it('their own pass echoing back is not a skip', () => {
+    expect(applyServerMessage({ snapshot: held, me, passPending: true }, passedMe).skipped).toBe(
+      undefined,
+    );
+  });
+
+  it("someone else's pass is not a skip", () => {
+    const other = { ...passedMe, playerId: 'p1' };
+    expect(applyServerMessage({ snapshot: held, me, passPending: false }, other).skipped).toBe(
+      undefined,
+    );
+  });
+});
+
 describe('applyServerMessage', () => {
   it('welcome sets me from playerId, keeping isHost unknown (false) until state confirms it', () => {
     const patch = applyServerMessage(
@@ -449,7 +479,9 @@ describe('optimistic fill (Phase 5 item 3)', () => {
   it('commit predicts with applyMove, overlays the cells, and leaves the confirmed board alone', () => {
     useRoomGameStore.getState().commit();
     const state = useRoomGameStore.getState();
-    expect(state.prediction).toEqual({ round: 0, cells });
+    expect(state.prediction).toMatchObject({ round: 0, cells });
+    // ...and the sheet's choice is kept so it can stay up, held, until ruled on.
+    expect(state.prediction?.sheet).toBeDefined();
     expect(state.pending).toBeNull();
     expect(myBoard(state.snapshot, state.me)).toBe(board);
   });

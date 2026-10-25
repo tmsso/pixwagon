@@ -118,3 +118,48 @@ export function BackIcon({ size = 20 }: IconProps) {
     </svg>
   );
 }
+
+/** Placing — three dots: this player still owes the round (pass 03 `PlayerChip`
+ *  status). Filled squares, not strokes: at 13 px an outline would blur. */
+export function DotsIcon({ size = 13 }: IconProps) {
+  return (
+    <svg {...base(size)} fill="currentColor" stroke="none">
+      <rect x="3" y="10.5" width="3.5" height="3.5" />
+      <rect x="10.25" y="10.5" width="3.5" height="3.5" />
+      <rect x="17.5" y="10.5" width="3.5" height="3.5" />
+    </svg>
+  );
+}
+
+/** Finished — four squares: this picture is complete. */
+export function SquaresIcon({ size = 13 }: IconProps) {
+  return (
+    <svg {...base(size)} fill="currentColor" stroke="none">
+      <rect x="4" y="4" width="7" height="7" />
+      <rect x="13" y="4" width="7" height="7" />
+      <rect x="4" y="13" width="7" height="7" />
+      <rect x="13" y="13" width="7" height="7" />
+    </svg>
+  );
+}
+
+/** Away — a broken link: the connection dropped, the seat is kept. */
+export function BrokenLinkIcon({ size = 13 }: IconProps) {
+  return (
+    <svg {...base(size)} strokeWidth={2}>
+      <path d="M9 15l-1.5 1.5a3 3 0 0 1-4-4L5 11" />
+      <path d="M15 9l1.5-1.5a3 3 0 0 1 4 4L19 13" />
+      <path d="M4 4l16 16" />
+    </svg>
+  );
+}
+
+/** Arrow — "the room moved on" (pass 03 `12e`, the skipped player's notice). */
+export function ArrowIcon({ size = 18 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M5 12h12" />
+      <path d="M13 7l5 5-5 5" />
+    </svg>
+  );
+}

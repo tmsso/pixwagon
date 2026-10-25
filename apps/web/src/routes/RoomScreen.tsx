@@ -10,6 +10,7 @@ import { HudFrame } from '../components/game/HudFrame.tsx';
 import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
 import { RollControl } from '../components/game/RollControl.tsx';
 import { Button } from '../components/ui/Button.tsx';
+import { ArrowIcon, RefreshIcon } from '../components/ui/icons.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
 import { useBoardCellSize } from '../design/boardScale.ts';
 import { roomSocketUrl } from '../net/roomOrigin.ts';
@@ -29,7 +30,9 @@ import {
   pictureProgress,
   roomPhase,
   roomRanking,
+  joinNames,
   waitingLine,
+  waitingNames,
 } from '../state/roomView.ts';
 import { CantJoin } from './room/CantJoin.tsx';
 import type { CantJoinReason } from './room/CantJoin.tsx';
@@ -135,6 +138,7 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   const prediction = useRoomGameStore((state) => state.prediction);
   const passPending = useRoomGameStore((state) => state.passPending);
   const lastRejection = useRoomGameStore((state) => state.lastRejection);
+  const skipped = useRoomGameStore((state) => state.skipped);
   const roundSeenAt = useRoomGameStore((state) => state.roundSeenAt);
   const store = useRoomGameStore.getState();
   const now = useNowAfter(roundSeenAt === null ? null : roundSeenAt + SKIP_WAITING_AFTER_MS);
@@ -184,7 +188,6 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
     else store.toggleBlobCell(cell);
   }
 
-  const pendingCount = pending ? pendingCellCount(pending) : 0;
   const overlay = pending ? candidateCells(pending) : (prediction?.cells ?? []);
 
   const morePictures = progress !== null && progress.picture < progress.pictures;
@@ -194,23 +197,30 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
     status = morePictures
       ? 'Your picture is complete! The room moves on when everyone is done.'
       : 'Your picture is complete!';
-  } else if (awaitingServer) status = 'Checking with the room…';
-  else if (acted) status = 'Done for this round.';
+  } else if (acted) status = 'Done for this round.';
   else if (progress?.isNewPicture) {
     // D8: the whole room moved on together. Said on the new picture's first
     // round only; the finished one is kept for the results screen.
     status = `On to picture ${progress.picture} of ${progress.pictures} — your last one is kept for the results.`;
   }
 
+  // Who "Move on without …" names, and what happens to them (pass 03 note 4).
+  const skipNames = showSkip ? waitingNames(snapshot, me?.playerId ?? null) : [];
+  const ownBoard = snapshot.mode === 'own-board';
+  // A sheet is up for the choice being composed, or — held and inert — for one
+  // already sent, until the referee answers (note 5, `12g`).
+  const sheetChoice = pending ?? prediction?.sheet ?? null;
+
   return (
     <HudFrame
       {...hud}
       sheet={
-        pending ? (
+        sheetChoice ? (
           <PlacementEditor
-            pending={pending}
-            commitLabel={`Place ${pendingCount} square${pendingCount === 1 ? '' : 's'}`}
-            commitDisabled={!isPendingComplete(pending)}
+            pending={sheetChoice}
+            busy={pending === null}
+            commitLabel={`Place ${pendingCellCount(sheetChoice)} square${pendingCellCount(sheetChoice) === 1 ? '' : 's'}`}
+            commitDisabled={!isPendingComplete(sheetChoice)}
             onSetActive={store.setActive}
             onRotate={store.rotateActive}
             onMirror={store.mirrorActive}
@@ -222,6 +232,33 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
       }
       controls={
         <div className="flex flex-col gap-3">
+          {skipped && !acted && !done ? (
+            // The host moved on without this player (`12e`, second frame).
+            // Says so before anything else, or the board looks like it
+            // skipped a round by itself.
+            <p
+              className="flex items-start gap-2 rounded-xl border border-border bg-surface p-3 text-sm text-ink"
+              role="status"
+            >
+              <span className="mt-0.5 shrink-0 text-ink-muted">
+                <ArrowIcon />
+              </span>
+              The room moved on to a new round. Your board is just as you left it.
+            </p>
+          ) : null}
+          {lastRejection ? (
+            // Never scolding, never "invalid move" (design pass 02, 03g; D1's
+            // reworded copy — under per-player boards nobody "got there first").
+            <p
+              className="flex items-center gap-2 rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-ink"
+              role="alert"
+            >
+              <span className="shrink-0 text-danger">
+                <RefreshIcon />
+              </span>
+              Those squares didn&rsquo;t fit — try another spot.
+            </p>
+          ) : null}
           <RollControl
             pair={[pieceOfferView(pair[0]), pieceOfferView(pair[1])]}
             fallbackFace={fallbackFaceView(roll.fallback)}
@@ -235,7 +272,16 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
               Pass the round
             </Button>
           ) : null}
-          {status ? (
+          {connection === 'reconnecting' ? (
+            // `12c`: the offers are disabled while the socket is down; say
+            // that nothing is lost, so waiting doesn't feel like a failure.
+            <div className="text-center" role="status">
+              <p className="text-sm font-medium text-ink">Reconnecting…</p>
+              <p className="text-sm text-ink-muted">
+                Your board is safe. You can carry on the moment you&rsquo;re back.
+              </p>
+            </div>
+          ) : status ? (
             <p className="text-center text-sm font-medium text-ink" role="status">
               {status}
             </p>
@@ -243,30 +289,54 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
           {(acted || done) && waiting ? (
             <p className="text-center text-sm text-ink-muted">{waiting}</p>
           ) : null}
-          {showSkip ? (
-            <Button variant="secondary" size="lg" onClick={store.skipWaiting}>
-              Skip waiting players
-            </Button>
-          ) : null}
-          {lastRejection ? (
-            // Never scolding, never "invalid move" (design pass 02, 03g; D1's
-            // reworded copy — under per-player boards nobody "got there first").
-            <p className="text-center text-sm text-ink-muted" role="alert">
-              Those squares didn&rsquo;t fit — try another spot.
-            </p>
+          {showSkip && skipNames.length > 0 ? (
+            <div className="grid gap-1.5">
+              <Button variant="secondary" size="lg" onClick={store.skipWaiting}>
+                Move on without {joinNames(skipNames)}
+              </Button>
+              {/* Never "skip" or "kick": the host moves the room forward, and
+                  the person isn't punished (Annotation 23). */}
+              <p className="text-center text-xs text-ink-muted">
+                {skipNames.length === 1
+                  ? `${skipNames[0]} keeps their board and plays the next round.`
+                  : `${joinNames(skipNames)} keep their boards and play the next round.`}{' '}
+                Only you see this.
+              </p>
+            </div>
           ) : null}
         </div>
       }
     >
-      <BoardCanvas
-        board={board}
-        cellSize={cellSize}
-        colorIndex={snapshot.players.find((p) => p.id === me?.playerId)?.seatIndex ?? 0}
-        candidateCells={overlay}
-        activeCandidateCells={pending ? activeCandidateCells(pending) : []}
-        invalid={lastRejection !== null}
-        onCellPress={handleCellPress}
-      />
+      <div className="grid justify-items-center gap-3">
+        <BoardCanvas
+          board={board}
+          cellSize={cellSize}
+          colorIndex={snapshot.players.find((p) => p.id === me?.playerId)?.seatIndex ?? 0}
+          candidateCells={overlay}
+          activeCandidateCells={pending ? activeCandidateCells(pending) : []}
+          invalid={lastRejection !== null}
+          onCellPress={handleCellPress}
+        />
+        {/* One line under the board, always there (empty when there is nothing
+            to say), so what it says never moves the board. While the referee
+            rules it is the wait — shown here because the footer is hidden
+            while the sheet is held (`12g`); otherwise what to do now (`12b`,
+            `12d`: own board says why the picture differs from the others'). */}
+        <p className="min-h-5 text-center text-sm text-ink-muted" role="status">
+          {awaitingServer ? (
+            'Checking with the room…'
+          ) : canAct && !pending ? (
+            ownBoard ? (
+              'Your own picture — everyone gets the same offers.'
+            ) : (
+              <>
+                Take <b className="font-semibold text-ink">the pair</b> or{' '}
+                <b className="font-semibold text-ink">the single</b>.
+              </>
+            )
+          ) : null}
+        </p>
+      </div>
     </HudFrame>
   );
 }
