@@ -120,6 +120,9 @@ function partlyFilled(board: Board, share: number): Board {
 const tramBoard = createBoard('transportation', 'tram');
 const sailBoard = createBoard('transportation', 'sailboat');
 const balloonBoard = createBoard('transportation', 'hot-air-balloon');
+const tulipBoard = createBoard('garden', 'tulip');
+const canBoard = createBoard('garden', 'watering-can');
+const mushroomBoard = createBoard('garden', 'mushroom');
 
 export const cards: Card[] = [
   // -------------------------------------------------------------------------
@@ -458,8 +461,8 @@ export const cards: Card[] = [
     path: 'components/player-chip/index.html',
     name: 'PlayerChip',
     group: 'Components',
-    subtitle: 'Active, idle, away, scored — across all six seats',
-    viewport: { width: 800, height: 380 },
+    subtitle: 'Round status (placing, done, finished, away), tags, progress — across all six seats',
+    viewport: { width: 800, height: 480 },
     render: () => (
       <div className="flex flex-col gap-6">
         <Variant label="states">
@@ -469,6 +472,22 @@ export const cards: Card[] = [
             <PlayerChip name="Away" colorIndex={2} connected={false} />
             <PlayerChip name="Scored" colorIndex={3} score={38} />
             <PlayerChip name="Progress" colorIndex={4} completion={0.42} />
+          </Row>
+        </Variant>
+        <Variant label="status — a word and a glyph, never colour alone">
+          <Row>
+            <PlayerChip name="Ravi" colorIndex={3} status="placing" />
+            <PlayerChip name="Sam" colorIndex={1} status="done" />
+            <PlayerChip name="Jo" colorIndex={2} status="finished" />
+            <PlayerChip name="Mia" colorIndex={4} status="away" />
+            <PlayerChip name="Sam" colorIndex={1} completion={0.68} status="done" />
+          </Row>
+        </Variant>
+        <Variant label="waiting-room tags">
+          <Row>
+            <PlayerChip name="Alex" colorIndex={0} active you host />
+            <PlayerChip name="Sam" colorIndex={1} />
+            <PlayerChip name="Jo" colorIndex={2} you />
           </Row>
         </Variant>
         <Variant label="all seats">
@@ -782,24 +801,25 @@ export const cards: Card[] = [
     path: 'components/board-compare/index.html',
     name: 'BoardCompare',
     group: 'Board',
-    subtitle: 'Finished boards side by side, ranked — own-board, a tie, a leaver, a late joiner',
-    viewport: { width: 700, height: 620 },
+    subtitle: 'The session side by side: a row per player, a column per picture',
+    viewport: { width: 520, height: 900 },
     render: () => (
-      <div className="flex w-[30rem] flex-col gap-6">
-        <Variant label="own-board, ranked">
+      <div className="flex w-[22.5rem] flex-col gap-6">
+        <Variant label="same board, ranked (a fewer-squares tie-break)">
           <BoardCompare
             meId="b"
             entries={[
               {
                 playerId: 'a',
-                name: 'Sam',
-                seatIndex: 1,
+                name: 'Jo',
+                seatIndex: 2,
                 rank: 1,
                 tied: false,
                 leftMidGame: false,
-                completedPictures: 2,
-                filled: 120,
-                boards: [partlyFilled(tramBoard, 1), partlyFilled(sailBoard, 1), partlyFilled(balloonBoard, 0.4)],
+                completedPictures: 3,
+                points: 300,
+                filled: 150,
+                boards: [partlyFilled(tramBoard, 1), partlyFilled(sailBoard, 1), partlyFilled(balloonBoard, 1)],
               },
               {
                 playerId: 'b',
@@ -808,14 +828,60 @@ export const cards: Card[] = [
                 rank: 2,
                 tied: false,
                 leftMidGame: false,
-                completedPictures: 1,
-                filled: 98,
-                boards: [partlyFilled(sailBoard, 1), partlyFilled(balloonBoard, 0.6), partlyFilled(tramBoard, 0.3)],
+                completedPictures: 2,
+                points: 200,
+                filled: 130,
+                boards: [partlyFilled(tramBoard, 1), partlyFilled(sailBoard, 1), partlyFilled(balloonBoard, 0.8)],
+              },
+              {
+                playerId: 'c',
+                name: 'Sam',
+                seatIndex: 1,
+                rank: 3,
+                tied: false,
+                leftMidGame: false,
+                completedPictures: 2,
+                points: 200,
+                filled: 126,
+                tieBreak: 4,
+                boards: [partlyFilled(tramBoard, 1), partlyFilled(sailBoard, 0.7), partlyFilled(balloonBoard, 1)],
               },
             ]}
           />
         </Variant>
-        <Variant label="tie, leaver, late joiner">
+        <Variant label="own board — each cell names its picture">
+          <BoardCompare
+            mode="own-board"
+            meId="b"
+            entries={[
+              {
+                playerId: 'a',
+                name: 'Mia',
+                seatIndex: 4,
+                rank: 1,
+                tied: false,
+                leftMidGame: false,
+                completedPictures: 3,
+                points: 300,
+                filled: 160,
+                boards: [partlyFilled(tulipBoard, 1), partlyFilled(canBoard, 1), partlyFilled(mushroomBoard, 1)],
+              },
+              {
+                playerId: 'b',
+                name: 'Ravi',
+                seatIndex: 5,
+                rank: 2,
+                tied: false,
+                leftMidGame: false,
+                completedPictures: 2,
+                points: 200,
+                filled: 140,
+                boards: [partlyFilled(canBoard, 1), partlyFilled(mushroomBoard, 0.8), partlyFilled(tulipBoard, 1)],
+              },
+            ]}
+          />
+        </Variant>
+        <Variant label="a tie, a leaver, a late joiner">
           <BoardCompare
             entries={[
               {
@@ -824,10 +890,11 @@ export const cards: Card[] = [
                 seatIndex: 2,
                 rank: 1,
                 tied: true,
-                leftMidGame: true,
-                completedPictures: 0,
-                filled: 40,
-                boards: [partlyFilled(tramBoard, 0.5), partlyFilled(tramBoard, 0.25)],
+                leftMidGame: false,
+                completedPictures: 1,
+                points: 100,
+                filled: 80,
+                boards: [partlyFilled(tramBoard, 1), partlyFilled(sailBoard, 0.4)],
               },
               {
                 playerId: 'd',
@@ -836,9 +903,22 @@ export const cards: Card[] = [
                 rank: 1,
                 tied: true,
                 leftMidGame: false,
+                completedPictures: 1,
+                points: 100,
+                filled: 80,
+                boards: [null, partlyFilled(sailBoard, 1)],
+              },
+              {
+                playerId: 'e',
+                name: 'Ravi',
+                seatIndex: 4,
+                rank: 3,
+                tied: false,
+                leftMidGame: true,
                 completedPictures: 0,
-                filled: 40,
-                boards: [null, partlyFilled(tramBoard, 0.75)],
+                points: 0,
+                filled: 20,
+                boards: [partlyFilled(tramBoard, 0.4), partlyFilled(sailBoard, 0)],
               },
             ]}
           />

@@ -13,8 +13,7 @@ import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
 import { RollControl } from '../components/game/RollControl.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { ArrowIcon, RefreshIcon } from '../components/ui/icons.tsx';
-import { Panel } from '../components/ui/Panel.tsx';
-import { useBoardCellSize } from '../design/boardScale.ts';
+import { useBoardCellSize, useResultsCellSize } from '../design/boardScale.ts';
 import { roomSocketUrl } from '../net/roomOrigin.ts';
 import { loadDisplayName, normaliseName, saveDisplayName } from '../state/displayName.ts';
 import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
@@ -32,8 +31,10 @@ import {
   pictureProgress,
   roomPhase,
   roomRanking,
+  hostName,
   joinNames,
   lastSquaresPhrase,
+  resultsHeadline,
   boardOutcome,
   previousPicture,
   waitingLine,
@@ -415,45 +416,52 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
 }
 
 /**
- * The room results screen (Phase 6; pass 02 `13a`–`13c`, provisional until
- * design pass 03). Ranked by completed pictures, then squares, from the
- * snapshot alone (`roomRanking`), so everyone — including someone who
- * reconnects after the end — sees the same ranking (Phase 5's Accept). Every
- * picture of the session is shown side by side in `BoardCompare`. The host
- * offers a rematch (D10): everyone returns to the waiting room, nobody
- * rejoins.
+ * The room results screen (pass 03 `13a`–`13d`, notes 11–13). A headline that
+ * says who won in words, then the whole session side by side in `BoardCompare`
+ * — ranked by completed pictures, then squares, from the snapshot alone
+ * (`roomRanking`), so everyone, including someone who reconnects after the end,
+ * sees the same ranking (Phase 5's Accept). The host offers a rematch (D10):
+ * everyone returns to the waiting room, nobody rejoins. The buttons stay
+ * pinned at the bottom while the results scroll — six players is six rows.
  */
 function RoomEnded({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useRoomGameStore((state) => state.me);
   const rematch = useRoomGameStore((state) => state.rematch);
+  const cellSize = useResultsCellSize();
   const ranking = roomRanking(snapshot);
   const pictures = snapshot.stageCount ?? 1;
+  const { title, sub } = resultsHeadline(ranking, me?.playerId ?? null, snapshot.mode, pictures);
+  const pack = getPack(snapshot.packId)?.name ?? snapshot.packId;
+  const mode = snapshot.mode === 'own-board' ? 'own board' : 'same board';
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-md content-center gap-6 bg-bg p-6">
-      <header className="text-center">
-        <p className="text-sm text-ink-muted">
-          Room <span className="font-mono tracking-widest">{snapshot.code}</span>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4 md:max-w-3xl">
+      <header className="grid gap-1">
+        <p className="font-mono text-xs tracking-widest text-ink-muted uppercase">
+          Game over · {pack} · {mode}
         </p>
-        <h1 className="text-2xl font-semibold text-ink">Game over</h1>
-        <p className="text-sm text-ink-muted">
-          {snapshot.mode === 'own-board' ? 'Own board' : 'Same board'} · {pictures} picture
-          {pictures === 1 ? '' : 's'}
-        </p>
+        <h1 className="text-3xl font-bold text-ink">{title}</h1>
+        <p className="text-ink-muted">{sub}</p>
       </header>
-      <Panel title="Final ranking">
-        <BoardCompare entries={ranking} {...(me ? { meId: me.playerId } : {})} />
-      </Panel>
-      <div className="grid gap-2 text-center">
+      <BoardCompare
+        entries={ranking}
+        mode={snapshot.mode === 'own-board' ? 'own-board' : 'same-board'}
+        cellSize={cellSize}
+        {...(me ? { meId: me.playerId } : {})}
+      />
+      <div className="flex-1" />
+      <div className="sticky bottom-0 grid gap-2 bg-bg pt-2 text-center">
         {me?.isHost ? (
           <Button size="lg" onClick={rematch}>
             Rematch
           </Button>
         ) : (
-          <p className="text-sm text-ink-muted">The host can start a rematch for everyone here.</p>
+          <p className="rounded-xl border border-border bg-surface p-3 text-ink">
+            {hostName(snapshot)} can start a rematch. Stay here and you&rsquo;re in.
+          </p>
         )}
-        <Link to="/lobby" className="text-accent underline">
-          Back to the lobby
+        <Link to="/" className="min-h-touch content-center font-medium text-ink">
+          Leave room
         </Link>
       </div>
     </main>

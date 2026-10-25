@@ -2,9 +2,9 @@ import { useCallback, useState } from 'react';
 import { MAX_PLAYERS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { Button } from '../../components/ui/Button.tsx';
-import { LinkIcon, TickIcon } from '../../components/ui/icons.tsx';
+import { LinkIcon, RefreshIcon, TickIcon } from '../../components/ui/icons.tsx';
 import { useRoomGameStore } from '../../state/roomGame.ts';
-import { hostName, startBlockedReason, waitingStatus } from '../../state/roomView.ts';
+import { hostName, joinNames, startBlockedReason, waitingStatus } from '../../state/roomView.ts';
 import { GameSheet, GameSummary } from './GameSettings.tsx';
 import { RoomPlayers } from './RoomPlayers.tsx';
 
@@ -27,6 +27,7 @@ export function WaitingRoom({
   const me = useRoomGameStore((state) => state.me);
   const connection = useRoomGameStore((state) => state.connection);
   const configChange = useRoomGameStore((state) => state.configChange);
+  const returned = useRoomGameStore((state) => state.returnedFromResults);
   const requestRoll = useRoomGameStore((state) => state.requestRoll);
   const [copied, setCopied] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -35,6 +36,7 @@ export function WaitingRoom({
   const blocked = startBlockedReason(snapshot, me);
   const status = waitingStatus(snapshot);
   const alone = snapshot.players.length <= 1;
+  const awayNames = snapshot.players.filter((p) => !p.connected).map((p) => p.name);
 
   async function copyLink() {
     try {
@@ -48,6 +50,21 @@ export function WaitingRoom({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4">
+      {returned ? (
+        // A rematch is a return, not a restart (note 13, Annotation 32): said
+        // once, at the top, to everyone who was watching it happen.
+        <p
+          role="status"
+          className="flex items-start gap-2.5 rounded-xl border border-accent bg-accent/10 p-3 text-sm text-ink"
+        >
+          <span className="mt-0.5 shrink-0 text-accent-hover">
+            <RefreshIcon />
+          </span>
+          {isHost
+            ? 'Rematch — same room, new offers. Change the game if you like, then start.'
+            : `Rematch — you’re back in room ${snapshot.code} with everyone.`}
+        </p>
+      ) : null}
       <header className="grid justify-items-center gap-2 pt-3">
         <p className="font-mono text-xs tracking-widest text-ink-muted uppercase">Room code</p>
         <p className="font-mono text-5xl font-bold tracking-widest text-ink">{snapshot.code}</p>
@@ -69,6 +86,14 @@ export function WaitingRoom({
             empty room (whose first player is its host), so someone who typed
             one and is alone in it may have mistyped. The note is only for
             them — never for a link, a room they just created, or company. */}
+        {returned && isHost && awayNames.length > 0 ? (
+          // They left the results before the rematch: their seat waits, and
+          // opening the link again brings them back as themselves (D6).
+          <p className="mt-2 text-sm text-ink-muted">
+            {joinNames(awayNames)} left before the rematch. Their seat waits — they come back as
+            themselves if they open the link again.
+          </p>
+        ) : null}
         {alone && arrivedByCode ? (
           <p className="mt-2 text-sm text-ink-muted">
             Expected friends here? Check the code with whoever sent it.

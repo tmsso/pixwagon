@@ -84,6 +84,31 @@ describe('configChange (pass 03 `02i`)', () => {
   });
 });
 
+describe('returnedFromResults (pass 03 note 13)', () => {
+  const me = { playerId: 'p2', isHost: false };
+  const ended: RoomSnapshot = { ...state0, players: [alex, bella], status: 'ended' };
+  const lobby: RoomSnapshot = { ...state0, players: [alex, bella] };
+  const apply = (held: RoomSnapshot | null, next: RoomSnapshot, flag = false) =>
+    applyServerMessage(
+      { snapshot: held, me, returnedFromResults: flag },
+      { type: 'state', state: next },
+    ).returnedFromResults;
+
+  it('is set when the room goes from the results to the waiting room in view', () => {
+    expect(apply(ended, lobby)).toBe(true);
+  });
+
+  it('is not set by joining or reconnecting straight into a waiting room', () => {
+    expect(apply(null, lobby)).toBe(false);
+    expect(apply(lobby, lobby)).toBe(false);
+  });
+
+  it('stays through lobby updates and ends when a game starts', () => {
+    expect(apply(lobby, { ...lobby, mode: 'own-board' }, true)).toBe(true);
+    expect(apply(lobby, { ...lobby, status: 'playing' }, true)).toBe(false);
+  });
+});
+
 describe('being skipped (pass 03 note 4)', () => {
   const me = { playerId: 'p2', isHost: false };
   const held: RoomSnapshot = {

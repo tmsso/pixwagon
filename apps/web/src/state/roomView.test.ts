@@ -7,6 +7,7 @@ import {
   canSkipWaiting,
   connectionPill,
   roomPhase,
+  resultsHeadline,
   roomRanking,
   pictureProgress,
   boardCompletion,
@@ -220,6 +221,60 @@ describe('in-game views (Phase 5 item 3)', () => {
     expect(ranking[0]).toMatchObject({ completedPictures: 1, name: 'P1', tied: false });
     expect(ranking[0]!.points).toBeGreaterThan(0);
     expect(ranking.map((r) => r.tied)).toEqual([false, true, true, false]);
+  });
+
+  it('says by how many squares a player fell behind, only when that decided the rank', () => {
+    const ended: RoomSnapshot = {
+      ...game,
+      status: 'ended',
+      players: [seat(0), seat(1), seat(2)],
+      boards: { p0: full, p1: some, p2: some },
+    };
+    const ranking = roomRanking(ended);
+    // p1 and p2 are tied with each other: no tie-break line for either.
+    expect(ranking.map((r) => r.tieBreak)).toEqual([null, null, null]);
+    const unequal = roomRanking({
+      ...ended,
+      boards: { p0: some, p1: fillCells(board, fillable.slice(0, 3)), p2: board },
+    });
+    expect(unequal.map((r) => [r.playerId, r.tieBreak])).toEqual([
+      ['p0', null],
+      ['p1', 2],
+      ['p2', 3],
+    ]);
+  });
+
+  it('writes the headline: a winner, you, a tie, one picture, own board', () => {
+    const ended: RoomSnapshot = {
+      ...game,
+      status: 'ended',
+      players: [seat(0), seat(1)],
+      boards: { p0: some, p1: full },
+    };
+    const ranking = roomRanking(ended);
+    expect(resultsHeadline(ranking, 'p0', 'same-board', 3)).toEqual({
+      title: 'P1 wins',
+      sub: 'Ranked by pictures finished, then squares.',
+    });
+    expect(resultsHeadline(ranking, 'p1', 'same-board', 1).title).toBe('You win');
+    expect(resultsHeadline(ranking, 'p1', 'same-board', 1).sub).toMatch(/^One picture this time/);
+    expect(resultsHeadline(ranking, 'p1', 'own-board', 3).sub).toMatch(/^Same offers, different/);
+    const tied = roomRanking({ ...ended, boards: { p0: full, p1: full } });
+    expect(resultsHeadline(tied, 'p1', 'same-board', 1)).toEqual({
+      title: 'It’s a tie',
+      sub: 'You and P0 finished the same pictures with the same number of squares.',
+    });
+    // Winning every picture of a three-picture session says so.
+    const sweep = roomRanking({
+      ...ended,
+      history: [
+        { p0: some, p1: full },
+        { p0: some, p1: full },
+      ],
+    });
+    expect(resultsHeadline(sweep, 'p0', 'same-board', 3).sub).toMatch(
+      /^All three pictures finished/,
+    );
   });
 
   it('ranks the whole session: completed pictures across history first, then squares', () => {

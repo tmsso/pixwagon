@@ -42,16 +42,20 @@ export function resolveBoardCellSize(
 }
 
 /**
- * Re-resolves on viewport resize. SSR-safe: `window` is only read inside the
- * effect and the lazy initialiser's guard, so `check-screens.tsx`'s static
- * render gets the phone step without touching a browser global.
- *
- * `availableWidth` is approximated as the viewport minus the 16px screen
- * padding each side (the design's spacing scale) rather than measured off the
- * DOM — precise enough for the overflow rule and it keeps this a pure function
- * of `window.innerWidth`, so no `ResizeObserver` and nothing for jsdom to miss.
+ * The miniature boards on the results screen use the same three viewport
+ * breakpoints at a smaller scale — 5, 8 and 12 px cells (pass 03 Annotation
+ * 28). Integer steps for the same reason as the board: no soft edges.
  */
-export function useBoardCellSize(boardCols: number): BoardCellSize {
+export function resultsCellForViewport(viewportWidth: number): 5 | 8 | 12 {
+  if (viewportWidth >= 1180) return 12;
+  if (viewportWidth >= 768) return 8;
+  return 5;
+}
+
+/** The viewport width, kept current on resize. SSR-safe: `window` is only read
+ *  inside the effect and the lazy initialiser's guard, so `check-screens.tsx`'s
+ *  static render gets the phone width without touching a browser global. */
+function useViewportWidth(): number {
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 390 : window.innerWidth,
   );
@@ -63,5 +67,22 @@ export function useBoardCellSize(boardCols: number): BoardCellSize {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  return viewportWidth;
+}
+
+export function useResultsCellSize(): 5 | 8 | 12 {
+  return resultsCellForViewport(useViewportWidth());
+}
+
+/**
+ * Re-resolves on viewport resize.
+ *
+ * `availableWidth` is approximated as the viewport minus the 16px screen
+ * padding each side (the design's spacing scale) rather than measured off the
+ * DOM — precise enough for the overflow rule and it keeps this a pure function
+ * of `window.innerWidth`, so no `ResizeObserver` and nothing for jsdom to miss.
+ */
+export function useBoardCellSize(boardCols: number): BoardCellSize {
+  const viewportWidth = useViewportWidth();
   return resolveBoardCellSize(viewportWidth, boardCols, viewportWidth - 32);
 }

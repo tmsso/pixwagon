@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_CELL_STEPS, resolveBoardCellSize, stepForViewport } from './boardScale.ts';
+import {
+  BOARD_CELL_STEPS,
+  resolveBoardCellSize,
+  resultsCellForViewport,
+  stepForViewport,
+} from './boardScale.ts';
 
 describe('stepForViewport', () => {
   it('is 20 below the tablet breakpoint', () => {
@@ -49,5 +54,15 @@ describe('resolveBoardCellSize', () => {
       expect(Number.isInteger(size)).toBe(true);
       expect(BOARD_CELL_STEPS).toContain(size);
     }
+  });
+});
+
+describe('resultsCellForViewport', () => {
+  it('steps 5, 8, 12 at the board rule breakpoints and nowhere between', () => {
+    expect(resultsCellForViewport(390)).toBe(5);
+    expect(resultsCellForViewport(767)).toBe(5);
+    expect(resultsCellForViewport(768)).toBe(8);
+    expect(resultsCellForViewport(1179)).toBe(8);
+    expect(resultsCellForViewport(1180)).toBe(12);
   });
 });

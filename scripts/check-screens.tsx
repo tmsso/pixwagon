@@ -104,6 +104,7 @@ function seedRoom(
     lastError: null,
     fatalError: null,
     configChange: null,
+    returnedFromResults: false,
     // In-game transients: every case starts from a quiet, undisturbed round.
     pending: null,
     prediction: null,
@@ -558,6 +559,39 @@ const screens: ScreenCase[] = [
     expect: ['Done for this round.', 'Waiting for Sam — the next round starts by itself.'],
   },
   {
+    // `13c`, host: back in the waiting room after Rematch, with Ravi away.
+    name: 'Room (waiting after a rematch, host)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom({
+        ...waitingSnapshot,
+        players: [
+          ...waitingSnapshot.players,
+          { id: 'p-ravi', name: 'Ravi', seatIndex: 2, isHost: false, connected: false },
+        ],
+      });
+      seedGame({ returnedFromResults: true });
+    },
+    expect: [
+      'Rematch — same room, new offers. Change the game if you like, then start.',
+      'Ravi left before the rematch. Their seat waits',
+      'Start game',
+    ],
+  },
+  {
+    name: 'Room (waiting after a rematch, guest)',
+    path: '/r/TRAM',
+    routePath: '/r/:code',
+    element: <GameRoute />,
+    setup: () => {
+      seedRoom(waitingSnapshot, { playerId: 'p-sam', isHost: false });
+      seedGame({ returnedFromResults: true });
+    },
+    expect: ['Rematch — you’re back in room TRAM with everyone.', 'Alex starts the game when'],
+  },
+  {
     name: 'Room (ended)',
     path: '/r/TRAM',
     routePath: '/r/:code',
@@ -568,15 +602,19 @@ const screens: ScreenCase[] = [
         status: 'ended',
         boards: { 'p-alex': tramHalf, 'p-sam': tramDone, 'p-kim': tram },
       }),
+    // `13a`: a headline in words, the session in aligned columns, Rematch for
+    // the host. Sam finished the picture; Alex and Kim did not.
     expect: [
-      'Game over',
-      'Final ranking',
-      '1.',
-      'Sam',
-      '1 complete',
-      'Alex (you)',
-      'squares',
+      'Game over · Transportation · same board',
+      'Sam wins',
+      'Ranked by pictures finished, then squares.',
+      '1st',
+      'Kim',
+      'You',
+      '✓ done',
+      'unfinished',
       'Rematch',
+      'Leave room',
     ],
   },
   {
@@ -597,14 +635,19 @@ const screens: ScreenCase[] = [
         },
         { playerId: 'p-sam', isHost: false },
       ),
-    // Alex and Sam each completed one picture; the half boards tie them on
-    // squares too. Kim is away, so flagged as having left.
+    // `13b`: Alex and Sam each completed one picture and the half boards tie
+    // them on squares too; Kim is away, so flagged as having left. Own board:
+    // every cell names its own picture.
     expect: [
-      'Own board · 2 pictures',
-      'tied',
-      'left',
-      '✓ complete',
-      'The host can start a rematch for everyone here.',
+      'Game over · Transportation · own board',
+      'It’s a tie',
+      'You and Alex finished the same pictures with the same number of squares.',
+      'Picture 1',
+      'Picture 2',
+      '1st · tied',
+      'left · 0',
+      '✓ Tram',
+      'Alex can start a rematch. Stay here and you’re in.',
     ],
   },
   {
