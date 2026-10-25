@@ -178,6 +178,8 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
     ...(progress ? { picture: { index: progress.picture, count: progress.pictures } } : {}),
     connection: connectionPill(connection),
     players: <RoomPlayers snapshot={snapshot} me={me} inGame />,
+    // Two players' chips share one row even at 320 px; more need two.
+    playerRows: (snapshot.players.length <= 2 ? 1 : 2) as 1 | 2,
   };
 
   // A joiner's board arrives in the `state` that follows `welcome` (pass 03 `12h`).
@@ -381,6 +383,7 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
           activeCandidateCells={pending ? activeCandidateCells(pending) : []}
           invalid={lastRejection !== null}
           onCellPress={handleCellPress}
+          focusWhen={pending !== null}
         />
         {/* One line under the board, always there (empty when there is nothing
             to say), so what it says never moves the board. While the referee
@@ -435,7 +438,7 @@ function RoomEnded({ snapshot }: { snapshot: RoomSnapshot }) {
   const mode = snapshot.mode === 'own-board' ? 'own board' : 'same board';
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4 md:max-w-3xl">
+    <main className="mx-auto flex min-h-app max-w-md flex-col gap-4 bg-bg p-4 md:max-w-3xl">
       <header className="grid gap-1">
         <p className="font-mono text-xs tracking-widest text-ink-muted uppercase">
           Game over · {pack} · {mode}

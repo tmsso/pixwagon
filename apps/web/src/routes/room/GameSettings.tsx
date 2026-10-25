@@ -111,6 +111,7 @@ export function GameSummary({
 export function GameSheet({ snapshot, onClose }: { snapshot: RoomSnapshot; onClose: () => void }) {
   const configure = useRoomGameStore((state) => state.configure);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const current = MODES.find((m) => m.mode === snapshot.mode) ?? MODES[0]!;
 
   useEffect(() => {
@@ -132,10 +133,31 @@ export function GameSheet({ snapshot, onClose }: { snapshot: RoomSnapshot; onClo
     <div className="fixed inset-0 z-30">
       <div className="absolute inset-0 bg-slate-950/20" aria-hidden onClick={onClose} />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        onKeyDown={(event) => {
+          // `aria-modal` is a promise that nothing behind the sheet is
+          // reachable, so Tab wraps inside it instead of walking out to the
+          // page underneath.
+          if (event.key !== 'Tab') return;
+          const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          );
+          if (!focusable || focusable.length === 0) return;
+          const first = focusable[0]!;
+          const last = focusable[focusable.length - 1]!;
+          const active = document.activeElement;
+          if (event.shiftKey && (active === first || active === titleRef.current)) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && active === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
         aria-labelledby="game-sheet-title"
-        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[78dvh] max-w-md flex-col gap-3 rounded-t-xl border-t border-border bg-surface px-4 pt-2.5 pb-4 shadow-lg"
+        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[78dvh] max-w-md flex-col gap-3 rounded-t-xl border-t border-border bg-surface px-4 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg"
       >
         <span className="mx-auto h-1 w-9 shrink-0 rounded-full bg-border" aria-hidden />
         <h2

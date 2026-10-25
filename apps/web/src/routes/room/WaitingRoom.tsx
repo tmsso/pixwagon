@@ -49,7 +49,7 @@ export function WaitingRoom({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4">
+    <main className="mx-auto flex min-h-app max-w-md flex-col gap-4 bg-bg p-4">
       {returned ? (
         // A rematch is a return, not a restart (note 13, Annotation 32): said
         // once, at the top, to everyone who was watching it happen.

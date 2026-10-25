@@ -36,7 +36,7 @@ export function PackPickerScreen() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4">
+    <main className="mx-auto flex min-h-app max-w-md flex-col gap-4 bg-bg p-4">
       <header className="flex items-center gap-2">
         <Link
           to="/"

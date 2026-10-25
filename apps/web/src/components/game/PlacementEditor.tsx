@@ -144,7 +144,9 @@ export function PlacementEditor({
         </div>
       )}
 
-      <div className="flex gap-2">
+      {/* Pinned to the bottom of the sheet: on a short phone the sheet scrolls,
+          and Place must never be what scrolls away. */}
+      <div className="sticky bottom-0 -mb-1 flex gap-2 bg-surface pb-1">
         <Button size="lg" className="flex-1" disabled={commitDisabled || busy} onClick={onCommit}>
           {busy ? 'Placing…' : commitLabel}
         </Button>
@@ -174,7 +176,7 @@ function ChosenOfferBar({ pending, onSwitch }: { pending: PendingChoice; onSwitc
       <button
         type="button"
         onClick={onSwitch}
-        className="ml-auto rounded text-sm font-medium text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="-mr-2 ml-auto min-h-touch rounded px-2 text-sm font-medium text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         Switch
       </button>

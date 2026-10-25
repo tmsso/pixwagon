@@ -26,7 +26,7 @@ export function JoinGate({
   const picture = packs[0]?.pictures[0];
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 bg-bg p-4">
+    <main className="mx-auto flex min-h-app max-w-md flex-col gap-4 bg-bg p-4">
       <p className="pt-1.5 text-center font-mono text-[15px] font-semibold tracking-tight text-ink">
         Pixwagon
       </p>
