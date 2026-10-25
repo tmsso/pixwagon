@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/Button.tsx';
-import { InstallIcon } from './icons.tsx';
+import { InstallIcon } from '../components/ui/icons.tsx';
 import { isCardVisible, isGhostVisible } from './installState.ts';
 import { usePwaStore } from './usePwaStore.ts';
 

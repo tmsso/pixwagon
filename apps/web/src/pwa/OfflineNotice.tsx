@@ -1,4 +1,4 @@
-import { OfflineIcon } from './icons.tsx';
+import { OfflineIcon } from '../components/ui/icons.tsx';
 
 /**
  * Offline is a state, not an incident (design pass 02 Annotation 16): one

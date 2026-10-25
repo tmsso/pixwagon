@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router';
 import { useSoloGameStore } from '../state/soloGame.ts';
 import { Button } from '../components/ui/Button.tsx';
-import { RefreshIcon } from './icons.tsx';
+import { UpdateBannerContent } from './UpdateBannerContent.tsx';
 import { usePwaStore } from './usePwaStore.ts';
 
 /**
@@ -27,13 +27,16 @@ export function UpdateBanner() {
       role="status"
       className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3"
     >
-      <span className="shrink-0 text-accent-hover">
-        <RefreshIcon size={18} />
-      </span>
-      <p className="flex-1 text-sm text-ink">A new version is ready.</p>
-      <Button size="sm" onClick={applyUpdate}>
-        Reload
-      </Button>
+      {/* "Update", not "Reload": a reload alone keeps serving the old build
+          until the update is accepted (`registerType: 'prompt'`), and pass 03
+          `02g2` shows this same word on a static copy of the banner. */}
+      <UpdateBannerContent
+        action={
+          <Button size="sm" onClick={applyUpdate}>
+            Update
+          </Button>
+        }
+      />
     </div>
   );
 }

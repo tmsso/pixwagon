@@ -10,7 +10,7 @@ import { usePwaStore, type BeforeInstallPromptEvent } from './usePwaStore.ts';
 
 // `registerType: 'prompt'` (vite.config.ts): a new worker installs and waits.
 // `updateSW(true)` is what actually skips-waiting and reloads — handed to the
-// store so the update banner's "Reload" button can call it when it's safe.
+// store so the update banner's "Update" button can call it when it's safe.
 const updateSW = registerSW({
   onNeedRefresh() {
     usePwaStore.getState().setUpdateReady(true);

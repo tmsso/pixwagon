@@ -24,6 +24,30 @@ const SIZE: Record<ButtonSize, string> = {
   lg: 'text-lg px-6 py-3 rounded-lg',
 };
 
+/** The button's look as a class string, so a router `<Link>` or a
+ *  non-interactive stand-in (a picture of a button) can wear it without a
+ *  second copy of these classes drifting from the real thing. */
+export function buttonClasses({
+  variant = 'primary',
+  size = 'md',
+  className = '',
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+} = {}): string {
+  return [
+    // min-h-touch keeps every button reachable one-handed on a phone.
+    'inline-flex min-h-touch items-center justify-center gap-2 border font-medium',
+    'transition-colors duration-fast',
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    'disabled:cursor-not-allowed disabled:opacity-50',
+    VARIANT[variant],
+    SIZE[size],
+    className,
+  ].join(' ');
+}
+
 export function Button({
   variant = 'primary',
   size = 'md',
@@ -36,16 +60,7 @@ export function Button({
   return (
     <button
       type="button"
-      // min-h-touch keeps every button reachable one-handed on a phone.
-      className={[
-        'inline-flex min-h-touch items-center justify-center gap-2 border font-medium',
-        'transition-colors duration-fast',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        VARIANT[variant],
-        SIZE[size],
-        className,
-      ].join(' ')}
+      className={buttonClasses({ variant, size, className })}
       disabled={disabled === true || loading}
       aria-busy={loading || undefined}
       {...rest}
