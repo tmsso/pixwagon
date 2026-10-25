@@ -4,6 +4,7 @@ import type { Board, CellRef, MoveRejection, Roll } from '@pixwagon/game-core';
 import { PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type {
   PlayerPresence,
+  GameMode,
   RoomMode,
   RoomSnapshot,
   ServerErrorCode,
@@ -155,13 +156,42 @@ const SETTLES_PENDING: ReadonlySet<ServerErrorCode> = new Set([
   'bad-message',
 ]);
 
+/** What the host last changed in the waiting room, as the guest saw it happen
+ *  (pass 03 `02i`, note 3). The server only ever sends the current choice, so
+ *  "changed from X" has to be remembered here, from the snapshot the guest was
+ *  holding when the new one arrived. */
+export interface ConfigChange {
+  from: { mode: GameMode; packId: string };
+}
+
+function configChangeAfter(
+  state: Pick<RoomGameSlice, 'snapshot'> & Partial<Pick<RoomGameSlice, 'configChange'>>,
+  next: RoomSnapshot,
+): ConfigChange | null {
+  const prev = state.snapshot;
+  // Only a change seen live, inside one stay in the waiting room, counts: a
+  // first snapshot (joining, reconnecting) or a game starting has no "from".
+  if (next.status !== 'lobby' || !prev || prev.status !== 'lobby') return null;
+  const changed = prev.mode !== next.mode || prev.packId !== next.packId;
+  // The baseline is what the guest was shown before the host started
+  // changing things, and it stays until the game starts: two quick taps
+  // (mode, then pack) read as one change from what they last saw, not as
+  // "from the half-way state".
+  const change: ConfigChange | null =
+    state.configChange ?? (changed ? { from: { mode: prev.mode, packId: prev.packId } } : null);
+  // Changed back to what it was: nothing left to announce.
+  if (change && change.from.mode === next.mode && change.from.packId === next.packId) return null;
+  return change;
+}
+
 /**
  * The pure state-transition function: given what the store currently holds
  * and one inbound server message, what changes. No side effects (no storage,
  * no sockets) so a test can assert on it directly with plain objects.
  */
 export function applyServerMessage(
-  state: Pick<RoomGameSlice, 'snapshot' | 'me'> & Partial<Pick<RoomGameSlice, 'prediction'>>,
+  state: Pick<RoomGameSlice, 'snapshot' | 'me'> &
+    Partial<Pick<RoomGameSlice, 'prediction' | 'configChange'>>,
   message: ServerMessage,
 ): Partial<RoomGameSlice> {
   const meId = state.me?.playerId;
@@ -185,6 +215,7 @@ export function applyServerMessage(
           : state.me,
         prediction: null,
         passPending: false,
+        configChange: configChangeAfter(state, message.state),
       };
 
     case 'presence':
@@ -300,6 +331,9 @@ interface RoomGameSlice {
    *  after this; it can only be later than the server's own stamp, so the
    *  button never shows before the server would accept the skip. */
   roundSeenAt: number | null;
+  /** The host's latest waiting-room change, for guests (`02i`); `null` when
+   *  there is none to show. */
+  configChange: ConfigChange | null;
 }
 
 export interface RoomGameState extends RoomGameSlice {
@@ -360,6 +394,7 @@ const initialSlice: RoomGameSlice = {
   passPending: false,
   lastRejection: null,
   roundSeenAt: null,
+  configChange: null,
 };
 
 function updatePending(

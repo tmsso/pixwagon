@@ -177,11 +177,16 @@ export function startBlockedReason(
   return null;
 }
 
+/** The name guests are told decides things ("Alex starts the game…"). */
+export function hostName(snapshot: RoomSnapshot): string {
+  return snapshot.players.find((p) => p.isHost)?.name ?? 'The host';
+}
+
 /** The waiting room's one line of status under the player list. */
 export function waitingStatus(snapshot: RoomSnapshot): string | null {
   const count = snapshot.players.length;
   if (count >= MAX_PLAYERS) return 'Room is full — six is the most we can tell apart on a board.';
-  if (count <= 1) return 'Waiting for someone to join.';
+  if (count <= 1) return 'Waiting for someone to join. Send them the link, or read out the code.';
   return null;
 }
 
