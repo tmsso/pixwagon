@@ -1,3 +1,10 @@
+import {
+  mirrorPiece as mirrorPending,
+  pickUp as pickUpPending,
+  rotatePiece as rotatePending,
+  selectTile as selectTilePending,
+  undo as undoPending,
+} from './playInput.ts';
 import { create } from 'zustand';
 import { applyMove, createBoard, isComplete, issueRoll } from '@pixwagon/game-core';
 import type { Board, CellRef, Move, MoveRejection, Roll, Seed } from '@pixwagon/game-core';
@@ -74,6 +81,14 @@ export interface SoloGameState {
   start: (config: SoloSessionConfig) => void;
   /** Begins composing a pair or fallback choice for the current round. */
   choose: (kind: 'pair' | 'fallback') => void;
+  /** Pass 04 input model (`playInput.ts`): a tray tile was chosen. */
+  selectTile: (kind: 'pair' | 'fallback', index: number) => void;
+  /** Lifts a staged pair piece off the board, optionally by one of its squares. */
+  pickUp: (index: number, grab?: CellRef) => void;
+  rotatePiece: (index: number) => void;
+  mirrorPiece: (index: number) => void;
+  /** Takes back the most recent thing staged (nothing is sent yet). */
+  undo: () => void;
   setActive: (index: number) => void;
   rotateActive: () => void;
   mirrorActive: () => void;
@@ -164,6 +179,20 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
     set({ pending: kind === 'pair' ? startPair(roll) : startFallback(roll), lastRejection: null });
   },
 
+  selectTile: (kind, index) =>
+    set((state) => ({
+      pending: selectTilePending(state.pending, state.roll, kind, index),
+      lastRejection: null,
+    })),
+  pickUp: (index, grab) =>
+    set((state) => ({
+      pending: updatePending(state.pending, (c) => pickUpPending(c, index, grab)),
+    })),
+  rotatePiece: (index) =>
+    set((state) => ({ pending: updatePending(state.pending, (c) => rotatePending(c, index)) })),
+  mirrorPiece: (index) =>
+    set((state) => ({ pending: updatePending(state.pending, (c) => mirrorPending(c, index)) })),
+  undo: () => set((state) => ({ pending: updatePending(state.pending, undoPending) })),
   setActive: (index) =>
     set((state) => ({ pending: updatePending(state.pending, (c) => setActivePending(c, index)) })),
   rotateActive: () =>

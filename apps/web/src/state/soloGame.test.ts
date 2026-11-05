@@ -216,3 +216,25 @@ function placeAtOrigin(origin: CellRef) {
   const offset = orientedOffsets(piece.pieceId, piece.orientation)[piece.anchor]!;
   state.placeActive({ x: origin.x + offset.dx, y: origin.y + offset.dy });
 }
+
+describe('pass 04 tray actions', () => {
+  it('select a tile, stage, turn in place, undo, then switch offers', () => {
+    useSoloGameStore.getState().start({
+      roomSeed: 'achievability-0',
+      packId: 'transportation',
+      pictureId: 'tram',
+    });
+    const store = () => useSoloGameStore.getState();
+    store().selectTile('pair', 0);
+    expect(store().pending?.kind).toBe('pair');
+    store().placeActive({ x: 3, y: 4 });
+    store().rotatePiece(0);
+    const pending = store().pending;
+    if (pending?.kind !== 'pair') throw new Error('expected the pair');
+    expect(pending.pieces[0].at).toEqual({ x: 3, y: 4 });
+    store().undo();
+    expect(store().pending?.kind === 'pair' && store().pending).toBeTruthy();
+    store().selectTile('fallback', 0);
+    expect(store().pending?.kind).toBe('fallback');
+  });
+});

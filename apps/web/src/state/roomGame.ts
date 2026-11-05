@@ -1,3 +1,10 @@
+import {
+  mirrorPiece as mirrorPending,
+  pickUp as pickUpPending,
+  rotatePiece as rotatePending,
+  selectTile as selectTilePending,
+  undo as undoPending,
+} from './playInput.ts';
 import { create } from 'zustand';
 import { applyMove, fillCells } from '@pixwagon/game-core';
 import type { Board, CellRef, MoveRejection, Roll } from '@pixwagon/game-core';
@@ -388,6 +395,14 @@ export interface RoomGameState extends RoomGameSlice {
    *  room with the same settings. */
   rematch: () => void;
   choose: (kind: 'pair' | 'fallback') => void;
+  /** Pass 04 input model (`playInput.ts`): a tray tile was chosen. */
+  selectTile: (kind: 'pair' | 'fallback', index: number) => void;
+  /** Lifts a staged pair piece off the board, optionally by one of its squares. */
+  pickUp: (index: number, grab?: CellRef) => void;
+  rotatePiece: (index: number) => void;
+  mirrorPiece: (index: number) => void;
+  /** Takes back the most recent thing staged (nothing is sent yet). */
+  undo: () => void;
   setActive: (index: number) => void;
   rotateActive: () => void;
   mirrorActive: () => void;
@@ -496,6 +511,23 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
       lastRejection: null,
     });
   },
+  selectTile: (kind, index) => {
+    const ready = actable(get());
+    if (!ready) return;
+    set((state) => ({
+      pending: selectTilePending(state.pending, ready.roll, kind, index),
+      lastRejection: null,
+    }));
+  },
+  pickUp: (index, grab) =>
+    set((state) => ({
+      pending: updatePending(state.pending, (c) => pickUpPending(c, index, grab)),
+    })),
+  rotatePiece: (index) =>
+    set((state) => ({ pending: updatePending(state.pending, (c) => rotatePending(c, index)) })),
+  mirrorPiece: (index) =>
+    set((state) => ({ pending: updatePending(state.pending, (c) => mirrorPending(c, index)) })),
+  undo: () => set((state) => ({ pending: updatePending(state.pending, undoPending) })),
   setActive: (index) =>
     set((state) => ({ pending: updatePending(state.pending, (c) => setActivePending(c, index)) })),
   rotateActive: () =>
