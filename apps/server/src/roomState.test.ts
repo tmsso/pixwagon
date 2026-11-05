@@ -855,6 +855,7 @@ describe('protocol / game-core enum drift guards (Phase 5)', () => {
       'blob-size-mismatch': true,
       'blob-not-contiguous': true,
       'incomplete-compound-choice': true,
+      'not-last-squares': true,
     } satisfies Record<MoveRejection, true>;
     expect([...moveRejectionSchema.options].sort()).toEqual(Object.keys(reasons).sort());
   });
@@ -1004,5 +1005,47 @@ describe('stampRoundStart', () => {
     expect(stampRoundStart(before, before, 42)).toBe(before);
     const after = { ...before, round: before.round + 1 };
     expect(stampRoundStart(before, after, 42).roundStartedAt).toBe(42);
+  });
+});
+
+describe('last squares and rounds used (D17, protocol 4)', () => {
+  /** `board` with every fillable square filled except the first `leave`. */
+  function leaving(board: Board, leave: number): Board {
+    const open = board.cells.flatMap((cell, i) =>
+      cell === 'fillable' ? [{ x: i % board.size.width, y: Math.floor(i / board.size.width) }] : [],
+    );
+    return fillCells(board, open.slice(leave));
+  }
+
+  it('accepts a finish when no more squares remain than the single totals, and records the rounds', () => {
+    const state = started(['a', 'b']);
+    const roll = currentRoll(state)!;
+    const total = FALLBACK_BLOB_SIZES[roll.fallback].reduce((sum, n) => sum + n, 0);
+    const nearlyDone = {
+      ...state,
+      boards: { ...state.boards, a: leaving(state.boards.a!, total) },
+    };
+    const ruling = submitFill(nearlyDone, 'a', roll.round, { kind: 'finish' });
+    expect(ruling.ok).toBe(true);
+    if (!ruling.ok) return;
+    expect(ruling.cells).toHaveLength(total);
+    expect(isComplete(ruling.state.boards.a!)).toBe(true);
+    expect(ruling.state.roundsUsed).toEqual([{ a: 1 }]);
+    expect(buildSnapshot(ruling.state, []).roundsUsed).toEqual([{ a: 1 }]);
+  });
+
+  it('refuses a finish with too many squares left', () => {
+    const state = started(['a', 'b']);
+    const ruling = submitFill(state, 'a', currentRoll(state)!.round, { kind: 'finish' });
+    expect(ruling).toEqual({ ok: false, rejection: 'not-last-squares' });
+  });
+
+  it('pads storage from before protocol 4 so stages stay aligned with history', () => {
+    const state = {
+      ...started(['a']),
+      history: [{}],
+      roundsUsed: undefined,
+    } as unknown as RoomState;
+    expect(buildSnapshot(state, []).roundsUsed).toEqual([{}, {}]);
   });
 });

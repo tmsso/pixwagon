@@ -149,8 +149,33 @@ export function applyMove(board: Board, roll: Roll, move: Move): MoveResult {
   if (move.choice.kind === 'pair') {
     return applyPairMove(board, roll, move.choice.placements);
   }
+  if (move.choice.kind === 'finish') {
+    if (!lastSquaresAvailable(board, roll.fallback)) return reject('not-last-squares');
+    const cells: CellRef[] = [];
+    board.cells.forEach((cell, index) => {
+      if (cell === 'fillable') {
+        cells.push({ x: index % board.size.width, y: Math.floor(index / board.size.width) });
+      }
+    });
+    return { ok: true, board: withFilled(board, cells) };
+  }
 
   return applyFallbackMove(board, roll.fallback, move.choice.blobs);
+}
+
+/**
+ * D17, "last squares" (decided 2026-11-05): may the single fill everything
+ * that is left? Yes when at least one square remains and no more remain than
+ * the face's total. "No more than", not "fewer than": the case that prompted
+ * it is two lone holes and a `2` — two squares, total two — which the normal
+ * rule (one connected group of two) can never fill. Without this rule the end
+ * of a picture is spent waiting for a `1`: a simulation of 360 games found a
+ * median of 4 rounds (10 at the 90th percentile) lost that way.
+ */
+export function lastSquaresAvailable(board: Board, face: FallbackFaceId): boolean {
+  const remaining = board.cells.filter((cell) => cell === 'fillable').length;
+  const total = FALLBACK_BLOB_SIZES[face].reduce((sum, size) => sum + size, 0);
+  return remaining > 0 && remaining <= total;
 }
 
 /** A placement `legalCellsFor` found: this piece fits here, in this orientation. */

@@ -138,6 +138,12 @@ export interface RankedPlayer {
    *  that gap is what put them below (same pictures finished, different
    *  squares); `null` otherwise (pass 03 note 11, "4 fewer squares"). */
   tieBreak: number | null;
+  /** D17 (protocol 4): rounds taken over the pictures this player completed —
+   *  the tiebreak between players with as many pictures, fewer first. */
+  roundsUsed: number;
+  /** How many more rounds than the player just above, when that is what put
+   *  them below; `null` otherwise. */
+  roundsBehind: number | null;
   total: number;
   /** One entry per picture of the session, oldest first, for `BoardCompare`.
    *  `null` for a picture played before this player joined. */
@@ -169,26 +175,41 @@ export function roomRanking(snapshot: RoomSnapshot): RankedPlayer[] {
       points: scores.reduce((sum, score) => sum + score.points, 0),
       filled: scores.reduce((sum, score) => sum + score.filled, 0),
       total: scores.reduce((sum, score) => sum + score.total, 0),
+      roundsUsed: (snapshot.roundsUsed ?? []).reduce(
+        (sum, stage) => sum + (stage[playerId] ?? 0),
+        0,
+      ),
       boards,
     };
   });
+  // Completed pictures, then (D17) fewer rounds to complete them, then filled
+  // squares, then seat. A snapshot from before protocol 4 has no `roundsUsed`:
+  // every row then counts 0 and the order is exactly the old one.
   rows.sort(
     (a, b) =>
-      b.completedPictures - a.completedPictures || b.filled - a.filled || a.seatIndex - b.seatIndex,
+      b.completedPictures - a.completedPictures ||
+      a.roundsUsed - b.roundsUsed ||
+      b.filled - a.filled ||
+      a.seatIndex - b.seatIndex,
   );
   const sameScore = (a: (typeof rows)[number], b: (typeof rows)[number]) =>
-    a.completedPictures === b.completedPictures && a.filled === b.filled;
+    a.completedPictures === b.completedPictures &&
+    a.roundsUsed === b.roundsUsed &&
+    a.filled === b.filled;
   const ranked: RankedPlayer[] = [];
   for (const [index, row] of rows.entries()) {
     const prev = ranked[index - 1];
     const next = rows[index + 1];
     // A tie shares the rank of the first player in it ("1, 1, 3").
     const tiedWithPrev = prev !== undefined && sameScore(prev, row);
-    const decidedBySquares =
+    const samePictures =
       prev !== undefined && !tiedWithPrev && prev.completedPictures === row.completedPictures;
+    const decidedByRounds = samePictures && prev.roundsUsed !== row.roundsUsed;
+    const decidedBySquares = samePictures && !decidedByRounds;
     ranked.push({
       ...row,
       tieBreak: decidedBySquares ? prev.filled - row.filled : null,
+      roundsBehind: decidedByRounds ? row.roundsUsed - prev.roundsUsed : null,
       rank: tiedWithPrev ? prev.rank : index + 1,
       tied: tiedWithPrev || (next !== undefined && sameScore(row, next)),
     });
@@ -294,7 +315,7 @@ export function resultsHeadline(
   pictures: number,
 ): { title: string; sub: string } {
   const top = ranking.filter((r) => r.rank === 1);
-  const rule = 'Ranked by pictures finished, then squares.';
+  const rule = 'Ranked by pictures finished, then fewest rounds, then squares.';
   if (top.length === 0) return { title: 'Game over', sub: rule };
   if (top.length > 1) {
     const names = [...top]
@@ -302,7 +323,7 @@ export function resultsHeadline(
       .map((r) => (r.playerId === meId ? 'You' : r.name));
     return {
       title: 'It’s a tie',
-      sub: `${joinNames(names)} finished the same pictures with the same number of squares.`,
+      sub: `${joinNames(names)} finished the same pictures in as many rounds, with the same number of squares.`,
     };
   }
   const winner = top[0]!;

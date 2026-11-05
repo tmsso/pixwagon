@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
-import { scoreBoard } from '@pixwagon/game-core';
+import { lastSquaresAvailable, scoreBoard } from '@pixwagon/game-core';
 import type { Board, FallbackFaceId, PieceId, Roll } from '@pixwagon/game-core';
 import { SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
@@ -430,6 +430,11 @@ function RoomPlayTable({
           }}
           problem={problemText(problem === 'incomplete' ? null : problem)}
           pass={canPass ? { onPass: store.pass } : null}
+          lastSquares={
+            canAct && lastSquaresAvailable(board, roll.fallback as FallbackFaceId)
+              ? { count: score.total - score.filled, onFinish: store.finish }
+              : null
+          }
         />
       </div>
     );

@@ -19,7 +19,7 @@ import { z } from 'zod';
  * join; a server seeing a version it does not speak refuses the connection with
  * a clear error rather than half-working.
  */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /*
  * Version history — bump on any change an older peer would misread:
@@ -28,6 +28,11 @@ export const PROTOCOL_VERSION = 3;
  *      broadcast, host `skip-waiting`. The bump is what turns an installed PWA
  *      still running a v1 build into the "reload to update" screen instead of a
  *      room that silently stalls after round 1 against the Phase 5 server.
+ *  3 — Phase 6 (2026-10-22): configure, own-board, picture cycling, rematch.
+ *  4 — Pass 04, D17 (2026-11-05): the `finish` move ("last squares"), the
+ *      `not-last-squares` rejection and `roundsUsed` in the snapshot. A
+ *      protocol-3 server would refuse a `finish` it can't parse, so the two
+ *      must not be mixed: the worker deploys first.
  */
 
 /**
@@ -155,6 +160,7 @@ export const moveRejectionSchema = z.enum([
   'blob-size-mismatch',
   'blob-not-contiguous',
   'incomplete-compound-choice',
+  'not-last-squares',
 ]);
 
 /** One player's score, mirroring game-core's `PlayerScore`. */
@@ -253,6 +259,14 @@ export const roomSnapshotSchema = z.object({
   /** Every finished stage's boards, oldest first — the results screen and
    *  `BoardCompare` read the whole session from `[...history, boards]`. */
   history: z.array(z.record(z.string(), boardSchema)),
+  /**
+   * D17's tiebreak: for each stage (`[...history, current]`, same order), the
+   * rounds each player took to complete that picture — only players who
+   * completed it appear. Fewer rounds ranks higher between players with the
+   * same number of completed pictures. Optional so a snapshot from a room
+   * started before protocol 4 still parses.
+   */
+  roundsUsed: z.array(z.record(z.string(), z.number().int().positive())).optional(),
   /** Players who have filled or passed in the round in play. */
   acted: z.array(z.string()),
 });
@@ -294,6 +308,8 @@ export const moveChoiceSchema = z.discriminatedUnion('kind', [
     kind: z.literal('fallback'),
     blobs: z.array(z.array(cellRefSchema).min(1).max(3)).min(1).max(2),
   }),
+  // D17 "last squares": no cells — the referee fills whatever is left.
+  z.object({ kind: z.literal('finish') }),
 ]);
 
 /** A fill's `choice` as the wire carries it (`pieceId` an unbranded string). */

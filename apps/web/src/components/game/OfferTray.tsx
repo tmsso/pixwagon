@@ -39,8 +39,10 @@ export interface OfferTrayProps {
   pass?: { onPass: () => void } | null;
   /** Wide layout: a taller, single-column tray in the side panel. */
   wide?: boolean;
-  /** Extra content above the action bar (the "last squares" note, hints). */
+  /** Extra content above the action bar (hints). */
   note?: ReactNode;
+  /** D17 "last squares": the single can fill every square left. */
+  lastSquares?: { count: number; onFinish: () => void } | null;
 }
 
 const PIECE_NAMES: Record<PieceId, string> = {
@@ -78,6 +80,7 @@ export function OfferTray({
   pass,
   wide = false,
   note,
+  lastSquares = null,
 }: OfferTrayProps) {
   const chosen = pending?.kind ?? null;
   const sizes = FALLBACK_BLOB_SIZES[fallback];
@@ -197,6 +200,20 @@ export function OfferTray({
       </div>
 
       {note}
+
+      {lastSquares ? (
+        // handoff-04 `04f`: the rule names itself when it applies, and one
+        // press does it — there is nothing to aim.
+        <div className="flex items-center gap-3 rounded-xl border border-accent bg-accent/10 px-3 py-2">
+          <p className="flex-1 text-sm text-ink">
+            <b className="font-semibold">Last squares</b> — the single fills the{' '}
+            {lastSquares.count === 1 ? 'square' : `${lastSquares.count} squares`} left.
+          </p>
+          <Button onClick={lastSquares.onFinish} disabled={off}>
+            Fill {lastSquares.count === 1 ? 'it' : `all ${lastSquares.count}`}
+          </Button>
+        </div>
+      ) : null}
 
       <p className="min-h-5 text-center text-sm text-ink" role="status">
         {problem ?? (holding ? '' : 'Pick a piece, then drop it on the picture.')}

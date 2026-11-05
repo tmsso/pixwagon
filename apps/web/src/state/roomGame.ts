@@ -7,7 +7,7 @@ import {
 } from './playInput.ts';
 import { create } from 'zustand';
 import { applyMove, fillCells } from '@pixwagon/game-core';
-import type { Board, CellRef, MoveRejection, Roll } from '@pixwagon/game-core';
+import type { Board, CellRef, MoveChoice, MoveRejection, Roll } from '@pixwagon/game-core';
 import { PROTOCOL_VERSION } from '@pixwagon/protocol';
 import type {
   PlayerPresence,
@@ -414,6 +414,10 @@ export interface RoomGameState extends RoomGameSlice {
    *  own function — and send it as a `fill`. A choice this client already
    *  knows is illegal is never sent; it is shown as rejected right away. */
   commit: () => void;
+  /** D17 "last squares": the single fills everything that is left. */
+  finish: () => void;
+  /** Predicts, then sends, one move (commit and finish both end here). */
+  submitChoice: (choice: MoveChoice) => void;
   pass: () => void;
   skipWaiting: () => void;
   /** Applies one transport event. Exposed as a store action — rather than a
@@ -550,10 +554,17 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
 
   commit: () => {
     const state = get();
-    const ready = actable(state);
-    if (!ready || !state.me || !state.pending || !isPendingComplete(state.pending)) return;
+    if (!state.pending || !isPendingComplete(state.pending)) return;
+    get().submitChoice(toMoveChoice(state.pending));
+  },
 
-    const choice = toMoveChoice(state.pending);
+  finish: () => get().submitChoice({ kind: 'finish' }),
+
+  submitChoice: (choice) => {
+    const state = get();
+    const ready = actable(state);
+    if (!ready || !state.me) return;
+
     const round = ready.roll.round;
     const predicted = applyMove(ready.board, ready.roll, {
       playerId: state.me.playerId,
@@ -579,7 +590,7 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
       pending: null,
       lastRejection: null,
       skipped: false,
-      prediction: { round, cells, sheet: state.pending },
+      prediction: { round, cells, ...(state.pending ? { sheet: state.pending } : {}) },
     });
     // game-core's `MoveChoice` marks its arrays `readonly`; the wire type does
     // not. Same data, so the cast only drops the modifier.

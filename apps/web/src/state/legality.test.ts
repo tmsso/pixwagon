@@ -31,8 +31,15 @@ describe('fallbackHasLegalPlacement', () => {
   });
 
   it('is false when no region is big enough', () => {
-    const b = board(2, 1, ['fillable', 'blank']);
+    // Three lone squares: more than a 2 totals, so "last squares" (D17)
+    // doesn't apply, and no two of them touch.
+    const b = board(5, 1, ['fillable', 'blank', 'fillable', 'blank', 'fillable']);
     expect(fallbackHasLegalPlacement(b, '2')).toBe(false);
+  });
+
+  it('is true for the last squares (D17): two lone holes and a 2', () => {
+    const b = board(3, 1, ['fillable', 'blank', 'fillable']);
+    expect(fallbackHasLegalPlacement(b, '2')).toBe(true);
   });
 
   it('is true for a compound face when a region covers each required size', () => {
@@ -41,18 +48,35 @@ describe('fallbackHasLegalPlacement', () => {
   });
 
   it('is false for a compound face when nothing meets the larger required size', () => {
-    const b = board(1, 1, ['fillable']);
+    // Four lone squares: more than 1+2 totals, and no two touch.
+    const b = board(7, 1, [
+      'fillable',
+      'blank',
+      'fillable',
+      'blank',
+      'fillable',
+      'blank',
+      'fillable',
+    ]);
     expect(fallbackHasLegalPlacement(b, '1+2')).toBe(false);
   });
 
-  it('is false for a compound face when only one region exists and it is too small for both blobs at once — a component-size-only check gets this wrong', () => {
-    // One connected region of exactly 2 cells "individually" clears both the
-    // >=1 and >=2 checks a size-only heuristic would run, but 1+2 needs 3
-    // disjoint cells total and only 2 exist anywhere on the board. Found via
-    // a live seeded playthrough (docs/mechanics-correction.md's fallback
-    // rules) before this exact check replaced the earlier approximation.
-    const b = board(2, 1, ['fillable', 'fillable']);
-    expect(fallbackHasLegalPlacement(b, '1+2')).toBe(false);
+  it('is false for a compound face whose blobs fit one at a time but not together — a component-size-only check gets this wrong', () => {
+    // A run of 3 and two lone squares. Each 2 of a 2+2 fits in the run on
+    // its own, so a size-only heuristic says yes; together they need 4
+    // squares the run doesn't have. Five squares remain, more than the 2+2's
+    // four, so D17's last squares don't apply either. (Pre-D17 this test used
+    // a lone 2-region against a 1+2, which is now the last squares.)
+    const b = board(7, 1, [
+      'fillable',
+      'fillable',
+      'fillable',
+      'blank',
+      'fillable',
+      'blank',
+      'fillable',
+    ]);
+    expect(fallbackHasLegalPlacement(b, '2+2')).toBe(false);
   });
 
   it('is true for a compound face split across two disjoint regions, each exactly the right size', () => {

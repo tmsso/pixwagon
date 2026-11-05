@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createBoard, isComplete } from './board.js';
-import { applyMove, legalCellsFor } from './moves.js';
+import { applyMove, lastSquaresAvailable, legalCellsFor } from './moves.js';
 import { issueRoll } from './roll.js';
 import { cellsAt, getPiece } from './shapes.js';
 import type { PieceId } from './shapes.js';
 import { FALLBACK_BLOB_SIZES } from './types.js';
-import type { Board, CellRef, CellState, Move, Roll } from './types.js';
+import type { Board, CellRef, CellState, FallbackFaceId, Move, Roll } from './types.js';
 
 function board(width: number, height: number, overrides: Record<string, CellState> = {}): Board {
   const cells: CellState[] = [];
@@ -513,5 +513,51 @@ describe('Phase 1 accept: a full board can be completed start to finish', () => 
     }
 
     expect(isComplete(current)).toBe(true);
+  });
+});
+
+describe('last squares (D17)', () => {
+  /** 5×3, all filled except (1,1) and (3,1): the owner's two-lone-holes board. */
+  function twoHoles(): Board {
+    const cells: CellState[] = Array.from({ length: 15 }, () => 'filled');
+    cells[6] = 'fillable';
+    cells[8] = 'fillable';
+    return { size: { width: 5, height: 3 }, packId: 't', pictureId: 't', cells };
+  }
+  const roll = (fallback: FallbackFaceId): Roll => ({
+    round: 0,
+    seed: 's',
+    pair: ['monomino', 'domino'],
+    fallback,
+  });
+  const finish = { playerId: 'p', round: 0, choice: { kind: 'finish' as const } };
+
+  it('a 2 fills two lone holes (no more remain than its total)', () => {
+    const result = applyMove(twoHoles(), roll('2'), finish);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(isComplete(result.board)).toBe(true);
+    expect(lastSquaresAvailable(twoHoles(), '2')).toBe(true);
+  });
+
+  it('a 1 cannot finish two squares', () => {
+    expect(applyMove(twoHoles(), roll('1'), finish)).toEqual({
+      ok: false,
+      reason: 'not-last-squares',
+    });
+  });
+
+  it('is not available with more squares left than the total, nor on a full board', () => {
+    const open = createBoard('transportation', 'tram');
+    expect(lastSquaresAvailable(open, '1+3')).toBe(false);
+    const done = applyMove(twoHoles(), roll('2'), finish);
+    if (!done.ok) throw new Error('unreachable');
+    expect(lastSquaresAvailable(done.board, '1+3')).toBe(false);
+  });
+
+  it('checks the round like any move', () => {
+    expect(applyMove(twoHoles(), roll('2'), { ...finish, round: 1 })).toEqual({
+      ok: false,
+      reason: 'wrong-round',
+    });
   });
 });

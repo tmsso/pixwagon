@@ -194,6 +194,25 @@ Roll | null, hostId: string | null, players: PlayerPresence[] }`. `currentRoll`
 - **Storage written by protocol 2** loads through `normaliseRoom`. A game in
   progress becomes a one-picture session (`pictureOrder: [pictureId]`).
 
+## Decided for protocol 4 (2026-11-05, pass 04 — D17)
+
+- **`fill.choice` gains `{ kind: 'finish' }`**, "last squares": when at least
+  one fillable square remains and no more remain than the round's single
+  totals, taking the single fills all of them, however they are split. It
+  carries no cells — the board decides which — so a tampered client can only
+  ask "may I finish now?", which game-core's `lastSquaresAvailable` answers.
+  "No more than", not "fewer than": two lone holes against a `2` is the case
+  that prompted the rule.
+- **`fill-rejected.reason` gains `not-last-squares`.**
+- **`RoomSnapshot.roundsUsed`** (optional, one record per stage in
+  `[...history, current]` order): rounds each player took to complete that
+  picture, recorded by the fill that completes it. Ranking breaks a tie on
+  completed pictures by fewer total rounds, then squares. Storage from
+  protocol 3 has none; `stageRounds` pads it so stages stay aligned.
+- **Deploy order:** the worker first. A protocol-3 worker can't parse
+  `finish`, and installed protocol-3 clients get "This room runs a newer
+  version" until they accept the update banner.
+
 ## Not yet decided
 
 - Per-socket message rate limiting (deferred: the free tier caps rather than
