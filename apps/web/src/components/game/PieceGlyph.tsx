@@ -3,6 +3,8 @@ export interface PieceGlyphProps {
   cells: readonly { x: number; y: number }[];
   cellSize?: number;
   label?: string;
+  /** `muted` draws the squares grey — a dimmed tray tile (pass 04). */
+  tone?: 'accent' | 'muted';
 }
 
 /**
@@ -11,7 +13,7 @@ export interface PieceGlyphProps {
  * is Phase 1 game-core work (docs/mechanics-correction.md); this component
  * just draws whatever cell-offset list it's given.
  */
-export function PieceGlyph({ cells, cellSize = 14, label }: PieceGlyphProps) {
+export function PieceGlyph({ cells, cellSize = 14, label, tone = 'accent' }: PieceGlyphProps) {
   if (cells.length === 0) return null;
 
   const minX = Math.min(...cells.map((c) => c.x));
@@ -42,7 +44,11 @@ export function PieceGlyph({ cells, cellSize = 14, label }: PieceGlyphProps) {
             style={{
               width: cellSize,
               height: cellSize,
-              background: isFilled ? 'var(--color-accent)' : 'transparent',
+              background: isFilled
+                ? tone === 'muted'
+                  ? 'var(--color-ink-muted)'
+                  : 'var(--color-accent)'
+                : 'transparent',
               borderRadius: 2,
             }}
           />

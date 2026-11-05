@@ -138,6 +138,7 @@ export function OfferTray({
                 label={`${PIECE_NAMES[pieceId]} (${getPiece(pieceId).cells.length})`}
                 state={state}
                 dimmed={chosen === 'fallback'}
+                large={wide}
                 disabled={off}
                 status={
                   state === 'held' ? 'In hand' : state === 'staged' ? 'On the board' : undefined
@@ -145,7 +146,11 @@ export function OfferTray({
                 onKeyboardSelect={() => onSelect('pair', index)}
                 {...handlers('pair', index)}
               >
-                <PieceGlyph cells={view.cells} cellSize={glyphCell} />
+                <PieceGlyph
+                  cells={view.cells}
+                  cellSize={glyphCell}
+                  tone={chosen === 'fallback' ? 'muted' : 'accent'}
+                />
               </PieceTile>
             );
           })}
@@ -165,6 +170,7 @@ export function OfferTray({
                 label={`${size} connected square${size === 1 ? '' : 's'}`}
                 state={state}
                 dimmed={chosen === 'pair'}
+                large={wide}
                 disabled={off}
                 status={
                   state === 'done'
@@ -178,7 +184,12 @@ export function OfferTray({
                 onKeyboardSelect={() => onSelect('fallback', index)}
                 {...handlers('fallback', index)}
               >
-                <BlobRun size={size} filled={filled} cellSize={glyphCell} />
+                <BlobRun
+                  size={size}
+                  filled={filled}
+                  cellSize={glyphCell}
+                  tone={chosen === 'pair' ? 'muted' : 'ink'}
+                />
               </PieceTile>
             );
           })}

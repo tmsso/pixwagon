@@ -20,6 +20,8 @@ export interface PieceTileProps {
   /** Keyboard selection. A pointer press selects on pointer-down instead, so
    *  a click that follows a drag can't undo the drop (see OfferTray). */
   onKeyboardSelect?: () => void;
+  /** The wide layout's bigger tile. */
+  large?: boolean;
 }
 
 /**
@@ -40,13 +42,19 @@ export function PieceTile({
   onPointerUp,
   onPointerCancel,
   onKeyboardSelect,
+  large = false,
 }: PieceTileProps) {
+  // handoff-04 "Tray tiles": held lifts 3px with a 2px accent-hover ring;
+  // staged is a dashed outline with an "on board" pill; dimmed is `bg` with
+  // grey squares (the glyph's `tone`, set by the tray).
   const tone =
     state === 'held'
-      ? 'border-accent bg-accent/10 shadow-md ring-2 ring-accent'
+      ? '-translate-y-[3px] border-accent bg-accent/10 shadow-md ring-2 ring-accent-hover'
       : state === 'staged' || state === 'done'
-        ? 'border-border bg-surface-sunken'
-        : 'border-border bg-surface hover:border-accent hover:bg-accent/5';
+        ? 'border-dashed border-accent bg-surface'
+        : dimmed
+          ? 'border-border bg-bg'
+          : 'border-border bg-surface hover:border-accent hover:bg-accent/5';
   return (
     <button
       type="button"
@@ -62,16 +70,22 @@ export function PieceTile({
         if (event.detail === 0) onKeyboardSelect?.();
       }}
       className={[
-        'relative flex min-h-touch min-w-touch touch-none flex-col items-center justify-center gap-1.5 rounded-lg border px-3 py-2 select-none',
-        'cursor-grab transition-[colors,opacity,box-shadow] duration-fast active:cursor-grabbing',
+        // At least 52px (60 in the wide panel), above --spacing-touch.
+        'relative flex min-h-13 min-w-13 touch-none flex-col items-center justify-center gap-1.5 rounded-lg border px-3 py-2 select-none',
+        large ? 'min-h-15 min-w-15' : '',
+        'cursor-grab transition-[colors,opacity,box-shadow,translate] duration-fast active:cursor-grabbing',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
         'disabled:cursor-not-allowed disabled:opacity-40',
-        dimmed ? 'opacity-55' : '',
+        dimmed ? 'opacity-70' : '',
         tone,
       ].join(' ')}
     >
       {children}
-      {status ? (
+      {state === 'staged' || state === 'done' ? (
+        <span className="rounded-full bg-accent px-1.5 py-px text-[0.625rem] leading-tight font-medium text-accent-ink">
+          {state === 'staged' ? 'on board' : 'painted'}
+        </span>
+      ) : status ? (
         <span
           className={[
             'text-xs whitespace-nowrap',
@@ -79,14 +93,6 @@ export function PieceTile({
           ].join(' ')}
         >
           {status}
-        </span>
-      ) : null}
-      {state === 'staged' || state === 'done' ? (
-        <span
-          aria-hidden
-          className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-accent text-[0.6rem] leading-none text-accent-ink"
-        >
-          ✓
         </span>
       ) : null}
     </button>
@@ -101,17 +107,22 @@ export function BlobRun({
   size,
   filled = 0,
   cellSize = 14,
+  tone = 'ink',
 }: {
   size: number;
   filled?: number;
   cellSize?: number;
+  tone?: 'ink' | 'muted';
 }) {
   return (
     <span className="flex gap-0.5" aria-hidden>
       {Array.from({ length: size }, (_, i) => (
         <span
           key={i}
-          className={['rounded-[2px]', i < filled ? 'bg-accent' : 'bg-ink'].join(' ')}
+          className={[
+            'rounded-[2px]',
+            i < filled ? 'bg-accent' : tone === 'muted' ? 'bg-ink-muted' : 'bg-ink',
+          ].join(' ')}
           style={{ width: cellSize, height: cellSize }}
         />
       ))}

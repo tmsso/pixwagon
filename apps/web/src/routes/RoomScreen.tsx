@@ -22,6 +22,7 @@ import { roomSocketUrl } from '../net/roomOrigin.ts';
 import { loadDisplayName, normaliseName, saveDisplayName } from '../state/displayName.ts';
 import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
 import { hasStaged } from '../state/playInput.ts';
+import { pictureFillColors } from '../state/pictureColors.ts';
 import { boardHint } from '../state/playHints.ts';
 import { ShortcutLegend } from '../components/game/ShortcutLegend.tsx';
 import {
@@ -501,6 +502,9 @@ function RoomPlayTable({
         candidateCells={overlay}
         activeCandidateCells={pending ? activeCandidateCells(pending) : []}
         invalid={lastRejection !== null}
+        fillColors={pictureFillColors(board.packId, board.pictureId)}
+        complete={done}
+        checking={prediction !== null}
         {...controls.board}
       />
     </PlayTable>

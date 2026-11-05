@@ -1,4 +1,5 @@
 import type { PlayerPattern } from './tokens.ts';
+import { luma } from '../state/pictureColors.ts';
 
 /**
  * Canvas port of `patternStyle` (patterns.ts) — same hatch families, drawn with
@@ -99,5 +100,39 @@ export function paintCellFill(
     }
   }
 
+  ctx.restore();
+}
+
+/**
+ * A filled square in the picture's own colour (pass 04, D19), with a 45°
+ * hatch as texture so a filled square never differs from an open one by
+ * colour alone: 16% white on most swatches, 7% ink on light ones (luma over
+ * 200, like the Tram's windows) where white would vanish. `textured: false`
+ * drops the hatch — the finished picture shows clean (handoff-04).
+ */
+export function paintPictureFill(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  hex: string,
+  textured: boolean,
+): void {
+  ctx.fillStyle = hex;
+  ctx.fillRect(x, y, size, size);
+  if (!textured || size < 8) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, size, size);
+  ctx.clip();
+  ctx.strokeStyle = luma(hex) > 200 ? 'rgba(23, 28, 33, 0.07)' : 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = Math.max(1, size / 10);
+  const period = Math.max(4, size / 4);
+  for (let k = -size; k < size * 2; k += period) {
+    ctx.beginPath();
+    ctx.moveTo(x + k, y + size);
+    ctx.lineTo(x + k + size, y);
+    ctx.stroke();
+  }
   ctx.restore();
 }

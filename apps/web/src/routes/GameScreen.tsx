@@ -16,6 +16,7 @@ import { pendingProblem, problemText } from '../state/placement.ts';
 import { boardHint } from '../state/playHints.ts';
 import { ShortcutLegend } from '../components/game/ShortcutLegend.tsx';
 import { hasStaged } from '../state/playInput.ts';
+import { pictureFillColors } from '../state/pictureColors.ts';
 import {
   SOLO_PLAYER_ID,
   activeCandidateCells,
@@ -158,6 +159,8 @@ export function GameScreen() {
         candidateCells={pending ? candidateCells(pending) : []}
         activeCandidateCells={pending ? activeCandidateCells(pending) : []}
         invalid={lastRejection !== null}
+        fillColors={pictureFillColors(board.packId, board.pictureId)}
+        complete={!playing}
         {...controls.board}
       />
     </PlayTable>
