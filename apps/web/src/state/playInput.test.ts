@@ -64,6 +64,13 @@ describe('holding and staging', () => {
     expect(candidateCells(again)).toEqual(expect.arrayContaining([{ x: 3, y: 3 }, grabbed]));
   });
 
+  it('turning the staged piece keeps the other one in hand', () => {
+    let choice = placeActive(startPair(roll), { x: 2, y: 2 });
+    choice = rotatePiece(choice, 0);
+    choice = mirrorPiece(choice, 0);
+    expect(heldPiece(choice)?.pieceId).toBe('tromino-l');
+  });
+
   it('rotate and mirror act on the named piece and leave the other alone', () => {
     let choice = placeActive(startPair(roll), { x: 2, y: 2 });
     const before = candidateCells(choice);

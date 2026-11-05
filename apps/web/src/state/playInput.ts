@@ -2,10 +2,8 @@ import { cellAt } from '@pixwagon/game-core';
 import type { Board, CellRef, Roll } from '@pixwagon/game-core';
 import {
   candidateCells,
-  mirrorActivePiece,
   orientedOffsets,
   pieceCellsAt,
-  rotateActivePiece,
   setActive,
   stagedPieceCells,
   startFallback,
@@ -88,14 +86,32 @@ export function selectTile(
   return setActive(current, index);
 }
 
+function transformPiece(
+  choice: PendingChoice,
+  index: number,
+  fn: (orientation: PendingPiece['orientation']) => PendingPiece['orientation'],
+): PendingChoice {
+  if (choice.kind !== 'pair') return choice;
+  const which = index === 1 ? 1 : 0;
+  const pieces = choice.pieces.map((p, i) =>
+    i === which ? { ...p, orientation: fn(p.orientation) } : p,
+  ) as [PendingPiece, PendingPiece];
+  // Which piece is in hand does not change: turning the staged piece with a
+  // tap must not take the other one out of the player's hand.
+  return { ...choice, pieces };
+}
+
 /** Turns piece `index` (held or staged) a quarter clockwise around its handle. */
 export function rotatePiece(choice: PendingChoice, index: number): PendingChoice {
-  return rotateActivePiece(setActive(choice, index));
+  return transformPiece(choice, index, (o) => ({
+    rotation: ((o.rotation + 90) % 360) as PendingPiece['orientation']['rotation'],
+    mirrored: o.mirrored,
+  }));
 }
 
 /** Flips piece `index` (held or staged) around its handle. */
 export function mirrorPiece(choice: PendingChoice, index: number): PendingChoice {
-  return mirrorActivePiece(setActive(choice, index));
+  return transformPiece(choice, index, (o) => ({ ...o, mirrored: !o.mirrored }));
 }
 
 /**

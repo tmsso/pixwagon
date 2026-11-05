@@ -376,14 +376,15 @@ const screens: ScreenCase[] = [
     expect: [
       'TRAM',
       'Round 3',
-      'Connected',
+      // Pass 04: the play table — a way home, the tray's own prompt.
+      'aria-label="Home"',
       'The pair',
       'The single',
       'You',
       'Kim',
       'placing',
       'away',
-      'the pair</b> or',
+      'Pick a piece, then drop it on the picture.',
     ],
   },
   {
@@ -396,8 +397,9 @@ const screens: ScreenCase[] = [
     expect: ['Sam', '0%', 'Your own picture — everyone gets the same offers.'],
   },
   {
-    // `12g`: after Place, the sheet stays up, held and disabled, "Placing…".
-    name: 'Room (game, checking with the room: sheet held)',
+    // `12g`, reworked by pass 04: after ✓ Place the tray stays up, dimmed and
+    // inert, "Placing…", with the sent move still in it.
+    name: 'Room (game, checking with the room: tray held)',
     path: '/r/TRAM',
     routePath: '/r/:code',
     element: <GameRoute />,
@@ -415,7 +417,7 @@ const screens: ScreenCase[] = [
         },
       });
     },
-    expect: ['Placing…', 'inert', 'Checking with the room…', 'Take back'],
+    expect: ['Placing…', 'inert', 'Checking with the room…', 'aria-label="Undo"', 'Painted'],
   },
   {
     // `03g`: the referee said no. Never scolding.
@@ -485,12 +487,11 @@ const screens: ScreenCase[] = [
         currentRoll: { ...playingSnapshot.currentRoll!, round: 10 },
         history: [{ 'p-alex': tramDone, 'p-sam': tramHalf, 'p-kim': tram }],
       }),
-    // The header marker is squares plus "2 of 3", with the full phrase as
-    // its accessible name (pass 03 note 8); the strip above the board reports
-    // the picture just played, in words (`12i`, note 9).
+    // Pass 04's header has room for the words (pass 03 note 8 drew squares
+    // plus "2 of 3" for want of it); the picture card reports the picture
+    // just played, in words (`12i`, note 9).
     expect: [
-      'aria-label="Picture 2 of 3"',
-      '2 of 3',
+      'Picture 2 of 3',
       'Round 1 of 40',
       'Picture 1 · Tram',
       'Complete · 100 points',
