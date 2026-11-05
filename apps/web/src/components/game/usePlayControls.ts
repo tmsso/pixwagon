@@ -96,7 +96,13 @@ export function usePlayControls({
 
   const pending = getPending();
   const shownHover = enabled ? hover : null;
-  const ghost: Ghost | null = ghostAt(board, pending, shownHover);
+  const found = ghostAt(board, pending, shownHover);
+  const ghost: (Ghost & { anchor: CellRef | null }) | null = found
+    ? { ...found, anchor: shownHover }
+    : null;
+  // Each staged piece's handle square, for the corner notch.
+  const stagedAnchors =
+    pending?.kind === 'pair' ? pending.pieces.flatMap((piece) => (piece.at ? [piece.at] : [])) : [];
   const staged = pending ? candidateCells(pending) : [];
   // Warn about lone squares for what is staged plus a ghost that fits, so the
   // warning shows while aiming, before the piece is dropped.
@@ -420,6 +426,8 @@ export function usePlayControls({
       canvasRef: setCanvas,
       ghost,
       loneCells,
+      stagedAnchors,
+      painting: pending?.kind === 'fallback',
     },
     tile,
     /** The action bar's Turn / Flip: the piece in hand, else the active one. */
