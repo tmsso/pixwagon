@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Play table, interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; overflow: hidden; border-radius: 26px; background: #f6f7f9">
+  <dc-import name="Table" header="{{ header }}" filled="{{ filled }}" filled-count="{{ filledCount }}" marks="{{ marks }}" offer="{{ offer }}" pair-tiles="{{ pairTiles }}" single-tiles="{{ singleTiles }}" single-face="{{ singleFace }}" status="{{ status }}" status-tone="{{ tone }}" can-undo="{{ canUndo }}" can-turn="{{ canTurn }}" can-flip="{{ canFlip }}" can-place="{{ canPlace }}" place-count="{{ placeCount }}" place-reason="{{ placeReason }}" on-cell="{{ onCell }}" on-hover="{{ onHover }}" on-undo="{{ onUndo }}" on-turn="{{ onTurn }}" on-flip="{{ onFlip }}" on-place="{{ onPlace }}" hint-size="390px,844px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  // A working sketch of BRIEF-04's model — pick up, aim, drop, ✓ Place — on
+  // the real Tram. Not the game engine: legality here is "every square is an
+  // open picture square", which is what applyMove checks for a placement.
+  static ROWS = [".....3......", ".....3......", ".0000000000.", ".0111011110.", ".0111011110.", ".0000000000.", ".0000000000.", "..2......2.."];
+  static ROUNDS = [
+    { pair: [{ name: 'L piece', cells: [[0, 0], [1, 0], [1, 1]] }, { name: '2-square bar', cells: [[0, 0], [0, 1]] }], single: [2] },
+    { pair: [{ name: 'S piece', cells: [[0, 1], [0, 2], [1, 0], [1, 1]] }, { name: '2-square bar', cells: [[0, 0], [1, 0]] }], single: [1, 2] },
+    { pair: [{ name: 'T piece', cells: [[0, 0], [0, 1], [0, 2], [1, 1]] }, { name: '1 square', cells: [[0, 0]] }], single: [3] },
+  ];
+
+  state = this.fresh(4, this.startFilled(), {}, null, '');
+
+  startFilled() {
+    const f = { '0,5': true };
+    for (let r = 2; r <= 4; r++) for (let c = 1; c <= 10; c++) f[r + ',' + c] = true;
+    return f;
+  }
+  offerOf(round) { return Component.ROUNDS[(round - 4) % Component.ROUNDS.length]; }
+  // Offsets relative to the anchor: the piece's first cell in reading order.
+  // The anchor is always one of the piece's own cells, so the tapped cell is
+  // always covered (BRIEF-04 "The anchor is a piece cell").
+  anchored(cells) {
+    const s = cells.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    return s.map((p) => [p[0] - s[0][0], p[1] - s[0][1]]);
+  }
+  fresh(round, filled, pop, msg, tone) {
+    const off = this.offerOf(round);
+    return {
+      round, filled, pop, msg, tone,
+      offer: null, held: null, aim: null,
+      shapes: off.pair.map((p) => this.anchored(p.cells)),
+      staged: {}, order: [],
+      blobs: off.single.map(() => []), active: 0,
+    };
+  }
+  key(r, c) { return r + ',' + c; }
+  parse(k) { return k.split(',').map(Number); }
+  fillable(r, c) {
+    const R = Component.ROWS;
+    return r >= 0 && r < R.length && c >= 0 && c < R[0].length && R[r][c] !== '.';
+  }
+  inBoard(r, c) { return r >= 0 && r < Component.ROWS.length && c >= 0 && c < Component.ROWS[0].length; }
+  cellsAt(shape, at) { return shape.map((d) => [at[0] + d[0], at[1] + d[1]]); }
+  occ(s, except) {
+    const o = { ...s.filled };
+    Object.keys(s.staged).forEach((i) => {
+      if (except && except.pair === Number(i)) return;
+      this.cellsAt(s.shapes[i], s.staged[i].at).forEach((p) => { o[this.key(p[0], p[1])] = true; });
+    });
+    s.blobs.forEach((b) => b.forEach((k) => { o[k] = true; }));
+    return o;
+  }
+  fits(cells, occ) { return cells.every((p) => this.fillable(p[0], p[1]) && !occ[this.key(p[0], p[1])]); }
+  stagedAt(s, k) {
+    for (const i of Object.keys(s.staged)) {
+      if (this.cellsAt(s.shapes[i], s.staged[i].at).some((p) => this.key(p[0], p[1]) === k)) return Number(i);
+    }
+    return null;
+  }
+  adj(a, b) { const p = this.parse(a), q = this.parse(b); return Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) === 1; }
+  // Removing a painted square can split a blob; the larger part stays (BRIEF-04).
+  largest(list) {
+    const seen = {}; let best = [];
+    list.forEach((start) => {
+      if (seen[start]) return;
+      const comp = []; const q = [start]; seen[start] = true;
+      while (q.length) {
+        const k = q.pop(); comp.push(k);
+        list.forEach((n) => { if (!seen[n] && this.adj(k, n)) { seen[n] = true; q.push(n); } });
+      }
+      if (comp.length > best.length) best = comp;
+    });
+    return best;
+  }
+  lone(occ) {
+    const out = {};
+    Component.ROWS.forEach((row, r) => {
+      for (let c = 0; c < row.length; c++) {
+        const k = this.key(r, c);
+        if (!this.fillable(r, c) || occ[k]) continue;
+        const open = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].some((n) => this.fillable(n[0], n[1]) && !occ[this.key(n[0], n[1])]);
+        if (!open) out[k] = true;
+      }
+    });
+    return out;
+  }
+
+  pickPair(i) {
+    const s = this.state; const off = this.offerOf(s.round);
+    const patch = { offer: 'pair', pop: {}, tone: '' };
+    if (s.offer === 'single') { patch.blobs = off.single.map(() => []); patch.active = 0; }
+    if (s.held === i) {
+      patch.held = null; patch.msg = 'Put the ' + off.pair[i].name + ' back in the tray.';
+    } else if (s.staged[i]) {
+      const staged = { ...s.staged }; delete staged[i];
+      patch.staged = staged; patch.order = s.order.filter((x) => x !== i);
+      patch.held = i; patch.aim = s.staged[i].at; patch.msg = 'Picked up the ' + off.pair[i].name + ' — drop it somewhere else.';
+    } else {
+      patch.held = i; patch.msg = 'Holding the ' + off.pair[i].name + '. Hover or tap the board to drop it.';
+    }
+    this.setState(patch);
+  }
+  pickSingle(b) {
+    const s = this.state; const off = this.offerOf(s.round);
+    const patch = { offer: 'single', active: b, pop: {}, tone: '', msg: 'Painting the ' + off.single[b] + ': tap squares that touch.' };
+    if (s.offer === 'pair') { patch.staged = {}; patch.order = []; patch.held = null; patch.aim = null; }
+    this.setState(patch);
+  }
+  cell(r, c) {
+    const s = this.state; const off = this.offerOf(s.round); const k = this.key(r, c);
+    if (s.offer === 'pair') {
+      if (s.held !== null) {
+        const cells = this.cellsAt(s.shapes[s.held], [r, c]);
+        if (this.fits(cells, this.occ(s, { pair: s.held }))) {
+          const staged = { ...s.staged, [s.held]: { at: [r, c] } };
+          const order = s.order.filter((x) => x !== s.held).concat([s.held]);
+          const left = off.pair.findIndex((_, i) => !staged[i]);
+          this.setState({ staged, order, held: null, pop: {}, tone: left < 0 ? 'accent' : '', msg: left < 0 ? 'Both pieces are on the board. ✓ Place sends the move.' : 'Staged. Now pick up the ' + off.pair[left].name + '.' });
+        } else {
+          this.setState({ aim: [r, c], tone: 'danger', msg: 'That spot doesn’t fit — the hatched squares are blocked.' });
+        }
+        return;
+      }
+      const i = this.stagedAt(s, k);
+      if (i !== null) { this.pickPair(i); return; }
+      this.setState({ tone: '', msg: 'Pick up a piece from the tray first.' });
+      return;
+    }
+    if (s.offer === 'single') {
+      const sizes = off.single;
+      const blobs = s.blobs.map((b) => b.slice());
+      const j = blobs.findIndex((b) => b.includes(k));
+      if (j >= 0) {
+        blobs[j] = this.largest(blobs[j].filter((x) => x !== k));
+        this.setState({ blobs, active: j, tone: '', msg: 'Square taken back.' });
+        return;
+      }
+      if (!this.fillable(r, c)) { this.setState({ tone: '', msg: 'That square isn’t part of the picture.' }); return; }
+      if (s.filled[k]) { this.setState({ tone: '', msg: 'That square is already filled.' }); return; }
+      let a = s.active; let msg = '';
+      const b = blobs[a];
+      if (b.length < sizes[a] && (b.length === 0 || b.some((x) => this.adj(x, k)))) {
+        b.push(k);
+      } else {
+        // A tap always does something visible: a square that doesn't touch the
+        // active blob restarts it there rather than being silently refused.
+        blobs[a] = [k];
+        msg = 'Started this ' + sizes[a] + ' again here — its squares must touch.';
+      }
+      let tone = '';
+      if (blobs[a].length === sizes[a]) {
+        const next = sizes.findIndex((n, i) => blobs[i].length < n);
+        if (next >= 0) { a = next; msg = 'Done — now paint the ' + sizes[next] + '.'; }
+        else { msg = 'Painted. ✓ Place sends the move.'; tone = 'accent'; }
+      }
+      this.setState({ blobs, active: a, msg, tone, pop: {} });
+      return;
+    }
+    this.setState({ tone: '', msg: 'Pick a piece from the pair, or tap the single to paint.' });
+  }
+  hover(r, c) {
+    const s = this.state;
+    if (s.held === null) return;
+    if (s.aim && s.aim[0] === r && s.aim[1] === c) return;
+    this.setState({ aim: [r, c] });
+  }
+  transform(fn, verb) {
+    const s = this.state;
+    if (s.offer !== 'pair') return;
+    let i = s.held; let fromStaged = false;
+    if (i === null) { i = s.order[s.order.length - 1]; if (i === undefined) return; fromStaged = true; }
+    const shapes = s.shapes.slice(); shapes[i] = shapes[i].map(fn);
+    if (!fromStaged) { this.setState({ shapes, tone: '', msg: verb + '.' }); return; }
+    const at = s.staged[i].at;
+    if (this.fits(this.cellsAt(shapes[i], at), this.occ(s, { pair: i }))) {
+      this.setState({ shapes, tone: '', msg: verb + ' in place.' });
+    } else {
+      const staged = { ...s.staged }; delete staged[i];
+      this.setState({ shapes, staged, order: s.order.filter((x) => x !== i), held: i, aim: at, tone: 'danger', msg: verb + ' — it doesn’t fit there now, so it’s back in your hand.' });
+    }
+  }
+  undo() {
+    const s = this.state; const off = this.offerOf(s.round);
+    if (s.held !== null) { this.setState({ held: null, tone: '', msg: 'Put back in the tray.' }); return; }
+    if (s.offer === 'pair' && s.order.length) {
+      const i = s.order[s.order.length - 1]; const staged = { ...s.staged }; delete staged[i];
+      this.setState({ staged, order: s.order.slice(0, -1), tone: '', msg: 'Took back the ' + off.pair[i].name + '.' });
+      return;
+    }
+    if (s.offer === 'single') {
+      const blobs = s.blobs.map((b) => b.slice());
+      let j = blobs[s.active].length ? s.active : blobs.map((b) => b.length > 0).lastIndexOf(true);
+      if (j < 0) return;
+      blobs[j].pop();
+      this.setState({ blobs, active: j, tone: '', msg: 'Square taken back.' });
+    }
+  }
+  place() {
+    const s = this.state; const keys = [];
+    if (s.offer === 'pair') Object.keys(s.staged).forEach((i) => this.cellsAt(s.shapes[i], s.staged[i].at).forEach((p) => keys.push(this.key(p[0], p[1]))));
+    if (s.offer === 'single') s.blobs.forEach((b) => b.forEach((k) => keys.push(k)));
+    const filled = { ...s.filled }; const pop = {};
+    keys.forEach((k) => { filled[k] = true; pop[k] = 'pop'; });
+    const n = Object.keys(filled).length;
+    const msg = n === 54 ? 'Picture complete!' : 'Placed ' + keys.length + ' squares. ' + (54 - n) + ' to go.';
+    this.setState(this.fresh(s.round + 1, filled, pop, msg, 'accent'));
+  }
+
+  renderVals() {
+    const s = this.state; const off = this.offerOf(s.round);
+    const marks = { ...s.pop };
+    Object.keys(s.staged).forEach((i) => {
+      this.cellsAt(s.shapes[i], s.staged[i].at).forEach((p, n) => { marks[this.key(p[0], p[1])] = n === 0 ? 'staged anchor' : 'staged'; });
+    });
+    s.blobs.forEach((b) => b.forEach((k) => { marks[k] = 'paint'; }));
+    const occAll = this.occ(s, null);
+    if (s.held !== null && s.aim) {
+      const cells = this.cellsAt(s.shapes[s.held], s.aim);
+      const occ = this.occ(s, { pair: s.held });
+      const ok = this.fits(cells, occ);
+      cells.forEach((p, n) => {
+        if (!this.inBoard(p[0], p[1])) return; // off-board ghost cells are clipped
+        const k = this.key(p[0], p[1]);
+        const blocked = !this.fillable(p[0], p[1]) || occ[k];
+        let cls = ok ? 'ghost' : blocked ? 'bad' : 'ghostno';
+        if (n === 0) cls += ' anchor';
+        marks[k] = cls;
+        if (ok) occAll[k] = true;
+      });
+    }
+    // D20: warn only about squares this move would newly strand.
+    const before = this.lone(s.filled); const after = this.lone(occAll);
+    Object.keys(after).forEach((k) => { if (!before[k] && !marks[k]) marks[k] = 'lone'; });
+    const loneCount = Object.keys(after).filter((k) => !before[k]).length;
+
+    const sizes = off.single;
+    const pairTiles = off.pair.map((p, i) => ({
+      cells: s.shapes[i],
+      tone: s.offer === 'single' ? 'dim' : s.held === i ? 'held' : s.staged[i] ? 'staged' : 'idle',
+      label: (s.staged[i] ? 'Pick the ' + p.name + ' back up' : 'Pick up the ' + p.name) + ', ' + p.cells.length + (p.cells.length === 1 ? ' square' : ' squares'),
+      pick: () => this.pickPair(i),
+    }));
+    const singleTiles = sizes.map((n, b) => {
+      const run = []; for (let x = 0; x < n; x++) run.push([0, x]);
+      const done = s.offer === 'single' && s.blobs[b].length === n;
+      return {
+        cells: run,
+        tone: s.offer === 'pair' ? 'dim' : done ? 'staged' : s.offer === 'single' && s.active === b ? 'held' : 'idle',
+        label: 'Paint the single’s ' + n + (n === 1 ? ' square' : ' connected squares'),
+        pick: () => this.pickSingle(b),
+      };
+    });
+    const pairReady = off.pair.every((_, i) => s.staged[i]);
+    const singleReady = sizes.every((n, b) => s.blobs[b].length === n);
+    const canPlace = (s.offer === 'pair' && pairReady && s.held === null) || (s.offer === 'single' && singleReady);
+    const placeCount = s.offer === 'pair' ? off.pair.reduce((t, p) => t + p.cells.length, 0) : s.offer === 'single' ? sizes.reduce((t, n) => t + n, 0) : 0;
+    let placeReason = 'Pick up a piece to start.';
+    if (s.offer === 'pair') placeReason = 'The pair is taken together — stage both pieces.';
+    if (s.offer === 'single') {
+      const left = sizes.reduce((t, n, b) => t + n - s.blobs[b].length, 0);
+      placeReason = 'Paint ' + left + ' more ' + (left === 1 ? 'square' : 'squares') + '.';
+    }
+    let status = s.msg || 'Pick a piece from the pair, or paint the single.';
+    let tone = s.tone;
+    if (loneCount && tone !== 'danger') { status = 'Careful: this leaves a lone square only a 1 can fill.'; tone = ''; }
+
+    return {
+      header: 'Solo · Round ' + s.round + ' of 22',
+      filled: s.filled,
+      filledCount: Object.keys(s.filled).length,
+      marks,
+      offer: s.offer,
+      pairTiles,
+      singleTiles,
+      singleFace: sizes.join('+'),
+      status,
+      tone,
+      canUndo: s.held !== null || s.order.length > 0 || s.blobs.some((b) => b.length > 0),
+      canTurn: s.offer === 'pair' && (s.held !== null || s.order.length > 0),
+      canFlip: s.offer === 'pair' && (s.held !== null || s.order.length > 0),
+      canPlace,
+      placeCount,
+      placeReason,
+      onCell: (r, c) => this.cell(r, c),
+      onHover: (r, c) => this.hover(r, c),
+      onUndo: () => this.undo(),
+      onTurn: () => this.transform((d) => [d[1], -d[0]], 'Turned'),
+      onFlip: () => this.transform((d) => [d[0], -d[1]], 'Flipped'),
+      onPlace: () => this.place(),
+    };
+  }
+}
+</script>
+</body>
+</html>

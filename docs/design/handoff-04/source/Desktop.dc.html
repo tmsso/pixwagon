@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Play table, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.dk{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#171c21;-webkit-font-smoothing:antialiased}
+.dk button{font:inherit;color:inherit}
+.eyebrow{font:600 11px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#5a6673}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center;cursor:pointer}
+.meter{height:8px;border-radius:999px;background:#eaedf1;overflow:hidden}
+.meter i{display:block;height:100%;background:#2a9d8a;border-radius:999px}
+.sec{padding:18px 20px;border-bottom:1px solid #eaedf1;display:flex;flex-direction:column;gap:12px}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.tile{min-width:60px;min-height:60px;padding:10px;border-radius:10px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center;cursor:pointer;position:relative}
+.tile:hover{border-color:#2a9d8a}
+.tile.held{border-color:#1f7a6c;box-shadow:0 0 0 2px #1f7a6c,0 6px 16px rgb(14 18 22/.14);transform:translateY(-3px)}
+.tile.staged{border-style:dashed;border-color:#1f7a6c;background:#f6f7f9}
+.tile.dim{background:#f6f7f9}
+.key{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:5px;border:1px solid #d3d9e0;border-bottom-width:2px;background:#fff;font:600 11px/1 'JetBrains Mono',monospace;color:#171c21}
+.tool{height:44px;flex:1;padding:0 10px;border-radius:10px;border:1px solid #d3d9e0;background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font:500 13px/1 Inter,sans-serif;cursor:pointer}
+.place{width:100%;height:48px;border-radius:10px;border:0;background:#2a9d8a;color:#fff!important;display:flex;align-items:center;justify-content:center;gap:8px;font:600 16px/1 Inter,sans-serif;cursor:pointer;box-shadow:0 2px 0 #175c51}
+.place:disabled{background:#d3d9e0;color:#5a6673!important;box-shadow:none;cursor:not-allowed}
+.place:disabled svg{stroke:#5a6673}
+.prow{display:flex;align-items:center;gap:10px;height:36px;font:500 14px/1 Inter,sans-serif}
+.prow .sw{width:20px;height:20px;border-radius:999px;border:1px solid rgb(14 18 22/.15)}
+.prow .st{margin-left:auto;font:400 13px/1 Inter,sans-serif;color:#5a6673}
+.p0{background-color:#0072b2}
+.p1{background-color:#d55e0033;background-image:repeating-linear-gradient(45deg,#d55e00 0 3px,transparent 3px 6px)}
+.p2{background-color:#009e7333;background-image:radial-gradient(#009e73 40%,transparent 42%);background-size:5px 5px}
+</style>
+</helmet>
+<div class="dk" style="width: 1440px; height: 900px; display: flex; background: #f6f7f9; overflow: hidden">
+  <main style="flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 28px 40px 32px; gap: 20px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 8px; flex: 1">
+        <span class="eyebrow">Room KX7P · Round 4 of 22 · same board</span>
+        <h1 style="margin: 0; font: 600 28px/1.15 Inter, sans-serif; letter-spacing: -0.02em">Tram</h1>
+      </div>
+      <button type="button" class="icon-btn" aria-label="How to play">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.6"></path><path d="M12 17.2h.01"></path></svg>
+      </button>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 0">
+      <div style="position: relative">
+        <dc-import name="Board" cell="64" gap="3" filled="{{ filled }}" marks="{{ marks }}" hint-size="801px,533px"></dc-import>
+        <svg width="22" height="28" viewBox="0 0 22 28" style="position: absolute; left: 372px; top: 372px; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.3))" aria-hidden="true"><path d="M2 2v21l5.5-5 3.6 8 3.4-1.5-3.6-7.8H18z" fill="#fff" stroke="#171c21" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+      </div>
+      <p style="margin: 0; font: 400 15px/1.4 Inter, sans-serif; color: #5a6673" role="status">Holding the 2-square bar — click to drop it, right-click to turn.</p>
+    </div>
+  </main>
+  <aside style="width: 340px; flex-shrink: 0; background: #fff; border-left: 1px solid #d3d9e0; display: flex; flex-direction: column" aria-label="Round panel">
+    <section class="sec">
+      <div style="align-self: center; padding: 10px; border-radius: 12px; background: #f6f7f9; border: 1px solid #eaedf1">
+        <dc-import name="Board" cell="18" gap="1" full="{{ true }}" hint-size="227px,151px"></dc-import>
+      </div>
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <span style="font: 600 16px/1.2 Inter, sans-serif">Tram <span style="font-weight: 400; color: #5a6673">· picture 1 of 3</span></span>
+        <span class="mono" style="font-size: 13px; font-weight: 600">31 / 54</span>
+      </div>
+      <div class="meter" role="progressbar" aria-label="Picture progress" aria-valuemin="0" aria-valuemax="54" aria-valuenow="31"><i style="width: 57%"></i></div>
+    </section>
+    <section class="sec" style="gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span class="eyebrow" style="color: #175c51">The pair · chosen</span>
+        <div class="tiles">
+          <button type="button" class="tile staged" aria-label="Pick the L piece back up"><dc-import name="Piece" cells="{{ lCells }}" tone="staged" size="14" hint-size="30px,30px"></dc-import></button>
+          <button type="button" class="tile held" aria-label="The 2-square bar, held" aria-pressed="true"><dc-import name="Piece" cells="{{ barCells }}" tone="held" size="14" hint-size="30px,14px"></dc-import></button>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span class="eyebrow">The single · <span style="color: #171c21">2</span></span>
+        <div class="tiles">
+          <button type="button" class="tile dim" aria-label="Switch to the single: 2 connected squares"><dc-import name="Piece" cells="{{ barCells }}" tone="dim" size="14" hint-size="30px,14px"></dc-import></button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="tool" aria-label="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>Undo</button>
+        <button type="button" class="tool"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Turn</button>
+        <button type="button" class="tool"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M8 7 3 12l5 5V7z"></path><path d="m16 7 5 5-5 5V7z"></path></svg>Flip</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <button type="button" class="place" disabled="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"></path></svg>Place 5</button>
+        <span style="font: 400 12px/1.3 Inter, sans-serif; color: #5a6673; text-align: center">Drop the bar to place the pair.</span>
+      </div>
+    </section>
+    <section class="sec" style="gap: 4px">
+      <span class="eyebrow" style="margin-bottom: 6px">Players · 3 of 6</span>
+      <div class="prow"><span class="sw p0"></span>You <span class="st">placing</span></div>
+      <div class="prow"><span class="sw p1"></span>Ines <span class="st">done · 33 / 54</span></div>
+      <div class="prow"><span class="sw p2"></span>Tomo <span class="st">placing</span></div>
+    </section>
+    <section style="margin-top: auto; padding: 16px 20px 20px; display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; font: 400 12px/1.3 Inter, sans-serif; color: #5a6673" aria-label="Keyboard and mouse shortcuts">
+      <span><span class="key">R</span> <span class="key">⟳</span></span><span>turn · right-click or wheel also turns</span>
+      <span><span class="key">F</span></span><span>flip · shift + right-click</span>
+      <span><span class="key">1</span>–<span class="key">4</span></span><span>pick up a tray piece</span>
+      <span><span class="key">Esc</span></span><span>put the held piece back</span>
+      <span><span class="key">Enter</span></span><span>drop, or place when nothing is held</span>
+    </section>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const filled = { '0,5': true };
+    for (let r = 2; r <= 4; r++) for (let c = 1; c <= 10; c++) filled[r + ',' + c] = true;
+    return {
+      filled,
+      // The L is staged; the bar is held and its ghost follows the pointer
+      // (the drawn cursor sits on the bar's anchor cell, row 6 column 6).
+      marks: { '5,7': 'staged anchor', '6,7': 'staged', '6,8': 'staged', '5,5': 'ghost anchor', '5,6': 'ghost' },
+      lCells: [[0, 0], [1, 0], [1, 1]],
+      barCells: [[0, 0], [0, 1]],
+    };
+  }
+}
+</script>
+</body>
+</html>

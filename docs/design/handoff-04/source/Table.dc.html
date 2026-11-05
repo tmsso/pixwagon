@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Play table, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pt{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#171c21;-webkit-font-smoothing:antialiased}
+.pt button{font:inherit;color:inherit}
+.eyebrow{font:600 11px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#5a6673}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center;cursor:pointer}
+.icon-btn:hover{border-color:#adb7c2}
+.meter{flex:1;height:8px;border-radius:999px;background:#eaedf1;overflow:hidden}
+.meter i{display:block;height:100%;background:#2a9d8a;border-radius:999px}
+.thumb{width:44px;height:44px;border-radius:8px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.chip{display:flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 6px;border-radius:999px;background:#fff;border:1px solid #d3d9e0;font:500 13px/1 Inter,sans-serif}
+.chip .sw{width:18px;height:18px;border-radius:999px;border:1px solid rgb(14 18 22/.15)}
+.chip .st{color:#5a6673;font-weight:400}
+.p0{background-color:#0072b2}
+.p1{background-color:#d55e0033;background-image:repeating-linear-gradient(45deg,#d55e00 0 3px,transparent 3px 6px)}
+.p2{background-color:#009e7333;background-image:radial-gradient(#009e73 40%,transparent 42%);background-size:5px 5px}
+.status{font:400 14px/1.4 Inter,sans-serif;color:#5a6673;min-height:20px;text-align:center}
+.status.danger{color:#ad3428}
+.status.accent{color:#175c51;font-weight:500}
+.tray{background:#fff;border-top:1px solid #d3d9e0;border-radius:20px 20px 0 0;box-shadow:0 -4px 12px rgb(14 18 22/.06);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;height:272px;box-sizing:border-box}
+.tray.dim .offers{opacity:.55;pointer-events:none}
+.offers{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;flex:1;min-height:0}
+.offer{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;background:#f6f7f9;border:1px solid #eaedf1}
+.offer.chosen{background:#fff;border-color:#2a9d8a;box-shadow:0 0 0 1px #2a9d8a}
+.offer.dimmed{opacity:.6}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.tile{min-width:52px;min-height:52px;padding:8px;border-radius:10px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center;cursor:pointer;position:relative}
+.tile:hover{border-color:#2a9d8a}
+.tile.held{border-color:#1f7a6c;box-shadow:0 0 0 2px #1f7a6c,0 6px 16px rgb(14 18 22/.14);transform:translateY(-3px)}
+.tile.staged{border-style:dashed;border-color:#1f7a6c;background:#f6f7f9}
+.tile.staged::after{content:"on board";position:absolute;bottom:-1px;left:50%;transform:translate(-50%,50%);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;background:#1f7a6c;color:#fff;padding:2px 5px;border-radius:999px;white-space:nowrap}
+.tile.dim{background:#f6f7f9}
+.tile.disabled{cursor:not-allowed;background:#f6f7f9}
+.banner{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#e6f4f1;color:#175c51;font:500 13px/1.35 Inter,sans-serif}
+.reason{font:400 12px/1.3 Inter,sans-serif;color:#5a6673;text-align:right;min-height:16px}
+.bar{display:flex;gap:8px;align-items:center}
+.tool{height:44px;min-width:44px;padding:0 10px;border-radius:10px;border:1px solid #d3d9e0;background:#fff;display:flex;align-items:center;gap:6px;font:500 13px/1 Inter,sans-serif;cursor:pointer}
+.tool:disabled{color:#7d8996;background:#f6f7f9;border-color:#eaedf1;cursor:not-allowed}
+.tool:disabled svg{stroke:#adb7c2}
+.place{margin-left:auto;height:44px;padding:0 16px;border-radius:10px;border:0;background:#2a9d8a;color:#fff!important;display:flex;align-items:center;gap:6px;font:600 15px/1 Inter,sans-serif;cursor:pointer;box-shadow:0 2px 0 #175c51}
+.place:hover{background:#1f7a6c}
+.place:disabled{background:#d3d9e0;color:#5a6673!important;box-shadow:none;cursor:not-allowed}
+.place:disabled svg{stroke:#5a6673}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+</style>
+</helmet>
+<div class="pt" style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #f6f7f9; overflow: hidden">
+  <div style="display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 0">
+    <div style="display: flex; align-items: center; gap: 8px; height: 44px">
+      <div style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+        <span class="eyebrow">{{ header }}</span>
+        <span style="font: 600 18px/1.2 Inter, sans-serif">Tram</span>
+      </div>
+      <button type="button" class="icon-btn" aria-label="How to play">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.6"></path><path d="M12 17.2h.01"></path></svg>
+      </button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div class="meter" role="progressbar" aria-label="Picture progress" aria-valuemin="0" aria-valuemax="{{ total }}" aria-valuenow="{{ filledCount }}"><i style="width: {{ pct }}"></i></div>
+      <span class="mono" style="font-size: 13px; font-weight: 600">{{ filledCount }} / {{ total }}</span>
+      <button type="button" class="thumb" aria-label="Show the target picture">
+        <dc-import name="Board" cell="3" gap="0" full="{{ true }}" hint-size="36px,24px"></dc-import>
+      </button>
+    </div>
+    <sc-if value="{{ room }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="3">
+          <span class="chip"><span class="sw {{ ch.cls }}"></span>{{ ch.name }} <span class="st">{{ ch.status }}</span></span>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px 16px; min-height: 0">
+    <dc-import name="Board" cell="28" gap="2" filled="{{ filled }}" marks="{{ marks }}" on-cell="{{ onCell }}" on-hover="{{ onHover }}" hint-size="358px,238px"></dc-import>
+    <p class="status {{ statusTone }}" role="status" style="margin: 0">{{ status }}</p>
+  </div>
+  <div class="tray {{ trayClass }}">
+    <sc-if value="{{ hasBanner }}" hint-placeholder-val="{{ false }}">
+      <div class="banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#175c51" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"></rect><rect x="13" y="13" width="7" height="7" rx="1"></rect></svg>
+        <span>{{ banner }}</span>
+      </div>
+    </sc-if>
+    <div class="offers">
+      <div class="offer {{ pairClass }}">
+        <span class="eyebrow">The pair</span>
+        <div class="tiles">
+          <sc-for list="{{ pairTiles }}" as="t" hint-placeholder-count="2">
+            <button type="button" class="tile {{ t.tone }}" aria-label="{{ t.label }}" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}">
+              <dc-import name="Piece" cells="{{ t.cells }}" tone="{{ t.tone }}" size="12" hint-size="40px,28px"></dc-import>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="offer {{ singleClass }}">
+        <span class="eyebrow">The single · <span style="color: #171c21">{{ singleFace }}</span></span>
+        <div class="tiles">
+          <sc-for list="{{ singleTiles }}" as="t" hint-placeholder-count="1">
+            <button type="button" class="tile {{ t.tone }}" aria-label="{{ t.label }}" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}">
+              <dc-import name="Piece" cells="{{ t.cells }}" tone="{{ t.tone }}" size="12" hint-size="28px,12px"></dc-import>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <p class="reason" style="margin: 0">{{ placeReason }}</p>
+    <div class="bar">
+      <button type="button" class="tool" disabled="{{ undoOff }}" onClick="{{ onUndo }}" aria-label="Undo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>
+      </button>
+      <button type="button" class="tool" disabled="{{ turnOff }}" onClick="{{ onTurn }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>
+        Turn
+      </button>
+      <button type="button" class="tool" disabled="{{ flipOff }}" onClick="{{ onFlip }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M8 7 3 12l5 5V7z"></path><path d="m16 7 5 5-5 5V7z"></path></svg>
+        Flip
+      </button>
+      <button type="button" class="place" disabled="{{ placeOff }}" onClick="{{ onPlace }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"></path></svg>
+        {{ placeLabel }}
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"header":{"editor":"text","default":"Solo · Round 4 of 22"},"room":{"editor":"boolean","default":false},"filled":{"editor":null},"marks":{"editor":null},"filledCount":{"editor":null},"pairTiles":{"editor":null},"singleTiles":{"editor":null},"singleFace":{"editor":null},"offer":{"editor":null},"status":{"editor":null},"statusTone":{"editor":null},"banner":{"editor":null},"trayDim":{"editor":null},"chips":{"editor":null},"canUndo":{"editor":null},"canTurn":{"editor":null},"canFlip":{"editor":null},"canPlace":{"editor":null},"placeCount":{"editor":null},"placeReason":{"editor":null},"onCell":{"editor":null},"onHover":{"editor":null},"onUndo":{"editor":null},"onTurn":{"editor":null},"onFlip":{"editor":null},"onPlace":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  // Defaults draw round 4 of the solo Tram at rest, so this artboard renders alone.
+  defaultFilled() {
+    const f = { '0,5': true };
+    for (let r = 2; r <= 4; r++) for (let c = 1; c <= 10; c++) f[r + ',' + c] = true;
+    return f;
+  }
+  renderVals() {
+    const p = this.props;
+    const filled = p.filled || this.defaultFilled();
+    const count = p.filledCount ?? Object.keys(filled).length;
+    const total = 54;
+    const offer = p.offer || null;
+    const pairTiles = p.pairTiles || [
+      { cells: [[0, 0], [1, 0], [1, 1]], tone: 'idle', label: 'Pick up the L piece, 3 squares' },
+      { cells: [[0, 0], [0, 1]], tone: 'idle', label: 'Pick up the 2-square bar' },
+    ];
+    const singleTiles = p.singleTiles || [{ cells: [[0, 0], [0, 1]], tone: 'idle', label: 'Paint the single: 2 connected squares' }];
+    const placeCount = p.placeCount ?? 0;
+    return {
+      header: p.header ?? 'Solo · Round 4 of 22',
+      room: !!p.room,
+      chips: p.chips || [],
+      filled,
+      marks: p.marks || {},
+      filledCount: count,
+      total,
+      pct: Math.round((count / total) * 100) + '%',
+      onCell: p.onCell,
+      onHover: p.onHover,
+      status: p.status ?? 'Pick a piece from the pair, or paint the single.',
+      statusTone: p.statusTone || '',
+      hasBanner: !!p.banner,
+      banner: p.banner || '',
+      trayClass: p.trayDim ? 'dim' : '',
+      pairClass: offer === 'pair' ? 'chosen' : offer === 'single' ? 'dimmed' : '',
+      singleClass: offer === 'single' ? 'chosen' : offer === 'pair' ? 'dimmed' : '',
+      pairTiles: pairTiles.map((t) => ({ ...t, pressed: t.tone === 'held' ? 'true' : 'false' })),
+      singleTiles: singleTiles.map((t) => ({ ...t, pressed: t.tone === 'held' ? 'true' : 'false' })),
+      singleFace: p.singleFace || '2',
+      placeReason: p.canPlace ? '' : (p.placeReason ?? 'Stage a whole offer to place it.'),
+      undoOff: !p.canUndo,
+      turnOff: !p.canTurn,
+      flipOff: !p.canFlip,
+      placeOff: !p.canPlace,
+      placeLabel: placeCount ? 'Place ' + placeCount : 'Place',
+      onUndo: p.onUndo,
+      onTurn: p.onTurn,
+      onFlip: p.onFlip,
+      onPlace: p.onPlace,
+    };
+  }
+}
+</script>
+</body>
+</html>

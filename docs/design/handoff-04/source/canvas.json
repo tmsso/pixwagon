@@ -1,0 +1,39 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-05T21:30:00Z" },
+  "title": "Pixwagon pass 04",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "Play table — phone, interactive (solo · Tram)", "is_interactive": true, "radius": 26 },
+    "States.dc.html": { "x": 470, "y": 0, "w": 3536, "h": 960, "title": "Play table — phone states" },
+    "Desktop.dc.html": { "x": 0, "y": 1400, "w": 1440, "h": 900, "title": "Play table — desktop landscape (room)" },
+    "HowToPlay.dc.html": { "x": 1520, "y": 1400, "w": 390, "h": 844, "title": "How to play — dialog", "radius": 26 },
+    "Home.dc.html": { "x": 0, "y": 2700, "w": 1440, "h": 900, "title": "Home — wide screens" },
+    "Components.dc.html": { "x": 1520, "y": 2700, "w": 1240, "h": 1040, "title": "Components and board looks" },
+    "Table.dc.html": { "x": 0, "y": 4140, "w": 390, "h": 844, "title": "PlayTable (phone) — component", "radius": 26 },
+    "Board.dc.html": { "x": 470, "y": 4140, "w": 358, "h": 238, "title": "BoardCanvas — component" },
+    "Piece.dc.html": { "x": 908, "y": 4140, "w": 120, "h": 80, "title": "PieceGlyph — component" }
+  },
+  "order": [
+    "Main.dc.html",
+    "States.dc.html",
+    "Desktop.dc.html",
+    "HowToPlay.dc.html",
+    "Home.dc.html",
+    "Components.dc.html",
+    "Table.dc.html",
+    "Board.dc.html",
+    "Piece.dc.html"
+  ],
+  "notes": {
+    "t1": { "x": 0, "y": -300, "text": "Pass 04 · the play table on a phone", "kind": "title1", "maxW": 4006 },
+    "t2": { "x": 0, "y": 1100, "text": "Wide screens and How to play", "kind": "title1", "maxW": 1910 },
+    "t3": { "x": 0, "y": 2400, "text": "Home and the component looks", "kind": "title1", "maxW": 2760 },
+    "t4": { "x": 0, "y": 3840, "text": "Parts the frames are built from", "kind": "title1", "maxW": 1030 },
+    "s1": { "x": -420, "y": 0, "w": 340, "fill": "teal", "text": "Answers docs/design/BRIEF-04.md (pass 04, D16–D21).\n\nVisual polish only: the gestures, the layout structure and the decisions are the brief's and are not reopened here.\n\nPlay the left frame: tap a tray tile, hover or tap the board, Turn / Flip, then ✓ Place." },
+    "s2": { "x": 4086, "y": 0, "w": 340, "fill": "orange", "text": "Token proposal (values only, names unchanged): in the light theme, warning #e8853a reads 1.9:1 on cell-fillable, too faint for the lone-square ring. These frames draw the ring in signal-600 #c96a25 on a bg-coloured inner halo (3.5:1). Proposal: warning → signal-600 in semanticLight." },
+    "s3": { "x": 4086, "y": 520, "w": 340, "fill": "blue", "text": "Filled squares use the picture's own palette (D19), with a 45° hatch at about 16% white (7% ink on near-white swatches). The hatch keeps \"filled\" readable without colour. On picture complete the hatch drops out for a beat." }
+  },
+  "designSystems": []
+}

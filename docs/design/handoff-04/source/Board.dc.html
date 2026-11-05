@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.pw-board{display:grid;touch-action:none;user-select:none;-webkit-user-select:none}
+.pw-c{position:relative;display:block;margin:0;padding:0;border:0;border-radius:2px;font:inherit;cursor:default;appearance:none}
+.pw-board.live .pw-c{cursor:pointer}
+.pw-board.thumb .pw-c{border-radius:0}
+.pw-c.fill{background-image:repeating-linear-gradient(45deg,rgb(255 255 255/.16) 0 2px,transparent 2px 6px)}
+.pw-c.fill.light{background-image:repeating-linear-gradient(45deg,rgb(23 28 33/.07) 0 2px,transparent 2px 6px)}
+.pw-board.full .pw-c.fill,.pw-board.thumb .pw-c.fill{background-image:none}
+.pw-c.ghost{background-color:rgb(42 157 138/.45)!important;box-shadow:inset 0 0 0 2px #2a9d8a}
+.pw-c.bad{background-color:#d3d9e0;box-shadow:inset 0 0 0 2px #d64a3f;background-image:repeating-linear-gradient(45deg,rgb(214 74 63/.6) 0 2px,transparent 2px 6px)!important}
+.pw-c.ghostno{background-color:rgb(214 74 63/.18)!important;box-shadow:inset 0 0 0 2px #d64a3f}
+.pw-c.staged{background-color:rgb(42 157 138/.65)!important;box-shadow:inset 0 0 0 2px #1f7a6c;background-image:none!important}
+.pw-c.paint{background-color:rgb(42 157 138/.65)!important;box-shadow:inset 0 0 0 2px #1f7a6c;background-image:radial-gradient(#fff 22%,transparent 26%)!important}
+.pw-c.checking{background-color:rgb(42 157 138/.35)!important;box-shadow:inset 0 0 0 2px #1f7a6c;background-image:repeating-linear-gradient(90deg,rgb(31 122 108/.35) 0 3px,transparent 3px 7px)!important}
+.pw-c.invalid{background-color:rgb(214 74 63/.35)!important;box-shadow:inset 0 0 0 2px #d64a3f}
+.pw-c.anchor::after{content:"";position:absolute;left:0;top:0;width:0;height:0;border-top:8px solid #fff;border-right:8px solid transparent;border-top-left-radius:2px}
+.pw-c.lone{box-shadow:inset 0 0 0 3px #f6f7f9;outline:3px dotted #c96a25;outline-offset:-3px}
+.pw-c.hint{box-shadow:inset 0 0 0 2px rgb(42 157 138/.5)}
+.pw-c.pop{animation:pw-pop 160ms ease-out}
+@keyframes pw-pop{0%{transform:scale(.72)}70%{transform:scale(1.08)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.pw-c.pop{animation:none}}
+.pw-c:focus-visible{outline:2px solid #171c21;outline-offset:1px;z-index:1}
+</style>
+</helmet>
+<div class="{{ boardClass }}" style="grid-template-columns: repeat({{ cols }}, {{ cellPx }}); grid-auto-rows: {{ cellPx }}; gap: {{ gapPx }}" role="grid" aria-label="{{ label }}" onContextMenu="{{ noMenu }}">
+  <sc-for list="{{ cells }}" as="c" hint-placeholder-count="96">
+    <button type="button" class="{{ c.cls }}" style="background-color: {{ c.bg }}" aria-label="{{ c.label }}" tabIndex="{{ tab }}" onClick="{{ c.click }}" onMouseEnter="{{ c.enter }}"></button>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"cell":{"editor":"int","default":28,"min":2,"max":64},"gap":{"editor":"int","default":2,"min":0,"max":4},"full":{"editor":"boolean","default":false},"rows":{"editor":null},"pal":{"editor":null},"filled":{"editor":null},"marks":{"editor":null},"onCell":{"editor":null},"onHover":{"editor":null},"picture":{"editor":null},"$preview":{"width":358,"height":238}}'>
+class Component extends DCLogic {
+  // The Tram from packages/packs/data/transportation.json, verbatim. Other
+  // pictures are passed in through `rows` and `pal`.
+  static TRAM = [".....3......", ".....3......", ".0000000000.", ".0111011110.", ".0111011110.", ".0000000000.", ".0000000000.", "..2......2.."];
+  static TRAM_PAL = ["#d4483b", "#e8f1f5", "#2c3038", "#8a9199"];
+
+  isLight(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return 0.299 * r + 0.587 * g + 0.114 * b > 200;
+  }
+
+  renderVals() {
+    const rows = this.props.rows || Component.TRAM;
+    const pal = this.props.pal || Component.TRAM_PAL;
+    const cell = Number(this.props.cell ?? 28);
+    const gap = Number(this.props.gap ?? 2);
+    const full = !!this.props.full;
+    const filled = this.props.filled || {};
+    const marks = this.props.marks || {};
+    const onCell = this.props.onCell;
+    const onHover = this.props.onHover;
+    const live = typeof onCell === 'function';
+    const cells = [];
+    rows.forEach((row, r) => {
+      for (let c = 0; c < row.length; c++) {
+        const ch = row[c];
+        const k = r + ',' + c;
+        let cls = 'pw-c';
+        let bg = '#f6f7f9';
+        let state = 'not part of the picture';
+        if (ch !== '.') {
+          if (full || filled[k]) {
+            bg = pal[Number(ch)];
+            cls += ' fill' + (this.isLight(bg) ? ' light' : '');
+            state = 'filled';
+          } else {
+            bg = '#d3d9e0';
+            state = 'open';
+          }
+        }
+        if (marks[k]) cls += ' ' + marks[k];
+        cells.push({
+          cls,
+          bg,
+          label: 'Row ' + (r + 1) + ', column ' + (c + 1) + ', ' + state,
+          click: () => { if (onCell) onCell(r, c); },
+          enter: () => { if (onHover) onHover(r, c); },
+        });
+      }
+    });
+    let boardClass = 'pw-board';
+    if (live) boardClass += ' live';
+    if (full) boardClass += ' full';
+    if (cell < 8) boardClass += ' thumb';
+    return {
+      cells,
+      cols: rows[0].length,
+      cellPx: cell + 'px',
+      gapPx: gap + 'px',
+      boardClass,
+      tab: live ? 0 : -1,
+      label: (this.props.picture || 'Tram') + ' board',
+      // Right-click turns the held piece (BRIEF-04 Gestures); the browser menu never opens on the board.
+      noMenu: (e) => { e.preventDefault(); },
+    };
+  }
+}
+</script>
+</body>
+</html>
