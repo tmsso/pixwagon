@@ -10,11 +10,11 @@ import { Button } from '../components/ui/Button.tsx';
 import { useBoardCellSize } from '../design/boardScale.ts';
 import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
 import { fallbackFaceView, pieceOfferView } from '../state/offerView.ts';
+import { pendingProblem, problemText } from '../state/placement.ts';
 import {
   SOLO_PLAYER_ID,
   activeCandidateCells,
   candidateCells,
-  isPendingComplete,
   pendingCellCount,
   useSoloGameStore,
 } from '../state/soloGame.ts';
@@ -65,6 +65,8 @@ export function GameScreen() {
   }
 
   const pendingCount = pending ? pendingCellCount(pending) : 0;
+  // Gated on the rules engine's own answer, not on a square count (pass 04).
+  const problem = pending ? pendingProblem(board, roll, pending) : null;
 
   return (
     <HudFrame
@@ -76,7 +78,8 @@ export function GameScreen() {
           <PlacementEditor
             pending={pending}
             commitLabel={`Place ${pendingCount} square${pendingCount === 1 ? '' : 's'}`}
-            commitDisabled={!isPendingComplete(pending)}
+            commitDisabled={problem !== null}
+            problem={problemText(problem)}
             onSetActive={setActive}
             onRotate={rotateActive}
             onMirror={mirrorActive}

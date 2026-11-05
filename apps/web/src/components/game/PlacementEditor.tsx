@@ -11,6 +11,9 @@ export interface PlacementEditorProps {
    *  computed by the caller from `pendingCellCount` / `isPendingComplete`. */
   commitLabel: string;
   commitDisabled: boolean;
+  /** Why a finished choice can't be placed (`problemText`), shown just above
+   *  the commit row; `null` when there is nothing to say. */
+  problem?: string | null;
   onSetActive: (index: number) => void;
   /** Turn — rotates the active piece 90°. Pair only. */
   onRotate: () => void;
@@ -54,6 +57,7 @@ export function PlacementEditor({
   onCancel,
   onCommit,
   busy = false,
+  problem = null,
 }: PlacementEditorProps) {
   const isPair = pending.kind === 'pair';
   const anythingPlaced = isPair
@@ -143,6 +147,12 @@ export function PlacementEditor({
           />
         </div>
       )}
+
+      {problem ? (
+        <p className="text-center text-sm text-ink" role="status">
+          {problem}
+        </p>
+      ) : null}
 
       {/* Pinned to the bottom of the sheet: on a short phone the sheet scrolls,
           and Place must never be what scrolls away. */}

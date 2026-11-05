@@ -1,5 +1,14 @@
 import { FALLBACK_BLOB_SIZES, getPiece } from '@pixwagon/game-core';
-import type { CellRef, MoveChoice, Orientation, PieceId, Roll } from '@pixwagon/game-core';
+import { applyMove, cellAt } from '@pixwagon/game-core';
+import type {
+  Board,
+  CellRef,
+  MoveChoice,
+  MoveRejection,
+  Orientation,
+  PieceId,
+  Roll,
+} from '@pixwagon/game-core';
 import { absolutePieceCells } from './legality.ts';
 
 /**
@@ -94,20 +103,82 @@ export function placeActiveOrigin(choice: PendingChoice, origin: CellRef): Pendi
   return { ...choice, pieces, active };
 }
 
-/** Toggles a cell in the active blob: adds it if there's room, removes it if
- *  already chosen. Contiguity isn't enforced tap-by-tap — only at commit —
- *  so a player can freely backtrack without the UI blocking a valid detour. */
-export function toggleBlobCell(choice: PendingChoice, cell: CellRef): PendingChoice {
+function sameCell(a: CellRef, b: CellRef): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+function touches(cells: readonly CellRef[], cell: CellRef): boolean {
+  return cells.some((c) => Math.abs(c.x - cell.x) + Math.abs(c.y - cell.y) === 1);
+}
+
+/** The largest orthogonally-connected part of `cells` — what a blob keeps when
+ *  removing one of its squares splits it in two. Ties keep the part holding
+ *  the earliest-tapped square, so the result is stable. */
+function largestConnectedPart(cells: readonly CellRef[]): CellRef[] {
+  const left = [...cells];
+  let best: CellRef[] = [];
+  while (left.length > 0) {
+    const part = [left.shift()!];
+    for (let i = 0; i < part.length; i += 1) {
+      for (let j = left.length - 1; j >= 0; j -= 1) {
+        if (touches([part[i]!], left[j]!)) part.push(...left.splice(j, 1));
+      }
+    }
+    if (part.length > best.length) best = part;
+  }
+  // Back in tap order, so the dot row fills the way the player tapped.
+  return cells.filter((c) => best.some((b) => sameCell(b, c)));
+}
+
+/** The first blob after `from` (wrapping round) that still wants squares, or
+ *  `from` itself when every blob is full. */
+function nextOpenBlob(blobs: readonly PendingBlob[], from: number): number {
+  for (let step = 1; step <= blobs.length; step += 1) {
+    const index = (from + step) % blobs.length;
+    if (blobs[index]!.cells.length < blobs[index]!.size) return index;
+  }
+  return from;
+}
+
+/**
+ * One tap on the board while composing the single. Pass 04 (BRIEF-04, "The
+ * single (painting)") replaced pass 02's "contiguity is checked at commit"
+ * rule, because that rule let a player compose a move the referee was always
+ * going to refuse — the owner's "two 1×1 squares don't fit" report:
+ *
+ * - a tap on a square already in any blob removes it from that blob (keeping
+ *   the larger part if that splits it) and makes that blob the active one;
+ * - a tap that touches the active blob grows it;
+ * - any other tap **restarts** the active blob at that square — never a silent
+ *   no-op, so every tap visibly does something;
+ * - a blob that becomes full hands focus to the next blob still wanting
+ *   squares (compound faces like `1+2` used to drop the second tap).
+ *
+ * `board`, when given, makes taps on squares that can't be filled do nothing.
+ */
+export function toggleBlobCell(choice: PendingChoice, cell: CellRef, board?: Board): PendingChoice {
   if (choice.kind !== 'fallback') return choice;
-  const blobs = choice.blobs.map((blob, index) => {
-    if (index !== choice.active) return blob;
-    const exists = blob.cells.some((c) => c.x === cell.x && c.y === cell.y);
-    if (exists)
-      return { ...blob, cells: blob.cells.filter((c) => c.x !== cell.x || c.y !== cell.y) };
-    if (blob.cells.length >= blob.size) return blob;
-    return { ...blob, cells: [...blob.cells, cell] };
-  });
-  return { ...choice, blobs };
+
+  const owner = choice.blobs.findIndex((blob) => blob.cells.some((c) => sameCell(c, cell)));
+  if (owner !== -1) {
+    const blobs = choice.blobs.map((blob, index) =>
+      index === owner
+        ? { ...blob, cells: largestConnectedPart(blob.cells.filter((c) => !sameCell(c, cell))) }
+        : blob,
+    );
+    return { ...choice, blobs, active: owner };
+  }
+
+  if (board && cellAt(board, cell) !== 'fillable') return choice;
+
+  const active = choice.blobs[choice.active]!;
+  const grows = active.cells.length < active.size && touches(active.cells, cell);
+  const cells = grows ? [...active.cells, cell] : [cell];
+  const blobs = choice.blobs.map((blob, index) =>
+    index === choice.active ? { ...blob, cells } : blob,
+  );
+  const next = cells.length === active.size ? nextOpenBlob(blobs, choice.active) : choice.active;
+  return { ...choice, blobs, active: next };
 }
 
 /** Clears the active piece's placement or the active blob's cells — the
@@ -182,4 +253,49 @@ export function toMoveChoice(choice: PendingChoice): MoveChoice {
     };
   }
   return { kind: 'fallback', blobs: choice.blobs.map((blob) => blob.cells) };
+}
+
+/** Why ✓ Place can't be pressed yet: the choice is unfinished, or the rules
+ *  engine would refuse it. `null` means it is legal. */
+export type PendingProblem = 'incomplete' | MoveRejection;
+
+/**
+ * The referee's own check, run on the client before the player may commit
+ * (pass 04, BRIEF-04 note 1). Counting squares was not enough: a single of `2`
+ * on two holes that don't touch has the right count and is still refused. In
+ * solo this is the referee; in a room the server still has the last word.
+ */
+export function pendingProblem(
+  board: Board,
+  roll: Roll,
+  choice: PendingChoice,
+): PendingProblem | null {
+  if (!isPendingComplete(choice)) return 'incomplete';
+  const result = applyMove(board, roll, {
+    playerId: 'preview',
+    round: roll.round,
+    choice: toMoveChoice(choice),
+  });
+  return result.ok ? null : result.reason;
+}
+
+/** One short line saying why a finished choice can't be placed. Plain words,
+ *  never "invalid move" (pass 02 Annotation 14). `null` for no message. */
+export function problemText(problem: PendingProblem | null): string | null {
+  switch (problem) {
+    case null:
+    case 'incomplete':
+      return null;
+    case 'overlapping-placement':
+      return 'The pieces overlap.';
+    case 'cell-already-filled':
+      return 'Part of it covers a filled square.';
+    case 'out-of-bounds':
+    case 'cell-not-fillable':
+      return 'Part of it is off the picture.';
+    case 'blob-not-contiguous':
+      return 'Each group’s squares must touch.';
+    default:
+      return 'That doesn’t fit there.';
+  }
 }

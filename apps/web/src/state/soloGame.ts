@@ -176,7 +176,7 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
     })),
   toggleBlobCell: (cell) =>
     set((state) => ({
-      pending: updatePending(state.pending, (c) => toggleBlobPendingCell(c, cell)),
+      pending: updatePending(state.pending, (c) => toggleBlobPendingCell(c, cell, state.board)),
     })),
   clearActive: () =>
     set((state) => ({ pending: updatePending(state.pending, clearActivePending) })),

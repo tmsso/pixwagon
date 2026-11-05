@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useLocation } from 'react-router';
-import type { CellRef, PieceId } from '@pixwagon/game-core';
+import type { CellRef, PieceId, Roll } from '@pixwagon/game-core';
 import { SKIP_WAITING_AFTER_MS } from '@pixwagon/protocol';
 import type { RoomSnapshot } from '@pixwagon/protocol';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
@@ -21,8 +21,9 @@ import { fallbackFaceView, pieceOfferView } from '../state/offerView.ts';
 import {
   activeCandidateCells,
   candidateCells,
-  isPendingComplete,
   pendingCellCount,
+  pendingProblem,
+  problemText,
 } from '../state/placement.ts';
 import { myBoard, useRoomGameStore } from '../state/roomGame.ts';
 import {
@@ -234,6 +235,9 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   // A sheet is up for the choice being composed, or — held and inert — for one
   // already sent, until the referee answers (note 5, `12g`).
   const sheetChoice = pending ?? prediction?.sheet ?? null;
+  // The referee's own check, run before the player may commit (pass 04). The
+  // wire roll's piece ids are strings the server issued via `issueRoll`.
+  const problem = pending ? pendingProblem(board, { ...roll, pair } as Roll, pending) : null;
 
   return (
     <HudFrame
@@ -244,7 +248,8 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
             pending={sheetChoice}
             busy={pending === null}
             commitLabel={`Place ${pendingCellCount(sheetChoice)} square${pendingCellCount(sheetChoice) === 1 ? '' : 's'}`}
-            commitDisabled={!isPendingComplete(sheetChoice)}
+            commitDisabled={pending === null || problem !== null}
+            problem={problemText(problem)}
             onSetActive={store.setActive}
             onRotate={store.rotateActive}
             onMirror={store.mirrorActive}
