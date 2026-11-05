@@ -200,7 +200,11 @@ the **players**.
 - **The action bar is always visible.** Turn, Flip and Undo are disabled when they
   can't act. ✓ Place shows its count and is disabled until the move is legal.
 
-### Tablet and desktop, landscape (≥ 900 px wide and wider than tall)
+### Landscape: phone sideways, tablet, desktop (≥ 600 px wide and wider than tall)
+
+Decided while building (2026-11-05): the threshold was 900 px, but a phone
+held sideways (667 × 375, 844 × 390) then got the stacked layout with about
+60 px of board. The side panel narrows to 46% of the width on small screens.
 
 ```
 ┌───────────────────────────────────────────────┬──────────────────────┐
@@ -231,7 +235,7 @@ The phone layout with larger cells.
 ### Board size (replaces Annotation 11)
 
 The cell size is the **largest whole number of CSS pixels** for which the board
-fits both the available width and the available height, clamped to **16–64 px**.
+fits both the available width and the available height, clamped to **12–64 px** (the floor was 16 until a phone held sideways needed less).
 It stays a whole number so cells keep crisp edges at any device pixel ratio. That
 was Annotation 11's reason, and it still holds. The three fixed steps
 (20/28/40) are retired: they left a desktop board at 480 × 320 in a 1440 × 900

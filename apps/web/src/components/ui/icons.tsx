@@ -163,3 +163,68 @@ export function ArrowIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+
+/** Turn — a square with a clockwise arc and arrow head (pass 02 Surface 07;
+ *  moved here from PlacementEditor in pass 04). */
+export function TurnIcon({ size = 22 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="7" y="9" width="9" height="9" />
+      <path d="M6 7.5V3.5h4" />
+      <path d="M6.2 3.6A9 9 0 0 1 20 8" />
+    </svg>
+  );
+}
+
+/** Flip — a dashed vertical axis with a mirrored bracket each side. */
+export function FlipIcon({ size = 22 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M12 2v20" strokeDasharray="3 3" />
+      <path d="M9 6H4v12h5" />
+      <path d="M15 6h5v12h-5" />
+    </svg>
+  );
+}
+
+/** Take back — a square with an X. */
+export function TakeBackIcon({ size = 22 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="4" y="4" width="16" height="16" />
+      <path d="M9 9l6 6M15 9l-6 6" />
+    </svg>
+  );
+}
+
+/** Undo (pass 04) — an arrow bending back to the left. */
+export function UndoIcon({ size = 22 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M8 5L4 9l4 4" />
+      <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+    </svg>
+  );
+}
+
+/** Home (pass 04) — a square house with a pitched roof. */
+export function HomeIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <path d="M3 11l9-7 9 7" />
+      <path d="M6 9.5V20h12V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </svg>
+  );
+}
+
+/** How to play (pass 04) — a question mark in a square. */
+export function HelpIcon({ size = 20 }: IconProps) {
+  return (
+    <svg {...base(size)}>
+      <rect x="3.5" y="3.5" width="17" height="17" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6V14" />
+      <path d="M12 17v.5" />
+    </svg>
+  );
+}

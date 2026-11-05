@@ -10,6 +10,7 @@ import {
   pickUp,
   rotatePiece,
   selectTile,
+  stagedFits,
   stagedPieceAt,
   undo,
 } from './playInput.ts';
@@ -169,5 +170,16 @@ describe('keys', () => {
     expect(keyAction('Escape')).toEqual({ kind: 'cancel' });
     expect(keyAction('2')).toEqual({ kind: 'select', tile: 1 });
     expect(keyAction('x')).toBeNull();
+  });
+});
+
+describe('stagedFits', () => {
+  it('is false once a turn swings a staged piece off the picture', () => {
+    const board = openBoard(3, 3);
+    // An I-tromino lying along the bottom row, handle in the middle.
+    let choice = placeActive(startPair({ ...roll, pair: ['tromino-i', 'domino'] }), { x: 1, y: 2 });
+    expect(stagedFits(board, choice, 0)).toBe(true);
+    choice = rotatePiece(choice, 0); // now vertical through (1,2): pokes out below
+    expect(stagedFits(board, choice, 0)).toBe(false);
   });
 });
