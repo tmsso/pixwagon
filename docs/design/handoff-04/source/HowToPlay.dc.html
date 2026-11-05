@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How to play</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ht{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#171c21;-webkit-font-smoothing:antialiased}
+.ht button{font:inherit}
+.eyebrow{font:600 11px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#5a6673}
+.step{display:grid;grid-template-columns:28px 1fr;gap:4px 12px;align-items:start}
+.num{width:28px;height:28px;border-radius:999px;background:#2a9d8a;color:#fff;display:grid;place-items:center;font:600 13px/1 'JetBrains Mono',monospace}
+.ill{grid-column:2;margin-top:8px;padding:12px;border-radius:12px;background:#f6f7f9;border:1px solid #eaedf1;display:flex;align-items:center;gap:10px}
+.mtile{padding:7px;border-radius:8px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center}
+.mtile.held{border-color:#1f7a6c;box-shadow:0 0 0 2px #1f7a6c}
+.verdict{font:600 12px/1 'JetBrains Mono',monospace;padding:4px 8px;border-radius:999px}
+</style>
+</helmet>
+<div class="ht" style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #f6f7f9">
+  <div aria-hidden="true" style="position: absolute; inset: 0">
+    <dc-import name="Table" hint-size="390px,844px"></dc-import>
+  </div>
+  <div style="position: absolute; inset: 0; background: rgb(14 18 22 / 0.48)"></div>
+  <div role="dialog" aria-modal="true" aria-labelledby="htp-title" style="position: absolute; left: 12px; right: 12px; top: 40px; bottom: 24px; background: #fff; border-radius: 20px; box-shadow: 0 12px 32px rgb(14 18 22 / 0.16); display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 8px; padding: 16px 12px 8px 20px">
+      <div style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+        <span class="eyebrow">Three steps</span>
+        <h2 id="htp-title" style="margin: 0; font: 600 22px/1.25 Inter, sans-serif; letter-spacing: -0.01em">How to play</h2>
+      </div>
+      <button type="button" aria-label="Close" style="width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+      </button>
+    </div>
+    <div style="flex: 1; overflow: auto; padding: 8px 20px 16px; display: flex; flex-direction: column; gap: 18px">
+      <div class="step">
+        <span class="num">1</span>
+        <p style="margin: 0; font: 400 15px/1.45 Inter, sans-serif; padding-top: 3px"><b style="font-weight: 600">Pick a piece</b> from the pair or the single. The pair is taken together; the single is squares you paint.</p>
+        <div class="ill">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span class="eyebrow" style="font-size: 9px">The pair</span>
+            <div style="display: flex; gap: 6px; align-items: flex-start">
+              <span class="mtile held"><dc-import name="Piece" cells="{{ lCells }}" tone="held" size="10" hint-size="22px,22px"></dc-import></span>
+              <span class="mtile"><dc-import name="Piece" cells="{{ barCells }}" size="10" hint-size="22px,10px"></dc-import></span>
+            </div>
+          </div>
+          <span style="font: 500 13px/1 Inter, sans-serif; color: #5a6673; padding: 0 4px">or</span>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span class="eyebrow" style="font-size: 9px">The single · 2</span>
+            <span class="mtile" style="justify-self: start"><dc-import name="Piece" cells="{{ barCells }}" size="10" hint-size="22px,10px"></dc-import></span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="num">2</span>
+        <p style="margin: 0; font: 400 15px/1.45 Inter, sans-serif; padding-top: 3px"><b style="font-weight: 600">Drop it on the picture.</b> Turn and flip as you like, then press ✓ Place.</p>
+        <div class="ill" style="justify-content: center">
+          <dc-import name="Board" rows="{{ miniRows }}" pal="{{ miniPal }}" filled="{{ miniFilled }}" marks="{{ miniMarks }}" cell="22" gap="2" picture="Example" hint-size="138px,70px"></dc-import>
+        </div>
+      </div>
+      <div class="step">
+        <span class="num">3</span>
+        <p style="margin: 0; font: 400 15px/1.45 Inter, sans-serif; padding-top: 3px"><b style="font-weight: 600">Fill every square.</b> A finished picture scores; an unfinished one doesn’t, however close.</p>
+        <div class="ill" style="justify-content: space-around">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+            <dc-import name="Board" cell="6" gap="1" full="{{ true }}" hint-size="83px,55px"></dc-import>
+            <span class="verdict" style="background: #e6f4f1; color: #175c51">✓ scores</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+            <dc-import name="Board" cell="6" gap="1" filled="{{ almost }}" hint-size="83px,55px"></dc-import>
+            <span class="verdict" style="background: #eaedf1; color: #434e59">53 / 54 · 0</span>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 12px 14px; border-radius: 12px; border: 1px solid #d3d9e0; display: flex; flex-direction: column; gap: 6px">
+        <span class="eyebrow">Last squares</span>
+        <p style="margin: 0; font: 400 14px/1.45 Inter, sans-serif">When fewer squares are left than the single’s total, the single fills them all — no waiting for a 1.</p>
+      </div>
+    </div>
+    <div style="padding: 12px 20px 16px; border-top: 1px solid #eaedf1">
+      <button type="button" style="width: 100%; height: 48px; border-radius: 10px; border: 0; background: #2a9d8a; color: #fff; font: 600 16px/1 Inter, sans-serif; cursor: pointer; box-shadow: 0 2px 0 #175c51">Got it</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tram = [".....3......", ".....3......", ".0000000000.", ".0111011110.", ".0111011110.", ".0000000000.", ".0000000000.", "..2......2.."];
+    const almost = {};
+    tram.forEach((row, r) => { for (let c = 0; c < row.length; c++) if (row[c] !== '.') almost[r + ',' + c] = true; });
+    delete almost['7,9'];
+    return {
+      lCells: [[0, 0], [1, 0], [1, 1]],
+      barCells: [[0, 0], [0, 1]],
+      // A drawn-for-the-dialog 5×3 strip, not a pack picture.
+      miniRows: ['00000', '00000', '.000.'],
+      miniPal: ['#4a90c2'],
+      miniFilled: { '0,0': true, '0,1': true, '1,0': true },
+      miniMarks: { '0,2': 'ghost anchor', '1,2': 'ghost', '1,3': 'ghost' },
+      almost,
+    };
+  }
+}
+</script>
+</body>
+</html>

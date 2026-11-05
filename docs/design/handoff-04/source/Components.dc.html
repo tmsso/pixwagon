@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Components and looks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.cp{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#171c21;-webkit-font-smoothing:antialiased}
+.cp button{font:inherit;color:inherit}
+.eyebrow{font:600 11px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#5a6673}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.card{background:#fff;border:1px solid #d3d9e0;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.h{margin:0;font:600 18px/1.3 Inter,sans-serif}
+.sub{margin:0;font:400 13px/1.45 Inter,sans-serif;color:#5a6673}
+.lbl{font:500 12px/1.3 'JetBrains Mono',monospace;color:#434e59;text-align:center}
+.tile{min-width:60px;min-height:60px;padding:10px;border-radius:10px;border:1px solid #d3d9e0;background:#fff;display:grid;place-items:center;position:relative}
+.tile.held{border-color:#1f7a6c;box-shadow:0 0 0 2px #1f7a6c,0 6px 16px rgb(14 18 22/.14);transform:translateY(-3px)}
+.tile.staged{border-style:dashed;border-color:#1f7a6c;background:#f6f7f9}
+.tile.dim{background:#f6f7f9;opacity:.75}
+.tile.disabled{background:#f6f7f9}
+.look{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px;border-radius:10px;background:#f6f7f9}
+.tool{height:44px;min-width:44px;padding:0 10px;border-radius:10px;border:1px solid #d3d9e0;background:#fff;display:flex;align-items:center;gap:6px;font:500 13px/1 Inter,sans-serif}
+.tool:disabled{color:#7d8996;background:#f6f7f9;border-color:#eaedf1}
+.tool:disabled svg{stroke:#adb7c2}
+.place{margin-left:auto;height:44px;padding:0 16px;border-radius:10px;border:0;background:#2a9d8a;color:#fff!important;display:flex;align-items:center;gap:6px;font:600 15px/1 Inter,sans-serif;box-shadow:0 2px 0 #175c51}
+.place:disabled{background:#d3d9e0;color:#5a6673!important;box-shadow:none}
+.place:disabled svg{stroke:#5a6673}
+.sz{display:grid;grid-template-columns:1fr auto auto;gap:8px 16px;font:400 13px/1.3 Inter,sans-serif}
+.sz span:nth-child(3n+2),.sz span:nth-child(3n){font-family:'JetBrains Mono',monospace;text-align:right}
+</style>
+</helmet>
+<div class="cp" style="width: 1240px; height: 1040px; box-sizing: border-box; padding: 32px; background: #e9ecef; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-content: start">
+  <section class="card">
+    <div>
+      <h2 class="h">PieceTile</h2>
+      <p class="sub">One piece or blob in the tray. At least 2.75rem; the state is carried by outline, lift and the glyph, never by colour alone.</p>
+    </div>
+    <div style="display: flex; gap: 18px; align-items: flex-end; justify-content: space-between">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px">
+          <span class="tile {{ t.tone }}"><dc-import name="Piece" cells="{{ t.cells }}" tone="{{ t.tone }}" size="14" hint-size="30px,30px"></dc-import></span>
+          <span class="lbl">{{ t.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+  <section class="card">
+    <div>
+      <h2 class="h">DiceFace — connected runs (D21)</h2>
+      <p class="sub">A number is one connected group of squares. The dots read as loose 1×1 pieces, which is what caused the “two 1×1” refusal.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: auto repeat(5, minmax(0, 1fr)); gap: 12px 10px; align-items: center">
+      <span class="lbl" style="text-align: left">was</span>
+      <sc-for list="{{ facesOld }}" as="f" hint-placeholder-count="5">
+        <span style="display: flex; gap: 8px; justify-content: center; opacity: 0.6"><sc-for list="{{ f.blobs }}" as="b" hint-placeholder-count="1"><dc-import name="Piece" cells="{{ b }}" tone="dots" size="10" hint-size="22px,10px"></dc-import></sc-for></span>
+      </sc-for>
+      <span class="lbl" style="text-align: left">now</span>
+      <sc-for list="{{ faces }}" as="f" hint-placeholder-count="5">
+        <span style="display: flex; gap: 8px; justify-content: center"><sc-for list="{{ f.blobs }}" as="b" hint-placeholder-count="1"><dc-import name="Piece" cells="{{ b }}" size="10" hint-size="22px,10px"></dc-import></sc-for></span>
+      </sc-for>
+      <span></span>
+      <sc-for list="{{ faces }}" as="f" hint-placeholder-count="5">
+        <span class="lbl">{{ f.label }}</span>
+      </sc-for>
+    </div>
+  </section>
+  <section class="card" style="grid-column: 1 / -1">
+    <div>
+      <h2 class="h">Board looks</h2>
+      <p class="sub">Each swatch is the real board renderer on a 3×2 strip in the Tram’s body colour. Ghost and staged sit over the open grey; filled squares keep a low-contrast hatch (D19).</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+      <sc-for list="{{ looks }}" as="l" hint-placeholder-count="12">
+        <div class="look">
+          <dc-import name="Board" rows="{{ strip }}" pal="{{ l.pal }}" filled="{{ l.filled }}" marks="{{ l.marks }}" full="{{ l.full }}" cell="30" gap="2" picture="Swatch" hint-size="94px,62px"></dc-import>
+          <span class="lbl">{{ l.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+  <section class="card">
+    <div>
+      <h2 class="h">ActionBar</h2>
+      <p class="sub">Always visible. Turn and Flip act on the held piece, or on the last staged one. ✓ Place shows its count and stays disabled, with a one-line reason, until the rules engine’s own check passes.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span class="lbl" style="text-align: right">The pair is taken together — stage both pieces.</span>
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="tool" aria-label="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg></button>
+        <button type="button" class="tool"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Turn</button>
+        <button type="button" class="tool"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M8 7 3 12l5 5V7z"></path><path d="m16 7 5 5-5 5V7z"></path></svg>Flip</button>
+        <button type="button" class="place" disabled="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"></path></svg>Place 5</button>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 12px">
+        <button type="button" class="tool" aria-label="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg></button>
+        <button type="button" class="tool" disabled="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"></path><path d="M20 4v5h-5"></path></svg>Turn</button>
+        <button type="button" class="tool" disabled="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171c21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><path d="M8 7 3 12l5 5V7z"></path><path d="m16 7 5 5-5 5V7z"></path></svg>Flip</button>
+        <button type="button" class="place"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"></path></svg>Place 3</button>
+      </div>
+      <span class="lbl" style="text-align: right">single painted — Turn and Flip don’t apply</span>
+    </div>
+  </section>
+  <section class="card">
+    <div>
+      <h2 class="h">Board size</h2>
+      <p class="sub">The largest whole number of CSS pixels that fits both the width and the height, clamped to 16–64 px. Worked for the 12×8 Tram, with a 2 px gap (3 px from 48 px up).</p>
+    </div>
+    <div class="sz">
+      <span class="eyebrow">Viewport</span><span class="eyebrow">Cell</span><span class="eyebrow">Board</span>
+      <span>Small phone, 360 × 740</span><span>25 px</span><span>322 × 214</span>
+      <span>Phone, 390 × 844</span><span>28 px</span><span>358 × 238</span>
+      <span>Tablet portrait, 768 × 1024</span><span>58 px</span><span>729 × 485</span>
+      <span>Tablet landscape, 1024 × 768 (panel)</span><span>47 px</span><span>597 × 397</span>
+      <span>Desktop, 1440 × 900 (panel)</span><span>64 px</span><span>801 × 533</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":1040}}'>
+class Component extends DCLogic {
+  run(n) { const r = []; for (let i = 0; i < n; i++) r.push([0, i]); return r; }
+  dots(n) { const r = []; for (let i = 0; i < n; i++) r.push([[0, 0]]); return r; }
+  renderVals() {
+    const red = ['#d4483b'];
+    const win = ['#e8f1f5'];
+    const all = { '0,0': true, '0,1': true, '0,2': true, '1,0': true, '1,1': true, '1,2': true };
+    const L = [[0, 0], [1, 0], [1, 1]];
+    const faceSets = [[1], [2], [3], [1, 2], [1, 3]];
+    return {
+      tiles: [
+        { cells: L, tone: 'idle', label: 'idle' },
+        { cells: L, tone: 'held', label: 'held' },
+        { cells: L, tone: 'staged', label: 'staged' },
+        { cells: L, tone: 'dim', label: 'dimmed' },
+        { cells: L, tone: 'disabled', label: 'disabled' },
+      ],
+      facesOld: faceSets.map((f) => ({ blobs: f.flatMap((n) => this.dots(n)) })),
+      faces: faceSets.map((f) => ({ label: f.join('+'), blobs: f.map((n) => this.run(n)) })),
+      strip: ['000', '000'],
+      looks: [
+        { label: 'open', pal: red, filled: {}, marks: {} },
+        { label: 'filled', pal: red, filled: all, marks: {} },
+        { label: 'filled, light', pal: win, filled: all, marks: {} },
+        { label: 'ghost fits', pal: red, filled: {}, marks: { '0,0': 'ghost anchor', '1,0': 'ghost', '1,1': 'ghost' } },
+        { label: 'doesn’t fit', pal: red, filled: { '1,1': true }, marks: { '0,0': 'ghostno', '1,0': 'ghostno', '1,1': 'bad' } },
+        { label: 'staged', pal: red, filled: {}, marks: { '0,0': 'staged anchor', '1,0': 'staged', '1,1': 'staged' } },
+        { label: 'painting', pal: red, filled: {}, marks: { '0,1': 'paint', '0,2': 'paint' } },
+        { label: 'lone square', pal: red, filled: { '0,1': true, '1,0': true, '1,1': true, '1,2': true }, marks: { '0,0': 'staged anchor', '0,2': 'lone' } },
+        { label: 'checking', pal: red, filled: {}, marks: { '0,0': 'checking', '1,0': 'checking', '1,1': 'checking' } },
+        { label: 'rejected', pal: red, filled: {}, marks: { '0,0': 'invalid', '1,0': 'invalid', '1,1': 'invalid' } },
+        { label: 'show where it fits', pal: red, filled: { '0,0': true }, marks: { '0,1': 'hint', '0,2': 'hint', '1,2': 'hint' } },
+        { label: 'complete', pal: red, filled: all, marks: {}, full: true },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

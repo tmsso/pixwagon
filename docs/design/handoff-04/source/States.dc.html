@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Play table states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.cap{font:500 12px/1.5 'JetBrains Mono',ui-monospace,monospace;color:#434e59;display:flex;gap:10px;align-items:baseline;min-height:18px}
+.cap b{font-weight:600;color:#171c21}
+.tag{font:600 10px/1.4 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#175c51;border:1px solid #2a9d8a;border-radius:999px;padding:1px 8px}
+.phone{width:390px;height:844px;border-radius:26px;overflow:hidden;border:1px solid #d3d9e0;box-shadow:0 4px 12px rgb(14 18 22/.10)}
+</style>
+</helmet>
+<div style="width: 3536px; height: 960px; box-sizing: border-box; padding: 40px; background: #e9ecef; display: flex; gap: 48px; align-items: flex-start">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="8">
+    <div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex-shrink: 0">
+      <div class="cap"><b>{{ f.id }}</b><span>{{ f.title }}</span><span class="tag">{{ f.tag }}</span></div>
+      <div class="phone">
+        <dc-import name="Table" header="{{ f.header }}" room="{{ f.room }}" chips="{{ f.chips }}" filled="{{ f.filled }}" marks="{{ f.marks }}" offer="{{ f.offer }}" pair-tiles="{{ f.pairTiles }}" single-tiles="{{ f.singleTiles }}" single-face="{{ f.singleFace }}" status="{{ f.status }}" status-tone="{{ f.tone }}" banner="{{ f.banner }}" tray-dim="{{ f.trayDim }}" can-undo="{{ f.canUndo }}" can-turn="{{ f.canTurn }}" can-flip="{{ f.canFlip }}" can-place="{{ f.canPlace }}" place-count="{{ f.placeCount }}" place-reason="{{ f.placeReason }}" hint-size="390px,844px"></dc-import>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3536,"height":960}}'>
+class Component extends DCLogic {
+  base() {
+    const f = { '0,5': true };
+    for (let r = 2; r <= 4; r++) for (let c = 1; c <= 10; c++) f[r + ',' + c] = true;
+    return f;
+  }
+  all() {
+    const rows = [".....3......", ".....3......", ".0000000000.", ".0111011110.", ".0111011110.", ".0000000000.", ".0000000000.", "..2......2.."];
+    const f = {};
+    rows.forEach((row, r) => { for (let c = 0; c < row.length; c++) if (row[c] !== '.') f[r + ',' + c] = true; });
+    return f;
+  }
+  tiles(l, b, single) {
+    return {
+      pairTiles: [
+        { cells: [[0, 0], [1, 0], [1, 1]], tone: l, label: 'The L piece, 3 squares' },
+        { cells: [[0, 0], [0, 1]], tone: b, label: 'The 2-square bar' },
+      ],
+      singleTiles: single || [{ cells: [[0, 0], [0, 1]], tone: l === 'idle' && b === 'idle' ? 'idle' : 'dim', label: 'The single: 2 connected squares' }],
+    };
+  }
+  renderVals() {
+    const solo = 'Solo · Round 4 of 22';
+    const room = 'Room KX7P · Round 4 of 22';
+    const chips = (me) => [
+      { name: 'You', cls: 'p0', status: me },
+      { name: 'Ines', cls: 'p1', status: 'done' },
+      { name: 'Tomo', cls: 'p2', status: 'placing' },
+    ];
+    const common = { room: false, chips: [], filled: this.base(), banner: '', trayDim: false, singleFace: '2', canUndo: true, canTurn: true, canFlip: true, canPlace: false, placeCount: 5, placeReason: 'The pair is taken together — stage both pieces.', tone: '', offer: 'pair', header: solo };
+    const frames = [
+      {
+        ...common, id: '04a', title: 'Holding — the ghost fits', tag: 'aim',
+        ...this.tiles('held', 'idle'),
+        marks: { '5,2': 'ghost anchor', '6,2': 'ghost', '6,3': 'ghost' },
+        status: 'Holding the L piece. Tap to drop it.',
+      },
+      {
+        ...common, id: '04b', title: 'Doesn’t fit', tag: 'aim',
+        ...this.tiles('held', 'idle'),
+        marks: { '4,1': 'bad anchor', '5,1': 'ghostno', '5,2': 'ghostno' },
+        status: 'That spot doesn’t fit — the hatched squares are blocked.', tone: 'danger',
+      },
+      {
+        ...common, id: '04c', title: 'Staged, lone-square warning', tag: 'D20',
+        ...this.tiles('staged', 'held'),
+        marks: { '5,1': 'staged anchor', '6,1': 'staged', '6,2': 'staged', '5,3': 'ghost anchor', '5,4': 'ghost', '7,2': 'lone' },
+        status: 'Careful: this leaves a lone square only a 1 can fill.',
+      },
+      {
+        ...common, id: '04d', title: 'Ready — ✓ Place 5', tag: 'D18',
+        ...this.tiles('staged', 'staged'),
+        marks: { '5,4': 'staged anchor', '6,4': 'staged', '6,5': 'staged', '5,5': 'staged anchor', '5,6': 'staged' },
+        status: 'Both pieces are on the board. ✓ Place sends the move.', tone: 'accent', canPlace: true,
+      },
+      {
+        ...common, id: '04e', title: 'The single, 1+2, second blob', tag: 'D21',
+        offer: 'single', singleFace: '1+2', canTurn: false, canFlip: false, placeCount: 3, placeReason: 'Paint 1 more square.',
+        ...this.tiles('dim', 'dim', [
+          { cells: [[0, 0]], tone: 'staged', label: 'The single’s 1, painted' },
+          { cells: [[0, 0], [0, 1]], tone: 'held', label: 'The single’s 2, painting' },
+        ]),
+        marks: { '5,6': 'paint', '6,8': 'paint' },
+        status: 'Done — now paint the 2.',
+      },
+      {
+        ...common, id: '04f', title: 'Last squares', tag: 'D17',
+        header: 'Solo · Round 15 of 22', offer: 'single', singleFace: '2+2', canTurn: false, canFlip: false, canPlace: true, placeCount: 3,
+        filled: (() => { const f = this.all(); delete f['1,5']; delete f['7,2']; delete f['7,9']; return f; })(),
+        banner: 'Last squares — the single fills them all.',
+        ...this.tiles('dim', 'dim', [
+          { cells: [[0, 0], [0, 1]], tone: 'staged', label: 'The single’s first 2' },
+          { cells: [[0, 0], [0, 1]], tone: 'staged', label: 'The single’s second 2' },
+        ]),
+        marks: { '1,5': 'paint', '7,2': 'paint', '7,9': 'paint' },
+        status: 'All 3 remaining squares are staged.', tone: 'accent',
+      },
+      {
+        ...common, id: '04g', title: 'Room — checking with the room', tag: 'room',
+        header: room, room: true, chips: chips('sent'), trayDim: true, canUndo: false, canTurn: false, canFlip: false, placeReason: '',
+        ...this.tiles('staged', 'staged'),
+        marks: { '5,4': 'checking', '6,4': 'checking', '6,5': 'checking', '5,5': 'checking', '5,6': 'checking' },
+        status: 'Checking with the room…',
+      },
+      {
+        ...common, id: '04h', title: 'Room — rejected', tag: 'room',
+        header: room, room: true, chips: chips('placing'), canUndo: false, canTurn: false, canFlip: false, offer: null, placeCount: 0, placeReason: 'Pick up a piece to start.',
+        ...this.tiles('idle', 'idle'),
+        marks: { '5,4': 'invalid', '6,4': 'invalid', '6,5': 'invalid', '5,5': 'invalid', '5,6': 'invalid' },
+        status: 'Those squares didn’t fit — try another spot.', tone: 'danger',
+      },
+    ];
+    return { frames };
+  }
+}
+</script>
+</body>
+</html>

@@ -14,6 +14,9 @@ docs/design/handoff-02/
 # (.dc.html is the canvas's own format; prettier would rewrap its markup).
 docs/design/handoff-03/
 
+# Pass 04's Design canvas source, same reason as pass 03.
+docs/design/handoff-04/source/
+
 # Generated. Their formatting is the generator's business.
 design-system/
 apps/web/src/design/tokens.css
