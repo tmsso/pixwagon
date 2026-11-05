@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { RefObject } from 'react';
 
 /**
  * Board cell size in CSS pixels — three integer steps and nothing between them
@@ -85,4 +86,48 @@ export function useResultsCellSize(): 5 | 8 | 12 {
 export function useBoardCellSize(boardCols: number): BoardCellSize {
   const viewportWidth = useViewportWidth();
   return resolveBoardCellSize(viewportWidth, boardCols, viewportWidth - 32);
+}
+
+/**
+ * Pass 04 (BRIEF-04, "Board size", replacing Annotation 11's three steps): the
+ * largest whole number of CSS pixels per cell at which a `cols × rows` board
+ * fits a `width × height` area, clamped to 16–64. Whole pixels for the same
+ * reason the steps existed — a fractional cell draws soft edges — but no
+ * longer only 20/28/40, which left a 12×8 board at 480×320 px in a 1440×900
+ * window.
+ */
+export const FIT_CELL_MIN = 16;
+export const FIT_CELL_MAX = 64;
+
+export function fitCellSize(cols: number, rows: number, width: number, height: number): number {
+  const fit = Math.floor(Math.min(width / Math.max(1, cols), height / Math.max(1, rows)));
+  return Math.max(FIT_CELL_MIN, Math.min(FIT_CELL_MAX, Number.isFinite(fit) ? fit : FIT_CELL_MIN));
+}
+
+/**
+ * `fitCellSize` for the element `ref` points at, kept current with a
+ * `ResizeObserver` (a browser API that reports an element's size whenever it
+ * changes — window resizes, a phone rotating, the tray growing). Before the
+ * first measurement, and in the Node-side screen render, it answers 20, the
+ * old phone step, so static renders keep their shape.
+ */
+export function useFitCellSize(
+  ref: RefObject<HTMLElement | null>,
+  cols: number,
+  rows: number,
+): number {
+  const [size, setSize] = useState(20);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const { width, height } = element.getBoundingClientRect();
+      setSize(fitCellSize(cols, rows, width, height));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, cols, rows]);
+  return size;
 }

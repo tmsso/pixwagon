@@ -1,16 +1,19 @@
+import { useRef } from 'react';
 import { Link, useParams } from 'react-router';
 import { scoreBoard } from '@pixwagon/game-core';
-import type { CellRef } from '@pixwagon/game-core';
+import { getPack } from '@pixwagon/packs';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
-import { HudFrame } from '../components/game/HudFrame.tsx';
-import { PlacementEditor } from '../components/game/PlacementEditor.tsx';
-import { PlayerChip } from '../components/game/PlayerChip.tsx';
-import { RollControl } from '../components/game/RollControl.tsx';
+import { OfferTray } from '../components/game/OfferTray.tsx';
+import { PicturePreview } from '../components/game/PicturePreview.tsx';
+import { PlayTable } from '../components/game/PlayTable.tsx';
+import { ProgressMeter } from '../components/game/ProgressMeter.tsx';
+import { usePlayControls } from '../components/game/usePlayControls.ts';
 import { Button } from '../components/ui/Button.tsx';
-import { useBoardCellSize } from '../design/boardScale.ts';
+import { useFitCellSize } from '../design/boardScale.ts';
+import { FINE_POINTER, WIDE_LAYOUT, useMediaQuery } from '../design/useMediaQuery.ts';
 import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
-import { fallbackFaceView, pieceOfferView } from '../state/offerView.ts';
-import { pendingProblem, problemText } from '../state/placement.ts';
+import { pendingProblem, problemText, type PendingChoice } from '../state/placement.ts';
+import { hasStaged } from '../state/playInput.ts';
 import {
   SOLO_PLAYER_ID,
   activeCandidateCells,
@@ -20,109 +23,130 @@ import {
 } from '../state/soloGame.ts';
 
 /**
- * The solo game, at `/r/solo` (Phase 2). Networked rooms at any other
- * `/r/:code` render `RoomScreen` instead (`GameRoute`, Phase 4). No
- * `connection` pill: solo runs with no network at all (docs/design/surfaces/
- * Annotation 08).
+ * The solo game and the daily, at `/r/solo` and `/r/daily` (Phase 2, 7a).
+ * Networked rooms at any other `/r/:code` render `RoomScreen` (`GameRoute`).
+ * No connection pill: solo runs with no network at all (Annotation 08).
  *
- * Turn flow (design pass 02, Surface 03): the footer shows both offers →
- * picking one opens the `PlacementEditor` sheet over the board (offers collapse
- * into the sheet's chosen-offer bar) → compose → commit from inside the sheet.
+ * Pass 04 (BRIEF-04): the play table. Both offers sit in a tray as pieces;
+ * picking one up shows it on the board under the pointer; it is dropped with
+ * a click or tap (or dragged straight from the tray), turned with right-click,
+ * the wheel, R or a tap on it, and the move is sent with a compact ✓ Place.
+ * Nothing covers the board any more.
  */
 export function GameScreen() {
   const { code } = useParams();
-  const board = useSoloGameStore((state) => state.board);
-  const roll = useSoloGameStore((state) => state.roll);
-  const round = useSoloGameStore((state) => state.round);
-  const status = useSoloGameStore((state) => state.status);
-  const pending = useSoloGameStore((state) => state.pending);
-  const lastRejection = useSoloGameStore((state) => state.lastRejection);
-  const choose = useSoloGameStore((state) => state.choose);
-  const setActive = useSoloGameStore((state) => state.setActive);
-  const rotateActive = useSoloGameStore((state) => state.rotateActive);
-  const mirrorActive = useSoloGameStore((state) => state.mirrorActive);
-  const placeActive = useSoloGameStore((state) => state.placeActive);
-  const toggleBlobCell = useSoloGameStore((state) => state.toggleBlobCell);
-  const clearActive = useSoloGameStore((state) => state.clearActive);
-  const cancelChoice = useSoloGameStore((state) => state.cancelChoice);
-  const commit = useSoloGameStore((state) => state.commit);
-  const passRound = useSoloGameStore((state) => state.passRound);
+  const store = useSoloGameStore;
+  const board = store((state) => state.board);
+  const roll = store((state) => state.roll);
+  const round = store((state) => state.round);
+  const status = store((state) => state.status);
+  const pending = store((state) => state.pending);
+  const lastRejection = store((state) => state.lastRejection);
+  const packId = store((state) => state.packId);
+  const pictureId = store((state) => state.pictureId);
+  const daily = store((state) => state.daily);
+  const actions = store.getState();
 
-  // Three integer steps, never a fraction (design pass 02, Annotation 11).
-  const cellSize = useBoardCellSize(board.size.width);
+  const wide = useMediaQuery(WIDE_LAYOUT);
+  const finePointer = useMediaQuery(FINE_POINTER);
+  const boardArea = useRef<HTMLDivElement>(null);
+  const cellSize = useFitCellSize(boardArea, board.size.width, board.size.height);
+
   const score = scoreBoard(SOLO_PLAYER_ID, board);
+  const picture = getPack(packId)?.pictures.find((p) => p.id === pictureId);
+  const playing = status === 'playing';
 
+  // Gated on the rules engine's own answer, not on a square count (pass 04).
+  const problem = pending ? pendingProblem(board, roll, pending) : 'incomplete';
+  const canCommit = problem === null;
   const canPass =
     !pending &&
-    status === 'playing' &&
+    playing &&
     !pairHasLegalPlacement(board, roll.pair) &&
     !fallbackHasLegalPlacement(board, roll.fallback);
 
-  function handleCellPress(cell: CellRef) {
-    if (!pending) return;
-    if (pending.kind === 'pair') placeActive(cell);
-    else toggleBlobCell(cell);
-  }
+  const controls = usePlayControls({
+    board,
+    getPending: () => store.getState().pending,
+    actions,
+    canCommit,
+    enabled: playing,
+  });
 
-  const pendingCount = pending ? pendingCellCount(pending) : 0;
-  // Gated on the rules engine's own answer, not on a square count (pass 04).
-  const problem = pending ? pendingProblem(board, roll, pending) : null;
+  const count = pending ? pendingCellCount(pending) : 0;
+
+  const pictureCard = (
+    <div className="flex items-center gap-3">
+      {picture ? (
+        <div className="shrink-0 rounded-md border border-border bg-surface p-1">
+          <PicturePreview
+            rows={picture.rows}
+            palette={picture.palette}
+            cellSize={wide ? 10 : 3}
+            label={`The picture to fill: ${picture.name}`}
+          />
+        </div>
+      ) : null}
+      <ProgressMeter
+        filled={score.filled}
+        total={score.total}
+        label={picture ? picture.name : undefined}
+      />
+    </div>
+  );
+
+  const tray = !playing ? (
+    <div className="grid gap-3 text-center">
+      <p className="text-sm font-medium text-ink" role="status">
+        Picture complete! +{score.points} points
+      </p>
+      <Link to="/results">
+        <Button size="lg" className="w-full">
+          See results
+        </Button>
+      </Link>
+    </div>
+  ) : (
+    <OfferTray
+      pair={roll.pair}
+      fallback={roll.fallback}
+      pending={pending}
+      wide={wide}
+      tileDrag={controls.tile}
+      onSelect={actions.selectTile}
+      onUndo={actions.undo}
+      onTurn={controls.turnActive}
+      onFlip={controls.flipActive}
+      canUndo={hasStaged(pending)}
+      commit={{
+        label: count > 0 ? `✓ Place ${count}` : '✓ Place',
+        disabled: !canCommit,
+        onCommit: actions.commit,
+      }}
+      problem={problemText(problem === 'incomplete' ? null : problem)}
+      pass={canPass ? { onPass: actions.passRound } : null}
+    />
+  );
 
   return (
-    <HudFrame
-      roomCode={code?.toUpperCase() ?? 'SOLO'}
-      round={round + 1}
-      players={<PlayerChip name="You" colorIndex={0} score={score.points} active />}
-      sheet={
-        pending ? (
-          <PlacementEditor
-            pending={pending}
-            commitLabel={`Place ${pendingCount} square${pendingCount === 1 ? '' : 's'}`}
-            commitDisabled={problem !== null}
-            problem={problemText(problem)}
-            onSetActive={setActive}
-            onRotate={rotateActive}
-            onMirror={mirrorActive}
-            onTakeBack={clearActive}
-            onCancel={cancelChoice}
-            onCommit={commit}
-          />
-        ) : undefined
-      }
-      controls={
-        status === 'complete' ? (
-          <div className="grid gap-3 text-center">
-            <p className="text-sm font-medium text-ink" role="status">
-              Picture complete! +{score.points} points
-            </p>
-            <Link to="/results">
-              <Button size="lg" className="w-full">
-                See results
-              </Button>
-            </Link>
-          </div>
+    <PlayTable
+      title={daily ? 'DAILY' : (code?.toUpperCase() ?? 'SOLO')}
+      round={`Round ${round + 1}`}
+      picture={pictureCard}
+      boardAreaRef={boardArea}
+      wide={wide}
+      status={
+        lastRejection ? (
+          // Never scolding, never "invalid move" (pass 02, 03g).
+          <span role="alert" className="text-ink">
+            That didn&rsquo;t fit — those squares went back. Try another spot.
+          </span>
         ) : (
-          <div className="flex flex-col gap-3">
-            <RollControl
-              pair={[pieceOfferView(roll.pair[0]), pieceOfferView(roll.pair[1])]}
-              fallbackFace={fallbackFaceView(roll.fallback)}
-              onChoose={choose}
-            />
-            {canPass ? (
-              <Button variant="secondary" size="lg" onClick={passRound}>
-                Pass the round
-              </Button>
-            ) : null}
-            {lastRejection ? (
-              // Never scolding, never "invalid move" (design pass 02, 03g). Solo
-              // has no other player to name, so this is the whole message.
-              <p className="text-center text-sm text-ink-muted" role="alert">
-                That didn&rsquo;t fit — those squares went back. Try another spot.
-              </p>
-            ) : null}
-          </div>
+          <span role="status">{boardHint(pending, finePointer)}</span>
         )
       }
+      tray={tray}
+      aside={finePointer ? <ShortcutLegend /> : null}
     >
       <BoardCanvas
         board={board}
@@ -130,9 +154,48 @@ export function GameScreen() {
         candidateCells={pending ? candidateCells(pending) : []}
         activeCandidateCells={pending ? activeCandidateCells(pending) : []}
         invalid={lastRejection !== null}
-        onCellPress={handleCellPress}
-        focusWhen={pending !== null}
+        {...controls.board}
       />
-    </HudFrame>
+    </PlayTable>
+  );
+}
+
+/** The one line under the board: what the pointer does right now. */
+export function boardHint(pending: PendingChoice | null, finePointer: boolean): string {
+  if (!pending) return '';
+  if (pending.kind === 'fallback') {
+    return finePointer
+      ? 'Click or drag across touching squares to paint them.'
+      : 'Tap or drag across touching squares to paint them.';
+  }
+  const held = pending.pieces[pending.active].at === null;
+  if (finePointer) {
+    return held
+      ? 'Click to drop it. Right-click or R turns it.'
+      : 'Click a piece to pick it up again, or ✓ Place.';
+  }
+  return held
+    ? 'Tap the picture to drop it.'
+    : 'Tap a piece to turn it, drag it to move it, or ✓ Place.';
+}
+
+export function ShortcutLegend() {
+  const rows: [string, string][] = [
+    ['Click / drag', 'pick up and drop'],
+    ['Right-click · R · wheel', 'turn'],
+    ['Shift + right-click · F', 'flip'],
+    ['Backspace', 'undo'],
+    ['Enter · double-click', 'place'],
+    ['Esc', 'put everything back'],
+  ];
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-ink-muted">
+      {rows.map(([keys, what]) => (
+        <div key={keys} className="contents">
+          <dt className="font-mono text-ink">{keys}</dt>
+          <dd>{what}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

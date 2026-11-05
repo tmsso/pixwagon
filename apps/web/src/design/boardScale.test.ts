@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOARD_CELL_STEPS,
+  fitCellSize,
   resolveBoardCellSize,
   resultsCellForViewport,
   stepForViewport,
@@ -64,5 +65,22 @@ describe('resultsCellForViewport', () => {
     expect(resultsCellForViewport(768)).toBe(8);
     expect(resultsCellForViewport(1179)).toBe(8);
     expect(resultsCellForViewport(1180)).toBe(12);
+  });
+});
+
+describe('fitCellSize (pass 04)', () => {
+  it('is the largest whole pixel size that fits both dimensions', () => {
+    // A 12×8 board in a 1000×600 area: width allows 83, height 75.
+    expect(fitCellSize(12, 8, 1000, 600)).toBe(64);
+    expect(fitCellSize(12, 8, 700, 400)).toBe(50);
+    expect(fitCellSize(12, 8, 358, 400)).toBe(29);
+  });
+
+  it('clamps to 16–64 and never returns a fraction', () => {
+    expect(fitCellSize(12, 8, 100, 100)).toBe(16);
+    expect(fitCellSize(3, 3, 5000, 5000)).toBe(64);
+    for (let w = 150; w < 1600; w += 53) {
+      expect(Number.isInteger(fitCellSize(11, 9, w, w * 0.7))).toBe(true);
+    }
   });
 });

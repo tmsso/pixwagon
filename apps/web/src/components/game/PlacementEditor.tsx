@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PendingChoice } from '../../state/placement.ts';
 import { pieceOfferView } from '../../state/offerView.ts';
 import { Button } from '../ui/Button.tsx';
+import { FlipIcon, TakeBackIcon, TurnIcon } from '../ui/icons.tsx';
 import { DiceFace, type FallbackFace } from './DiceFace.tsx';
 import { PieceGlyph } from './PieceGlyph.tsx';
 
@@ -277,50 +278,4 @@ function Tool({
 function blobSizesToFace(blobs: readonly { size: number }[]): FallbackFace {
   if (blobs.length === 1) return blobs[0]!.size as 1 | 2 | 3;
   return [blobs[0]!.size, blobs[1]!.size] as [number, number];
-}
-
-/* Original geometric outline icons (design pass 02, Surface 07 iconography
-   specimen): 24px viewBox, 1.7px stroke, square caps, currentColor, no fill.
-   Path data lifted from the handoff's inline `<symbol>` defs. */
-const iconAttrs = {
-  width: 22,
-  height: 22,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.7,
-  strokeLinecap: 'square' as const,
-  'aria-hidden': true,
-};
-
-/** Turn — a square with a clockwise arc and arrow head. */
-function TurnIcon() {
-  return (
-    <svg {...iconAttrs}>
-      <rect x="7" y="9" width="9" height="9" />
-      <path d="M6 7.5V3.5h4" />
-      <path d="M6.2 3.6A9 9 0 0 1 20 8" />
-    </svg>
-  );
-}
-
-/** Flip — a dashed vertical axis with a mirrored bracket each side. */
-function FlipIcon() {
-  return (
-    <svg {...iconAttrs}>
-      <path d="M12 2v20" strokeDasharray="3 3" />
-      <path d="M9 6H4v12h5" />
-      <path d="M15 6h5v12h-5" />
-    </svg>
-  );
-}
-
-/** Take back — a square with an X. */
-function TakeBackIcon() {
-  return (
-    <svg {...iconAttrs}>
-      <rect x="4" y="4" width="16" height="16" />
-      <path d="M9 9l6 6M15 9l-6 6" />
-    </svg>
-  );
 }
