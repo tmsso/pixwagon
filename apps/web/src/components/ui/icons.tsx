@@ -1,7 +1,7 @@
 /* Original geometric outline icons (design pass 02, Annotations 16–17; pass
    03): 24px viewBox, 1.7px stroke, square caps, currentColor, no fill. Path
    data lifted from the handoffs' inline SVG (pass 02's `<symbol>` defs; pass
-   03's `source/*.dc.html`). Same house style as PlacementEditor.tsx's
+   03's `source/*.dc.html`). Same house style as the tray's
    Turn/Flip/Take-back set. Lived in `pwa/` until pass 03 gave the room
    screens icons of their own. */
 

@@ -39,6 +39,10 @@ Sync is a **snapshot, not a live watch**. Any time `tokens.ts` or a component sh
 
 If the beta features are not available on the account, use Claude Design's **Export → "Hand off to Claude Code"** bundle. It drops into this directory in one step, without the token sync. In that mode `docs/contracts/design-tokens.md` is the manual source of truth, reconciled once at implementation.
 
+## Pass 04 (2026-11-05)
+
+`BRIEF-04.md` inverts the usual order: the interaction was built first (engineering-led, D16), and the brief doubles as the contract and as the brief for a Claude Design polish pass. That pass is `handoff-04/` (#60), drawn as a Design canvas like pass 03; its "Looks, as specified on the canvas" were built in pass 04's C1 PR. The cards for the new components (`OfferTray`, `PieceTile`, `ProgressMeter`) replace `RollControl` and `PlacementEditor`. **Re-run `/design-sync` after the merge.**
+
 ## What goes in this directory
 
 Design output: exported screens, annotation notes, and any spec the implementation phases should follow. Nothing here is generated, so it is safe to hand-edit — unlike `design-system/`, which is regenerated wholesale.

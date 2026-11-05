@@ -150,12 +150,11 @@ function useNowAfter(at: number | null): number {
 }
 
 /**
- * The networked game (Phase 5 item 3; pass 02 `12a`–`12c`, `03f`). The same
- * turn flow as solo's `GameScreen` — offers, then the `PlacementEditor`
- * sheet — over this player's own board from the snapshot (D1(a): everyone
- * has a copy of one picture). A committed choice shows as `candidate` cells
- * until the referee rules (`fill-accepted` / `fill-rejected`); the sheet's
- * offers stay dimmed meanwhile.
+ * The networked game (Phase 5 item 3; pass 02 `12a`–`12c`; pass 04's play
+ * table). The same table as solo's `GameScreen` over this player's own board
+ * from the snapshot (D1(a): everyone has a copy of one picture). A committed
+ * choice shows as checking cells until the referee rules (`fill-accepted` /
+ * `fill-rejected`); the tray stays dimmed meanwhile.
  */
 function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useRoomGameStore((state) => state.me);

@@ -20,9 +20,10 @@ import { HudFrame } from '../../apps/web/src/components/game/HudFrame.tsx';
 import { PackCard } from '../../apps/web/src/components/game/PackCard.tsx';
 import { PicturePreview } from '../../apps/web/src/components/game/PicturePreview.tsx';
 import { PieceGlyph } from '../../apps/web/src/components/game/PieceGlyph.tsx';
-import { PlacementEditor } from '../../apps/web/src/components/game/PlacementEditor.tsx';
+import { OfferTray } from '../../apps/web/src/components/game/OfferTray.tsx';
 import { PlayerChip } from '../../apps/web/src/components/game/PlayerChip.tsx';
-import { RollControl } from '../../apps/web/src/components/game/RollControl.tsx';
+import { ProgressMeter } from '../../apps/web/src/components/game/ProgressMeter.tsx';
+import { BlobRun, PieceTile } from '../../apps/web/src/components/game/PieceTile.tsx';
 import { Button } from '../../apps/web/src/components/ui/Button.tsx';
 import { Dialog } from '../../apps/web/src/components/ui/Dialog.tsx';
 import { IconButton } from '../../apps/web/src/components/ui/IconButton.tsx';
@@ -41,7 +42,6 @@ import {
 } from '../../apps/web/src/design/tokens.ts';
 import {
   placeActive,
-  setActive,
   startFallback,
   startPair,
   toggleBlobCell,
@@ -620,35 +620,94 @@ export const cards: Card[] = [
   },
 
   {
-    path: 'components/roll-control/index.html',
-    name: 'RollControl',
+    path: 'components/offer-tray/index.html',
+    name: 'OfferTray',
     group: 'Components',
-    subtitle: 'The pair vs. the single, both revealed up front; awaiting the referee',
-    viewport: { width: 800, height: 420 },
+    subtitle:
+      'Pass 04: both offers as pieces in a tray, plus Undo · Turn · Flip · ✓ Place (replaces RollControl and PlacementEditor)',
+    viewport: { width: 900, height: 900 },
     render: () => {
-      const pair = [
-        { id: 'a', cells: TETROMINO_S },
-        { id: 'b', cells: TROMINO_L },
-      ] as const;
+      // Fixtures built through the real placement helpers, so every state is
+      // exactly what the store holds mid-turn.
+      const demoRoll: Roll = {
+        round: 1,
+        seed: 's',
+        pair: ['tromino-l', 'tetromino-s'],
+        fallback: '1+2',
+      };
+      const held = startPair(demoRoll);
+      const ready = placeActive(placeActive(held, { x: 3, y: 3 }), { x: 6, y: 6 });
+      const painting = toggleBlobCell(startFallback(demoRoll), { x: 2, y: 2 });
+      const noop = () => {};
+      const common = {
+        pair: demoRoll.pair,
+        fallback: demoRoll.fallback,
+        onSelect: noop,
+        onUndo: noop,
+        onTurn: noop,
+        onFlip: noop,
+      };
       return (
-        <div className="flex flex-col gap-6">
-          <Variant label="pair selected">
-            <div className="w-96">
-              <RollControl pair={pair} fallbackFace={[1, 2]} selectedChoice="pair" />
+        <div className="grid grid-cols-2 gap-6">
+          <Variant label="start of the round — nothing picked">
+            <div className="w-96 rounded-xl border border-border bg-surface p-3">
+              <OfferTray
+                {...common}
+                pending={null}
+                canUndo={false}
+                commit={{ label: '✓ Place', disabled: true, onCommit: noop }}
+              />
             </div>
           </Variant>
-          <Variant label="single selected">
-            <div className="w-96">
-              <RollControl pair={pair} fallbackFace={[1, 2]} selectedChoice="fallback" />
+          <Variant label="a pair piece in hand">
+            <div className="w-96 rounded-xl border border-border bg-surface p-3">
+              <OfferTray
+                {...common}
+                pending={held}
+                canUndo={false}
+                commit={{ label: '✓ Place 7', disabled: true, onCommit: noop }}
+              />
             </div>
           </Variant>
-          <Variant label="awaiting server truth">
-            <div className="w-96">
-              <RollControl
-                pair={pair}
-                fallbackFace={[1, 2]}
-                selectedChoice="pair"
-                awaitingServer
+          <Variant label="both staged, ready">
+            <div className="w-96 rounded-xl border border-border bg-surface p-3">
+              <OfferTray
+                {...common}
+                pending={ready}
+                canUndo
+                commit={{ label: '✓ Place 7', disabled: false, onCommit: noop }}
+              />
+            </div>
+          </Variant>
+          <Variant label="painting the single — the pair dims">
+            <div className="w-96 rounded-xl border border-border bg-surface p-3">
+              <OfferTray
+                {...common}
+                pending={painting}
+                canUndo
+                commit={{ label: '✓ Place 3', disabled: true, onCommit: noop }}
+              />
+            </div>
+          </Variant>
+          <Variant label="disabled reason">
+            <div className="w-96 rounded-xl border border-border bg-surface p-3">
+              <OfferTray
+                {...common}
+                pending={ready}
+                canUndo
+                problem="The pieces overlap."
+                commit={{ label: '✓ Place 7', disabled: true, onCommit: noop }}
+              />
+            </div>
+          </Variant>
+          <Variant label="room: checking with the referee">
+            <div className="w-96 rounded-xl border border-border bg-surface p-3">
+              <OfferTray
+                {...common}
+                pending={ready}
+                canUndo
+                busy
+                commit={{ label: '✓ Place 7', disabled: false, onCommit: noop }}
               />
             </div>
           </Variant>
@@ -658,81 +717,58 @@ export const cards: Card[] = [
   },
 
   {
-    path: 'components/placement-editor/index.html',
-    name: 'PlacementEditor',
+    path: 'components/piece-tile/index.html',
+    name: 'PieceTile',
     group: 'Components',
-    subtitle: 'The composition sheet: chosen-offer bar, piece/blob radiogroup, Turn/Flip/Take back, commit',
-    viewport: { width: 900, height: 640 },
-    render: () => {
-      // Fixtures built through the real placement helpers, so the states are
-      // exactly what the store would hold mid-turn.
-      const demoRoll: Roll = {
-        round: 1,
-        seed: 's',
-        pair: ['domino', 'monomino'],
-        fallback: '1+2',
-      };
-      const pairFresh = startPair(demoRoll);
-      const pairOneDown = placeActive(pairFresh, { x: 3, y: 3 });
-      const pairBothDown = placeActive(pairOneDown, { x: 6, y: 6 });
-      let singleMidway = toggleBlobCell(startFallback(demoRoll), { x: 2, y: 2 });
-      singleMidway = toggleBlobCell(setActive(singleMidway, 1), { x: 5, y: 5 });
+    subtitle: 'One tray piece: idle, held (lifted, ringed), staged (dashed, on board), dimmed',
+    viewport: { width: 760, height: 260 },
+    render: () => (
+      <div className="flex flex-wrap items-end gap-6">
+        <Variant label="idle">
+          <PieceTile label="Bent three" state="idle">
+            <PieceGlyph cells={TROMINO_L} cellSize={13} />
+          </PieceTile>
+        </Variant>
+        <Variant label="held">
+          <PieceTile label="Bent three" state="held" status="In hand">
+            <PieceGlyph cells={TROMINO_L} cellSize={13} />
+          </PieceTile>
+        </Variant>
+        <Variant label="staged">
+          <PieceTile label="Bent three" state="staged" status="On the board">
+            <PieceGlyph cells={TROMINO_L} cellSize={13} />
+          </PieceTile>
+        </Variant>
+        <Variant label="dimmed (other offer chosen)">
+          <PieceTile label="Bent three" state="idle" dimmed>
+            <PieceGlyph cells={TROMINO_L} cellSize={13} tone="muted" />
+          </PieceTile>
+        </Variant>
+        <Variant label="single blob, painting">
+          <PieceTile label="Two squares" state="held" status="1 more">
+            <BlobRun size={2} filled={1} cellSize={13} />
+          </PieceTile>
+        </Variant>
+      </div>
+    ),
+  },
 
-      const noop = () => {};
-      const common = {
-        onSetActive: noop,
-        onRotate: noop,
-        onMirror: noop,
-        onTakeBack: noop,
-        onCancel: noop,
-        onCommit: noop,
-      };
-
-      return (
-        <div className="flex flex-wrap gap-6">
-          <Variant label="pair — nothing placed">
-            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
-              <PlacementEditor
-                pending={pairFresh}
-                commitLabel="Place 3 squares"
-                commitDisabled
-                {...common}
-              />
-            </div>
-          </Variant>
-          <Variant label="pair — one down, one to go">
-            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
-              <PlacementEditor
-                pending={pairOneDown}
-                commitLabel="Place 3 squares"
-                commitDisabled
-                {...common}
-              />
-            </div>
-          </Variant>
-          <Variant label="pair — ready to commit">
-            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
-              <PlacementEditor
-                pending={pairBothDown}
-                commitLabel="Place 3 squares"
-                commitDisabled={false}
-                {...common}
-              />
-            </div>
-          </Variant>
-          <Variant label="single — one blob done, one short">
-            <div className="w-80 rounded-t-xl border border-border bg-surface p-4">
-              <PlacementEditor
-                pending={singleMidway}
-                commitLabel="Place 3 squares"
-                commitDisabled
-                {...common}
-              />
-            </div>
-          </Variant>
-        </div>
-      );
-    },
+  {
+    path: 'components/progress-meter/index.html',
+    name: 'ProgressMeter',
+    group: 'Components',
+    subtitle: 'Pass 04 picture card: squares filled, in text and as a bar',
+    viewport: { width: 520, height: 220 },
+    render: () => (
+      <div className="flex w-96 flex-col gap-6">
+        <Variant label="start">
+          <ProgressMeter filled={0} total={54} label="Tram" />
+        </Variant>
+        <Variant label="most of the way">
+          <ProgressMeter filled={41} total={54} label="Tram" />
+        </Variant>
+      </div>
+    ),
   },
 
   {
@@ -931,7 +967,7 @@ export const cards: Card[] = [
     path: 'components/hud-frame/index.html',
     name: 'HudFrame',
     group: 'Components',
-    subtitle: 'In-game chrome: status, board, thumb-reach controls',
+    subtitle: 'In-game chrome — since pass 04 only the joining skeleton; games use PlayTable',
     viewport: { width: 480, height: 800 },
     render: () => (
       <Variant label="in a room">
@@ -947,13 +983,16 @@ export const cards: Card[] = [
               </>
             }
             controls={
-              <RollControl
-                pair={[
-                  { id: 'a', cells: TETROMINO_SQUARE },
-                  { id: 'b', cells: DOMINO },
-                ]}
-                fallbackFace={2}
-                selectedChoice="pair"
+              <OfferTray
+                pair={['tetromino-o', 'domino']}
+                fallback="2"
+                pending={null}
+                onSelect={() => {}}
+                onUndo={() => {}}
+                onTurn={() => {}}
+                onFlip={() => {}}
+                canUndo={false}
+                commit={{ label: '✓ Place', disabled: true, onCommit: () => {} }}
               />
             }
           >
