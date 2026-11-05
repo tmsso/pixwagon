@@ -12,6 +12,8 @@ import { OfferTray } from '../components/game/OfferTray.tsx';
 import { PicturePreview } from '../components/game/PicturePreview.tsx';
 import { PictureStrip } from '../components/game/PictureStrip.tsx';
 import { PlayTable } from '../components/game/PlayTable.tsx';
+import { HowToPlay } from '../components/game/HowToPlay.tsx';
+import { useHowToPlay } from '../state/howToPlay.ts';
 import { ProgressMeter } from '../components/game/ProgressMeter.tsx';
 import { usePlayControls } from '../components/game/usePlayControls.ts';
 import { Button } from '../components/ui/Button.tsx';
@@ -267,12 +269,13 @@ function RoomPlayTable({
     : ('incomplete' as const);
   const canCommit = canAct && problem === null;
   const score = scoreBoard(me?.playerId ?? '', board);
+  const [helpOpen, showHelp, closeHelp] = useHowToPlay();
   const controls = usePlayControls({
     board,
     getPending: () => useRoomGameStore.getState().pending,
     actions: store,
     canCommit,
-    enabled: canAct,
+    enabled: canAct && !helpOpen,
   });
 
   // The tray shows the move being composed — or, while the referee rules,
@@ -432,82 +435,86 @@ function RoomPlayTable({
     );
 
   return (
-    <PlayTable
-      title={snapshot.code}
-      round={`Round ${hud.round}${hud.roundOf !== undefined ? ` of ${hud.roundOf}` : ''}`}
-      headerExtra={
-        <>
-          {hud.picture && hud.picture.count > 1 ? (
-            <span className="font-mono text-xs whitespace-nowrap text-ink-muted">
-              Picture {hud.picture.index} of {hud.picture.count}
-            </span>
-          ) : null}
-          {hud.connection && hud.connection !== 'online' ? (
-            <span
-              role="status"
-              className="shrink-0 rounded-full bg-warning/20 px-2 py-0.5 text-xs text-ink"
-            >
-              {hud.connection === 'reconnecting'
-                ? 'Reconnecting…'
-                : hud.connection === 'connecting'
-                  ? 'Connecting…'
-                  : 'Offline'}
-            </span>
-          ) : null}
-        </>
-      }
-      picture={pictureCard}
-      players={hud.players}
-      boardAreaRef={boardArea}
-      wide={wide}
-      status={
-        lastRejection ? (
-          // Never scolding, never "invalid move" (pass 02 03g; D1's wording —
-          // under per-player boards nobody "got there first").
-          <span role="alert" className="text-ink">
-            Those squares didn&rsquo;t fit — try another spot.
-          </span>
-        ) : (
-          <span role="status">
-            {awaitingServer ? (
-              'Checking with the room…'
-            ) : lastPicture && nowPicture ? (
-              // The new picture, named, and what it gets (`12i`). Own board:
-              // the budget is shared even though the pictures differ.
-              <>
-                <b className="font-semibold text-ink">{nowPicture.name}</b>
-                {ownBoard
-                  ? ` — a fresh board. ${snapshot.roundBudget} rounds for everyone this picture.`
-                  : ` — a fresh board and ${snapshot.roundBudget} rounds.`}
-              </>
-            ) : canAct && !pending ? (
-              // The tray says what to do; own board also says why this
-              // picture differs from the others' (`12d`).
-              ownBoard ? (
-                'Your own picture — everyone gets the same offers.'
-              ) : null
-            ) : canAct ? (
-              boardHint(pending, finePointer)
+    <>
+      <PlayTable
+        onHelp={showHelp}
+        title={snapshot.code}
+        round={`Round ${hud.round}${hud.roundOf !== undefined ? ` of ${hud.roundOf}` : ''}`}
+        headerExtra={
+          <>
+            {hud.picture && hud.picture.count > 1 ? (
+              <span className="font-mono text-xs whitespace-nowrap text-ink-muted">
+                Picture {hud.picture.index} of {hud.picture.count}
+              </span>
             ) : null}
-          </span>
-        )
-      }
-      tray={tray}
-      aside={finePointer ? <ShortcutLegend /> : null}
-    >
-      <BoardCanvas
-        board={board}
-        cellSize={cellSize}
-        colorIndex={snapshot.players.find((p) => p.id === me?.playerId)?.seatIndex ?? 0}
-        candidateCells={overlay}
-        activeCandidateCells={pending ? activeCandidateCells(pending) : []}
-        invalid={lastRejection !== null}
-        fillColors={pictureFillColors(board.packId, board.pictureId)}
-        complete={done}
-        checking={prediction !== null}
-        {...controls.board}
-      />
-    </PlayTable>
+            {hud.connection && hud.connection !== 'online' ? (
+              <span
+                role="status"
+                className="shrink-0 rounded-full bg-warning/20 px-2 py-0.5 text-xs text-ink"
+              >
+                {hud.connection === 'reconnecting'
+                  ? 'Reconnecting…'
+                  : hud.connection === 'connecting'
+                    ? 'Connecting…'
+                    : 'Offline'}
+              </span>
+            ) : null}
+          </>
+        }
+        picture={pictureCard}
+        players={hud.players}
+        boardAreaRef={boardArea}
+        wide={wide}
+        status={
+          lastRejection ? (
+            // Never scolding, never "invalid move" (pass 02 03g; D1's wording —
+            // under per-player boards nobody "got there first").
+            <span role="alert" className="text-ink">
+              Those squares didn&rsquo;t fit — try another spot.
+            </span>
+          ) : (
+            <span role="status">
+              {awaitingServer ? (
+                'Checking with the room…'
+              ) : lastPicture && nowPicture ? (
+                // The new picture, named, and what it gets (`12i`). Own board:
+                // the budget is shared even though the pictures differ.
+                <>
+                  <b className="font-semibold text-ink">{nowPicture.name}</b>
+                  {ownBoard
+                    ? ` — a fresh board. ${snapshot.roundBudget} rounds for everyone this picture.`
+                    : ` — a fresh board and ${snapshot.roundBudget} rounds.`}
+                </>
+              ) : canAct && !pending ? (
+                // The tray says what to do; own board also says why this
+                // picture differs from the others' (`12d`).
+                ownBoard ? (
+                  'Your own picture — everyone gets the same offers.'
+                ) : null
+              ) : canAct ? (
+                boardHint(pending, finePointer)
+              ) : null}
+            </span>
+          )
+        }
+        tray={tray}
+        aside={finePointer ? <ShortcutLegend /> : null}
+      >
+        <BoardCanvas
+          board={board}
+          cellSize={cellSize}
+          colorIndex={snapshot.players.find((p) => p.id === me?.playerId)?.seatIndex ?? 0}
+          candidateCells={overlay}
+          activeCandidateCells={pending ? activeCandidateCells(pending) : []}
+          invalid={lastRejection !== null}
+          fillColors={pictureFillColors(board.packId, board.pictureId)}
+          complete={done}
+          checking={prediction !== null}
+          {...controls.board}
+        />
+      </PlayTable>
+      <HowToPlay open={helpOpen} onClose={closeHelp} />
+    </>
   );
 }
 

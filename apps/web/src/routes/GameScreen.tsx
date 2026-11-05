@@ -6,6 +6,8 @@ import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
 import { OfferTray } from '../components/game/OfferTray.tsx';
 import { PicturePreview } from '../components/game/PicturePreview.tsx';
 import { PlayTable } from '../components/game/PlayTable.tsx';
+import { HowToPlay } from '../components/game/HowToPlay.tsx';
+import { useHowToPlay } from '../state/howToPlay.ts';
 import { ProgressMeter } from '../components/game/ProgressMeter.tsx';
 import { usePlayControls } from '../components/game/usePlayControls.ts';
 import { Button } from '../components/ui/Button.tsx';
@@ -70,12 +72,13 @@ export function GameScreen() {
     !pairHasLegalPlacement(board, roll.pair) &&
     !fallbackHasLegalPlacement(board, roll.fallback);
 
+  const [helpOpen, showHelp, closeHelp] = useHowToPlay();
   const controls = usePlayControls({
     board,
     getPending: () => store.getState().pending,
     actions,
     canCommit,
-    enabled: playing,
+    enabled: playing && !helpOpen,
   });
 
   const count = pending ? pendingCellCount(pending) : 0;
@@ -134,35 +137,39 @@ export function GameScreen() {
   );
 
   return (
-    <PlayTable
-      title={daily ? 'DAILY' : (code?.toUpperCase() ?? 'SOLO')}
-      round={`Round ${round + 1}`}
-      picture={pictureCard}
-      boardAreaRef={boardArea}
-      wide={wide}
-      status={
-        lastRejection ? (
-          // Never scolding, never "invalid move" (pass 02, 03g).
-          <span role="alert" className="text-ink">
-            That didn&rsquo;t fit — those squares went back. Try another spot.
-          </span>
-        ) : (
-          <span role="status">{boardHint(pending, finePointer)}</span>
-        )
-      }
-      tray={tray}
-      aside={finePointer ? <ShortcutLegend /> : null}
-    >
-      <BoardCanvas
-        board={board}
-        cellSize={cellSize}
-        candidateCells={pending ? candidateCells(pending) : []}
-        activeCandidateCells={pending ? activeCandidateCells(pending) : []}
-        invalid={lastRejection !== null}
-        fillColors={pictureFillColors(board.packId, board.pictureId)}
-        complete={!playing}
-        {...controls.board}
-      />
-    </PlayTable>
+    <>
+      <PlayTable
+        onHelp={showHelp}
+        title={daily ? 'DAILY' : (code?.toUpperCase() ?? 'SOLO')}
+        round={`Round ${round + 1}`}
+        picture={pictureCard}
+        boardAreaRef={boardArea}
+        wide={wide}
+        status={
+          lastRejection ? (
+            // Never scolding, never "invalid move" (pass 02, 03g).
+            <span role="alert" className="text-ink">
+              That didn&rsquo;t fit — those squares went back. Try another spot.
+            </span>
+          ) : (
+            <span role="status">{boardHint(pending, finePointer)}</span>
+          )
+        }
+        tray={tray}
+        aside={finePointer ? <ShortcutLegend /> : null}
+      >
+        <BoardCanvas
+          board={board}
+          cellSize={cellSize}
+          candidateCells={pending ? candidateCells(pending) : []}
+          activeCandidateCells={pending ? activeCandidateCells(pending) : []}
+          invalid={lastRejection !== null}
+          fillColors={pictureFillColors(board.packId, board.pictureId)}
+          complete={!playing}
+          {...controls.board}
+        />
+      </PlayTable>
+      <HowToPlay open={helpOpen} onClose={closeHelp} />
+    </>
   );
 }

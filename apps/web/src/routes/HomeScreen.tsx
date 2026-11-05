@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { HowToPlay } from '../components/game/HowToPlay.tsx';
+import { markHowToPlaySeen } from '../state/howToPlay.ts';
 import { Button, buttonClasses } from '../components/ui/Button.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
 import { InstallPrompt } from '../pwa/InstallPrompt.tsx';
@@ -15,6 +18,13 @@ export function HomeScreen() {
   const navigate = useNavigate();
   const start = useSoloGameStore((state) => state.start);
   const online = useOnlineStatus();
+  // Home never opens it by itself; the first game does (pass 04).
+  const [helpOpen, setHelpOpen] = useState(false);
+  const showHelp = () => setHelpOpen(true);
+  const closeHelp = () => {
+    markHowToPlaySeen();
+    setHelpOpen(false);
+  };
   // Read on render, not cached: coming back from /packs remounts Home.
   const soloPack = getPack(loadSoloPack());
   // Phase 7b: this device's completed results (state/history.ts). Read on
@@ -99,6 +109,15 @@ export function HomeScreen() {
       </Panel>
 
       <InstallPrompt />
+
+      <button
+        type="button"
+        onClick={showHelp}
+        className="mx-auto min-h-touch rounded px-3 text-sm font-medium text-accent-hover focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        How to play
+      </button>
+      <HowToPlay open={helpOpen} onClose={closeHelp} />
 
       {recent.length > 0 ? (
         <Panel title="Recent results" tone="sunken">
