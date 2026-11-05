@@ -199,7 +199,7 @@ export function OfferTray({
       {note}
 
       <p className="min-h-5 text-center text-sm text-ink" role="status">
-        {problem ?? (holding ? '' : 'Pick a piece, then drop it on the picture.')}
+        {problem ?? (holding ? '' : 'Place the first piece on the picture — or pick another here.')}
       </p>
 
       <div className="flex items-stretch gap-2">
