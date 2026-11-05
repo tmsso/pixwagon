@@ -27,6 +27,7 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 | 7     | Daily puzzle + persistence            | delivered | ⏳ device   | 7a/7b seen in two browsers; phones (step 5)                                                                         |
 | 8     | Second shape pack                     | delivered | ✅ met      | Garden ships as data; pack choice is D7                                                                             |
 | 9     | Polish                                | partly    | ⏳ device   | keyboard, safe areas, iOS hint, small-phone fixes shipped (#54); phone check is device step 6; round timer deferred |
+| P04   | Pass 04 — play table redesign         | in review | ⏳ device   | stacked PRs #56–#66 (2026-11-05); merge + Pages deploy, then D17's worker; phones are device step 7                 |
 
 Live (Pages redeployed 2026-10-25 from `main` at `200c775` — the pass-03 rework and Phase 9 polish, PRs #48–#55; the room worker is unchanged at version `a34dba09`, protocol 3): web app `https://pixwagon.pages.dev` (Pages) · room worker `https://pixwagon-app.tmsso.workers.dev`. Live-verified: the served bundle is the local build's (`index-DHZ1MApG.js`), contains the new copy and no preview origin; `/health` → `protocolVersion: 3`; one production room with two headless browsers — the guest got no Start button, the host started, both reached "Round 1" with chips saying "placing", no page errors. The 2026-10-22 deploy's longer check (own-board, picture 2, daily) was not repeated.
 
@@ -43,6 +44,22 @@ Live (Pages redeployed 2026-10-25 from `main` at `200c775` — the pass-03 rewor
 5. _Superseded by 4:_ **Phase 5** — items 1–2 merged 2026-09-24 and deliberately **not deployed** (the live client cannot fill or pass until item 3, so a Phase 5 worker would stall live rooms after round 1; owner's call, this batch). Items 3–4 next, then deploy the worker together with the client. Then **6**. **Phase 8** (second pack) is independent and is a good filler deliverable when a batch has room. **Phase 7** after 6. **Phase 9** last.
 6. **2026-10-22 batch** — D6 (persistent rejoin), Phase 6 (protocol 3, own-board, picture cycling, results and rematch, D7 pack choice), Phase 7a (daily) and 7b (local history), as stacked PRs #38–#46. Next: merge and deploy them, then the **device session** (now steps 2–5), then the **design pass 03 rework** of the provisional Phase 6 screens — the handoff has landed (`docs/design/handoff-03/`, 2026-10-22; its README's 19 engineering notes are the work list), then **Phase 9**.
 7. **2026-10-25 batch** — the pass-03 rework (all 19 engineering notes, PRs #48–#53, client only, no protocol change) and the Phase 9 items that need no phone (#54). Merged and deployed (Pages only; the worker stays `a34dba09`). Left for the owner: the device session (steps 2–6) and a `/design-sync` re-sync (BoardCompare and PlayerChip cards changed). Remaining after that: the round timer (an owner call, see Phase 9) and any pass-03 follow-ups from the device session.
+
+8. **2026-11-05 batch — pass 04, the play table** (owner: "gameplay counterintuitive … a logic error with two 1×1 holes … the whole experience needs a reshuffle"). `docs/design/BRIEF-04.md` is the contract; `docs/design/handoff-04/` (#60, the owner's Claude Design pass) is the visual spec. Stacked PRs #57–#65 (client only) and #66 (D17, protocol 4 — held back until the worker deploys). See "Pass 04" below.
+
+## Pass 04 — the play table (2026-11-05)
+
+What changed for players: pieces sit in a tray; you pick one up, aim it at the picture (a ghost says fits / doesn't), drop it with a click or tap or drag it in, turn it with right-click / wheel / R or a tap, and confirm with a compact ✓ Place. Nothing covers the board; tablets, desktops and phones held sideways get a side panel; the board fills its space in whole pixels; filled squares reveal the picture's colours; How to play exists; Home uses wide screens. The "two 1×1" refusal was a presentation bug (dots-drawn die, no blob auto-advance, Place gated on count), fixed in #57.
+
+**Decided 2026-11-05 (owner agreed all defaults, up front):** D16 engineering-led redesign supersedes pass 02/03's in-game interaction (BRIEF-04 lists the annotations) · D17 "last squares" rule with a rounds tiebreak, as its own PR, worker deploy on the owner's go · D18 compact ✓ Place everywhere (plus Enter / double-click) · D19 filled squares in the picture's colours with a texture hatch · D20 fits/doesn't ghost, lone-square warning, "show where it fits" not built (default off) · D21 a `2` stays one connected group · D22 ship autonomy as 2026-10-25 · D23 Playwright stays a scratch tool.
+
+Decided while building (BRIEF-04 updated at each): the default handle is the cell nearest the piece's middle · the side panel starts at 600 px landscape (was 900) and cells may go down to 12 px, for phones held sideways · a staged piece that stops fitting after a turn goes back to the hand (from handoff-04) · a drop that doesn't fit stays in hand with the red ghost showing why.
+
+### Decisions D24–D26 — owner to confirm
+
+- **D24 — `warning` token → `signal-600`** (handoff-04's proposal: today's value measures 1.9:1 on fillable squares). Recommended: yes. Until then only the lone-square ring uses `signal-600`.
+- **D25 — D17's boundary is "no more than", not BRIEF-04's "fewer than"** the single's total. Built that way (#66): the owner's own two-holes-and-a-2 case needs it, and the simulation's 100% was measured with it. Recommended: confirm.
+- **D26 — when to ship D17.** #66 bumps the protocol to 4: the worker deploys first, then Pages; installed PWAs see "This room runs a newer version" until they accept the update. Verified on the preview worker only. Recommended: right after #57–#65 are live and looked at on a phone.
 
 ## Decisions D5–D7 — **decided 2026-10-08** (owner: D5 keep, D6 and D7 agreed)
 
@@ -96,6 +113,8 @@ Everything below needs a real phone and cannot be done by Claude. Run it once an
 6. **Pass 03 and Phase 9** (after the Pages deploy of the 2026-10-25 batch; accept the update banner on Home first — it now says "Update"):
    - **Look and feel:** a room end to end on two phones — waiting room (host's "This game" sheet, the guest's "changed from" line), chips saying placing / done / finished / away, "Move on without …" after 30 s, picture 2 strip, results and Rematch. Say anything that looks different from `docs/design/handoff-03/`.
    - **Phase 9 Accept:** play a whole game **one-handed on the smallest phone you have**, then again with the phone in greyscale (iOS: Settings → Accessibility → Display & Text Size → Colour Filters → Grayscale; Android: Digital Wellbeing or Developer options → Simulate colour space → Monochromacy). On an iPhone, check the install card says "Tap the Share button, then Add to Home Screen" and the installed app doesn't draw under the notch or the home bar. _Accept if the board, the sheet's Place button and the chips are all usable._
+
+7. **Pass 04** (after the 2026-11-05 merge and Pages deploy): on a phone and a desktop, play a solo picture end to end. Pick up, drop (tap and drag), turn (tap the piece; on desktop right-click / wheel / R), undo, ✓ Place; check the side panel on a phone held sideways; open How to play. _Accept if it feels direct, nothing covers the board, and ✓ Place is always on screen._ After D17 deploys: finish a picture with "Last squares" and check a room's results say "N more rounds" when rounds decide.
 
 ---
 

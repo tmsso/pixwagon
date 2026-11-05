@@ -9,7 +9,7 @@ import { ResultsScreen } from './routes/ResultsScreen.tsx';
 
 /**
  * Five routes for the six design surfaces in architecture.md §4B — the sixth,
- * the round-offer control (`RollControl`), is a component rather than a
+ * the round-offer control (`OfferTray` since pass 04), is a component rather than a
  * navigable screen; it appears inside the game screen and is designed as its
  * own surface.
  *

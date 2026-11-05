@@ -382,3 +382,30 @@ Things worth knowing:
 - The generated design bundle changes whenever new Tailwind classes appear, so each PR regenerated it before `pnpm verify`.
 - Deviations D11–D15 are in `ROADMAP.md`: D11 and D12 decided, D13–D15 built defaults awaiting the owner.
 - A review before merging caught two things the first Phase 9 pass missed: the new board cursor was drawn for touch players too (any tap focuses the canvas; now `:focus-visible` only), and the safe-area padding would have shown the browser's default white around a notch in dark mode (html/body now carry the page colour). Chromium can't show `env()` insets, so neither was visible in the audit runs.
+
+### 2026-11-05 — pass 04, the play table (PRs #56–#66)
+
+The owner found the game counterintuitive, the browser view bare, and a two-1×1-holes move refused. A `/long-batch` session reviewed the mechanics and rebuilt the interaction, engineering-led (D16), with `docs/design/BRIEF-04.md` as the contract. The owner had Claude Design answer the brief in parallel (#60, `handoff-04/`), and its look specs were built in C1.
+
+- **#56** BRIEF-04: findings, D16–D21, gesture table, layouts, superseded annotations.
+- **#57 A1** the "two 1×1" report. The die drew a `2` as two separate dots, composing the single accepted squares that don't touch, compound faces dropped the second tap, and Place was gated on square count. Now: connected runs, live contiguity, auto-advance, Place gated on an `applyMove` dry run.
+- **#58 A2** anchors: the tapped square is part of the piece (it used to be the bounding-box corner, often empty for S/T/L), and turning pivots on it.
+- **#59 B1** `playInput.ts`, the pure interaction model.
+- **#61 B2** the play table for solo and daily: tray, pointer layer (hover ghost, click/tap, drag, right-click, wheel, keys), side panel, fit-to-area board. A mid-batch review found six gesture gaps; each was reproduced in a scripted browser run and fixed before moving on.
+- **#62 B3** rooms on the table. A two-browser run found that turning a staged piece on touch took the held piece out of the hand.
+- **#63 C1** handoff-04's looks: palette reveal, ghost/staged/checking/rejected, lone ring, pop, tray tiles.
+- **#64 C2** How to play. **#65 C3** wide Home.
+- **This PR (E)** design-system cards: OfferTray, PieceTile and ProgressMeter in; RollControl and PlacementEditor retired.
+- **#66 D17** "last squares", protocol 4, the rounds tiebreak. Held back: the worker deploys first. The play:check bots found that the last picture's `roundsUsed` never reached clients (fills only send deltas), so a full `state` now goes out at session end. tamper-check and session-check had protocol 3 inlined.
+
+Things worth knowing:
+
+- **Simulation** (heuristic bot, 6 pictures × 60 seeds; a person plays worse):
+  - current rules: 91% of pictures complete, and a median of 4 rounds (p90 10) is spent waiting for a `1`;
+  - a `2` meaning two loose squares: 93%;
+  - "last squares": 100%, and the wait is gone.
+
+  A first run that mixed "loose" with "partial" overstated the loose rule; the advisor caught it.
+
+- **Merging is blocked in auto mode** ("Merge Without Review"), so the chain is stacked for the owner to merge.
+- **Verification:** Playwright scratch runs against `pnpm dev` (desktop, phone and tablet, touch via CDP for jitter). Room runs used port 5173, because of the CORS allowlist, against the preview worker, and needed How to play's seen flag pre-set.
