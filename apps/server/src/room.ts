@@ -566,8 +566,10 @@ export class Room {
 
   /** After a round closes: everyone gets the scores, then the next roll, or
    *  a full `state` when the room moved on to the next picture (every board
-   *  was replaced — a roll alone would leave clients on the old picture), or
-   *  nothing more when the session ended. */
+   *  was replaced — a roll alone would leave clients on the old picture) or
+   *  the session ended. The end needs it too since protocol 4: fills only
+   *  send cell deltas, so the last picture's `roundsUsed` — the ranking's
+   *  tiebreak (D17) — reaches clients only in a snapshot. */
   #announceClose(closing: ReturnType<typeof closeRoundIfDone>, conns: readonly SeatedConn[]): void {
     if (!closing.closed) return;
     this.#broadcast(
@@ -577,7 +579,7 @@ export class Room {
         sessionEnded: closing.sessionEnded,
       }),
     );
-    if (closing.stageAdvanced) {
+    if (closing.stageAdvanced || closing.sessionEnded) {
       this.#broadcast(encode({ type: 'state', state: buildSnapshot(closing.state, conns) }));
     } else if (closing.roll) {
       this.#broadcast(encode({ type: 'roll', roll: closing.roll }));

@@ -1,4 +1,4 @@
-import { cellsAt, getPiece, legalCellsFor } from '@pixwagon/game-core';
+import { cellsAt, getPiece, lastSquaresAvailable, legalCellsFor } from '@pixwagon/game-core';
 import { FALLBACK_BLOB_SIZES } from '@pixwagon/game-core';
 import type { Board, CellRef, FallbackFaceId, Orientation, PieceId } from '@pixwagon/game-core';
 
@@ -102,6 +102,8 @@ function enumerateBlobs(available: ReadonlySet<string>, size: number): CellRef[]
  *  disjoint from the others and from already-filled cells? Tries the larger
  *  size first — fewer, more constraining candidates to branch on. */
 export function fallbackHasLegalPlacement(board: Board, face: FallbackFaceId): boolean {
+  // D17: "last squares" is a legal single too, so Pass never shows beside it.
+  if (lastSquaresAvailable(board, face)) return true;
   const sizes = [...FALLBACK_BLOB_SIZES[face]].sort((a, b) => b - a);
 
   function search(available: ReadonlySet<string>, remaining: readonly number[]): boolean {

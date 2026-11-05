@@ -7,7 +7,15 @@ import {
 } from './playInput.ts';
 import { create } from 'zustand';
 import { applyMove, createBoard, isComplete, issueRoll } from '@pixwagon/game-core';
-import type { Board, CellRef, Move, MoveRejection, Roll, Seed } from '@pixwagon/game-core';
+import type {
+  Board,
+  CellRef,
+  Move,
+  MoveChoice,
+  MoveRejection,
+  Roll,
+  Seed,
+} from '@pixwagon/game-core';
 import { getPack } from '@pixwagon/packs';
 import {
   activeCandidateCells,
@@ -105,6 +113,10 @@ export interface SoloGameState {
   commit: () => void;
   /** No legal move this round — advances without filling. */
   passRound: () => void;
+  /** D17 "last squares": the single fills everything that is left. */
+  finish: () => void;
+  /** Referees and applies one move (commit and finish both end here). */
+  submitChoice: (choice: MoveChoice) => void;
 }
 
 /** The remembered pack (`packChoice.ts`, D7) — its first picture, as solo
@@ -214,12 +226,14 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
   commit: () => {
     const state = get();
     if (!state.pending || !isPendingComplete(state.pending)) return;
+    get().submitChoice(toMoveChoice(state.pending));
+  },
 
-    const move: Move = {
-      playerId: SOLO_PLAYER_ID,
-      round: state.round,
-      choice: toMoveChoice(state.pending),
-    };
+  finish: () => get().submitChoice({ kind: 'finish' }),
+
+  submitChoice: (choice) => {
+    const state = get();
+    const move: Move = { playerId: SOLO_PLAYER_ID, round: state.round, choice };
     const result = applyMove(state.board, state.roll, move);
     if (!result.ok) {
       // Dismiss the sheet and bring the offers back (design pass 02, 03g). The

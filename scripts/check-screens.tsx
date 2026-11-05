@@ -608,7 +608,7 @@ const screens: ScreenCase[] = [
     expect: [
       'Game over · Transportation · same board',
       'Sam wins',
-      'Ranked by pictures finished, then squares.',
+      'Ranked by pictures finished, then fewest rounds, then squares.',
       '1st',
       'Kim',
       'You',
@@ -642,7 +642,7 @@ const screens: ScreenCase[] = [
     expect: [
       'Game over · Transportation · own board',
       'It’s a tie',
-      'You and Alex finished the same pictures with the same number of squares.',
+      'You and Alex finished the same pictures in as many rounds, with the same number of squares.',
       'Picture 1',
       'Picture 2',
       '1st · tied',

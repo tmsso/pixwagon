@@ -244,6 +244,24 @@ describe('in-game views (Phase 5 item 3)', () => {
     ]);
   });
 
+  it('breaks a tie on pictures by fewer rounds (D17, protocol 4)', () => {
+    const ended: RoomSnapshot = {
+      ...game,
+      status: 'ended',
+      players: [seat(0), seat(1)],
+      boards: { p0: full, p1: full },
+      roundsUsed: [{ p0: 12, p1: 9 }],
+    };
+    const ranking = roomRanking(ended);
+    expect(ranking.map((r) => [r.playerId, r.rank, r.roundsBehind, r.tieBreak])).toEqual([
+      ['p1', 1, null, null],
+      ['p0', 2, 3, null],
+    ]);
+    // Without `roundsUsed` (a pre-protocol-4 snapshot) it is a plain tie.
+    const old = roomRanking({ ...ended, roundsUsed: undefined });
+    expect(old.map((r) => r.rank)).toEqual([1, 1]);
+  });
+
   it('writes the headline: a winner, you, a tie, one picture, own board', () => {
     const ended: RoomSnapshot = {
       ...game,
@@ -254,7 +272,7 @@ describe('in-game views (Phase 5 item 3)', () => {
     const ranking = roomRanking(ended);
     expect(resultsHeadline(ranking, 'p0', 'same-board', 3)).toEqual({
       title: 'P1 wins',
-      sub: 'Ranked by pictures finished, then squares.',
+      sub: 'Ranked by pictures finished, then fewest rounds, then squares.',
     });
     expect(resultsHeadline(ranking, 'p1', 'same-board', 1).title).toBe('You win');
     expect(resultsHeadline(ranking, 'p1', 'same-board', 1).sub).toMatch(/^One picture this time/);
@@ -262,7 +280,7 @@ describe('in-game views (Phase 5 item 3)', () => {
     const tied = roomRanking({ ...ended, boards: { p0: full, p1: full } });
     expect(resultsHeadline(tied, 'p1', 'same-board', 1)).toEqual({
       title: 'It’s a tie',
-      sub: 'You and P0 finished the same pictures with the same number of squares.',
+      sub: 'You and P0 finished the same pictures in as many rounds, with the same number of squares.',
     });
     // Winning every picture of a three-picture session says so.
     const sweep = roomRanking({

@@ -28,9 +28,9 @@ if (PRODUCTION_HOSTS.includes(host)) {
 }
 console.log(`tamper check against ${origin}`);
 
-// Inlined rather than imported from `@pixwagon/protocol`: the workspace root
-// doesn't depend on it. Must match PROTOCOL_VERSION.
-const PROTOCOL_VERSION = 3;
+// Imported by relative path (as play-check does): the workspace root doesn't
+// depend on `@pixwagon/protocol`. Inlining it went stale at protocol 4.
+import { PROTOCOL_VERSION } from '../packages/protocol/src/index.ts';
 
 type Message = { type: string; [key: string]: unknown };
 
@@ -126,6 +126,8 @@ const attempts: [string, object][] = [
     },
   ],
   ['cells off the board', { kind: 'fallback', blobs: [[{ x: 999, y: 999 }]] }],
+  // Protocol 4 (D17): "finish" on a fresh board, far from the last squares.
+  ['"last squares" on a fresh board', { kind: 'finish' }],
 ];
 
 for (const [label, choice] of attempts) {

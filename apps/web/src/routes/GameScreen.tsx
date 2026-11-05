@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Link, useParams } from 'react-router';
-import { scoreBoard } from '@pixwagon/game-core';
+import { lastSquaresAvailable, scoreBoard } from '@pixwagon/game-core';
 import { getPack } from '@pixwagon/packs';
 import { BoardCanvas } from '../components/game/BoardCanvas.tsx';
 import { OfferTray } from '../components/game/OfferTray.tsx';
@@ -134,6 +134,11 @@ export function GameScreen() {
       }}
       problem={problemText(problem === 'incomplete' ? null : problem)}
       pass={canPass ? { onPass: actions.passRound } : null}
+      lastSquares={
+        lastSquaresAvailable(board, roll.fallback)
+          ? { count: score.total - score.filled, onFinish: actions.finish }
+          : null
+      }
     />
   );
 

@@ -19,6 +19,8 @@ export interface BoardCompareEntry {
   filled: number;
   /** Squares fewer than the player ranked above, when that decided the rank. */
   tieBreak?: number | null;
+  /** D17: rounds behind the player above, when that decided the rank. */
+  roundsBehind?: number | null;
   /** `null` for a picture played before this player joined. */
   boards: readonly (Board | null)[];
 }
@@ -120,7 +122,11 @@ export function BoardCompare({
                     `${entry.completedPictures} ${entry.completedPictures === 1 ? 'picture' : 'pictures'} · ${entry.points}`
                   )}
                 </span>
-                {entry.tieBreak ? (
+                {entry.roundsBehind ? (
+                  <span className="text-xs text-ink-muted">
+                    {entry.roundsBehind} more {entry.roundsBehind === 1 ? 'round' : 'rounds'}
+                  </span>
+                ) : entry.tieBreak ? (
                   <span className="text-xs text-ink-muted">{entry.tieBreak} fewer squares</span>
                 ) : null}
               </div>

@@ -95,6 +95,12 @@ export interface RoomState {
   /** Boards of every finished stage, oldest first (the results screen). */
   history: Record<string, Board>[];
   /**
+   * D17's tiebreak (2026-11-05): per stage, oldest first and ending with the
+   * stage in play, how many of the stage's rounds each player took to
+   * complete its picture. Only players who completed it appear.
+   */
+  roundsUsed: Record<string, number>[];
+  /**
    * Own-board: each board-holder's fixed offset along `pictureOrder`, given at
    * start by seat rank (0, 1, 2, …) and to a mid-game joiner as the lowest
    * unused one. Not the seat itself: seats can have gaps (a lobby leaver frees
@@ -157,6 +163,7 @@ export function initialRoomState(code: string): RoomState {
     stageStartRound: 0,
     roundBudget: null,
     history: [],
+    roundsUsed: [],
     pictureOffsets: {},
     baseSeed: null,
     rematchCount: 0,
@@ -513,6 +520,7 @@ export function startGame(state: RoomState, playerIds: readonly string[]): Start
     roundBudget,
     boards,
     history: [],
+    roundsUsed: [{}],
     acted: [],
   };
   const { roll, state: next } = issueNextRoll(started);
@@ -576,6 +584,7 @@ export function rematch(state: RoomState): RematchResult {
       stageStartRound: 0,
       roundBudget: null,
       history: [],
+      roundsUsed: [],
       pictureOffsets: {},
       boards: {},
       acted: [],
@@ -630,6 +639,15 @@ export function submitFill(
   const result = applyMove(board, roll, { playerId, round, choice: toMoveChoice(choice) });
   if (!result.ok) return { ok: false, rejection: result.reason };
 
+  // D17: the fill that completes a picture records how many of the stage's
+  // rounds it took — the tiebreak between players with as many pictures.
+  let roundsUsed = state.roundsUsed;
+  if (isComplete(result.board) && !isComplete(board)) {
+    const all = stageRounds(state);
+    const current = { ...all[all.length - 1], [playerId]: roll.round - state.stageStartRound + 1 };
+    roundsUsed = [...all.slice(0, -1), current];
+  }
+
   return {
     ok: true,
     cells: newlyFilled(board, result.board),
@@ -637,8 +655,22 @@ export function submitFill(
       ...state,
       boards: { ...state.boards, [playerId]: result.board },
       acted: [...state.acted, playerId],
+      roundsUsed,
     },
   };
+}
+
+/**
+ * `roundsUsed` with one entry per stage up to the one in play. Storage from a
+ * game started before protocol 4 has none, so the missing stages are filled
+ * with "nobody recorded" rather than misaligning the list against `history`.
+ */
+function stageRounds(state: RoomState): Record<string, number>[] {
+  const want = state.history.length + 1;
+  const have = state.roundsUsed ?? [];
+  return have.length >= want
+    ? have.slice(0, want)
+    : [...have, ...Array.from({ length: want - have.length }, () => ({}))];
 }
 
 export type PassResult =
@@ -776,6 +808,7 @@ export function closeRoundIfDone(
   const { roll, state: next } = issueNextRoll({
     ...advancing,
     history: [...state.history, state.boards],
+    roundsUsed: [...stageRounds(state), {}],
     boards,
     roundBudget,
     stageStartRound: state.round,
@@ -824,6 +857,7 @@ export function buildSnapshot(state: RoomState, conns: readonly SeatedConn[]): R
     stageStartRound: state.stageStartRound,
     boards: state.boards,
     history: state.history,
+    roundsUsed: state.status === 'lobby' ? [] : stageRounds(state),
     acted: state.acted,
   };
 }

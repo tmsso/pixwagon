@@ -377,8 +377,8 @@ describe('Phase 5 messages', () => {
 });
 
 describe('protocol 2 additions', () => {
-  it('is protocol version 2', () => {
-    expect(PROTOCOL_VERSION).toBe(3);
+  it('is protocol version 4 (pass 04, D17)', () => {
+    expect(PROTOCOL_VERSION).toBe(4);
   });
 
   it('presence requires the connected flag', () => {

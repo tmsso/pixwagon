@@ -112,7 +112,14 @@ export interface PiecePlacement {
  */
 export type MoveChoice =
   | { kind: 'pair'; placements: readonly [PiecePlacement, PiecePlacement] }
-  | { kind: 'fallback'; blobs: readonly (readonly CellRef[])[] };
+  | { kind: 'fallback'; blobs: readonly (readonly CellRef[])[] }
+  /**
+   * "Last squares" (owner decision D17, 2026-11-05): when no more fillable
+   * squares remain than the single's total, taking the single may fill all of
+   * them, however they are split. Carries no cells — the board says which —
+   * so it can't be tampered with beyond "is it allowed now".
+   */
+  | { kind: 'finish' };
 
 export interface Move {
   playerId: PlayerId;
@@ -130,7 +137,8 @@ export type MoveRejection =
   | 'not-offered'
   | 'blob-size-mismatch'
   | 'blob-not-contiguous'
-  | 'incomplete-compound-choice';
+  | 'incomplete-compound-choice'
+  | 'not-last-squares';
 
 export type MoveResult = { ok: true; board: Board } | { ok: false; reason: MoveRejection };
 
