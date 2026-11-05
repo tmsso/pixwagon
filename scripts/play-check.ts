@@ -20,8 +20,10 @@ import {
   applyMove,
   FALLBACK_BLOB_SIZES,
   isComplete,
+  lastSquaresAvailable,
   legalCellsFor,
 } from '../packages/game-core/src/index.ts';
+import { PROTOCOL_VERSION } from '../packages/protocol/src/index.ts';
 import type { Board, CellRef, Move, Roll } from '../packages/game-core/src/index.ts';
 
 const PRODUCTION_HOSTS = ['pixwagon-app.tmsso.workers.dev'];
@@ -84,6 +86,8 @@ function findBlob(board: Board, size: number, avoid: Set<string>): CellRef[] | n
 }
 
 function chooseMove(board: Board, roll: Roll, playerId: string): Move['choice'] | null {
+  // D17 (protocol 4): the last squares finish the picture in one move.
+  if (lastSquaresAvailable(board, roll.fallback)) return { kind: 'finish' };
   const [a, b] = roll.pair;
   let best: { choice: Move['choice']; gain: number } | null = null;
   const pa = legalCellsFor(board, a),
@@ -123,7 +127,7 @@ async function connect(code: string, name: string) {
   const c = { ws, msgs: [] as Msg[], id: '', send: (m: object) => ws.send(JSON.stringify(m)) };
   ws.onmessage = (e) => c.msgs.push(JSON.parse(String(e.data)));
   await new Promise((r) => (ws.onopen = r));
-  c.send({ type: 'join', protocolVersion: 3, name });
+  c.send({ type: 'join', protocolVersion: PROTOCOL_VERSION, name });
   for (let i = 0; i < 50 && !c.id; i++) {
     const w = c.msgs.find((m) => m.type === 'welcome');
     if (w) c.id = w.playerId;
@@ -185,6 +189,11 @@ for (let guard = 0; guard < 300; guard++) {
     log.push(
       `session ended at round ${roll.round}: A complete=${isComplete(boards[A.id]!)} B complete=${isComplete(boards[B.id]!)}`,
     );
+    // D17's tiebreak data, as the results screen will read it.
+    await sleep(400);
+    const final = [...B.msgs].reverse().find((m) => m.type === 'state')?.state as
+      (Snap & { roundsUsed?: Record<string, number>[] }) | undefined;
+    log.push(`roundsUsed per stage: ${JSON.stringify(final?.roundsUsed ?? null)}`);
     break;
   }
   let next: Msg | undefined;

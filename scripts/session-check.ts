@@ -30,9 +30,9 @@ if (PRODUCTION_HOSTS.includes(host)) {
 }
 console.log(`session check against ${origin}`);
 
-// Inlined rather than imported from `@pixwagon/protocol`, as in tamper-check:
-// the workspace root doesn't depend on it. Must match PROTOCOL_VERSION.
-const PROTOCOL_VERSION = 3;
+// Imported by relative path (as play-check does): the workspace root doesn't
+// depend on `@pixwagon/protocol`. Inlining it went stale at protocol 4.
+import { PROTOCOL_VERSION } from '../packages/protocol/src/index.ts';
 
 type Message = { type: string; [key: string]: unknown };
 
