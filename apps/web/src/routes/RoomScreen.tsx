@@ -275,6 +275,7 @@ function RoomPlayTable({
     actions: store,
     canCommit,
     enabled: canAct && !helpOpen,
+    roll: { ...roll, pair } as Roll,
   });
 
   // The tray shows the move being composed — or, while the referee rules,

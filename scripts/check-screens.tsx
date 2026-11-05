@@ -384,7 +384,7 @@ const screens: ScreenCase[] = [
       'Kim',
       'placing',
       'away',
-      'Pick a piece, then drop it on the picture.',
+      'Place the first piece on the picture — or pick another here.',
     ],
   },
   {

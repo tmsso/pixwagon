@@ -79,6 +79,7 @@ export function GameScreen() {
     actions,
     canCommit,
     enabled: playing && !helpOpen,
+    roll,
   });
 
   const count = pending ? pendingCellCount(pending) : 0;
