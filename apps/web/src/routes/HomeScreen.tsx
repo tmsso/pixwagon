@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { HowToPlay } from '../components/game/HowToPlay.tsx';
+import { PicturePreview } from '../components/game/PicturePreview.tsx';
 import { markHowToPlaySeen } from '../state/howToPlay.ts';
 import { Button, buttonClasses } from '../components/ui/Button.tsx';
 import { Panel } from '../components/ui/Panel.tsx';
@@ -32,6 +33,8 @@ export function HomeScreen() {
   const history = loadHistory();
   const todaysDaily = dailyResult(history, dailyKey(new Date()));
   const recent = history.slice(0, 5);
+  const dailyToday = dailyConfig();
+  const daily = getPack(dailyToday.packId)?.pictures.find((p) => p.id === dailyToday.pictureId);
 
   function handleDaily() {
     start(dailyConfig());
@@ -44,8 +47,11 @@ export function HomeScreen() {
   }
 
   return (
-    <main className="mx-auto grid min-h-app max-w-md content-center gap-6 bg-bg p-6">
-      <header className="text-center">
+    // Pass 04 (BRIEF-04 "Home on wide screens", handoff-04 `Home`): from
+    // 768px the page becomes two columns — play and history on the left, the
+    // chosen pack and today's daily on the right. The phone column is unchanged.
+    <main className="mx-auto grid min-h-app max-w-md content-center gap-6 bg-bg p-6 md:max-w-5xl md:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] md:items-start md:gap-x-10">
+      <header className="text-center md:col-span-2">
         <div className="flex items-center justify-center gap-3">
           <h1 className="font-mono text-3xl font-bold tracking-tight text-ink">Pixwagon</h1>
           {/* Offline is a state, not an incident (Annotation 16) — one neutral
@@ -133,6 +139,52 @@ export function HomeScreen() {
           </ul>
         </Panel>
       ) : null}
+      <aside className="hidden gap-6 md:col-start-2 md:row-span-4 md:row-start-2 md:grid">
+        {daily ? (
+          <Panel title="Today's daily">
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 rounded-md border border-border bg-bg p-1.5">
+                <PicturePreview
+                  rows={daily.rows}
+                  palette={daily.palette}
+                  cellSize={7}
+                  mode="outline"
+                  label={`Today's daily, still to fill`}
+                />
+              </div>
+              <div className="grid gap-2">
+                <p className="text-sm text-ink-muted">
+                  The same picture and offers for everyone today.
+                </p>
+                {todaysDaily ? (
+                  <p className="font-medium text-ink">✓ Done in {todaysDaily.rounds} rounds</p>
+                ) : (
+                  <Button onClick={handleDaily}>Play today&rsquo;s daily</Button>
+                )}
+              </div>
+            </div>
+          </Panel>
+        ) : null}
+        {soloPack ? (
+          <Panel title={soloPack.name}>
+            <ul className="flex flex-wrap items-end gap-4">
+              {soloPack.pictures.map((picture) => (
+                <li key={picture.id} className="grid justify-items-center gap-1.5">
+                  <div className="rounded-md border border-border bg-bg p-1.5">
+                    <PicturePreview
+                      rows={picture.rows}
+                      palette={picture.palette}
+                      cellSize={9}
+                      label={picture.name}
+                    />
+                  </div>
+                  <span className="text-xs text-ink-muted">{picture.name}</span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+      </aside>
     </main>
   );
 }
