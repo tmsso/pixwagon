@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import type { Board, CellRef } from '@pixwagon/game-core';
-import { candidateCells, isPendingComplete, type PendingChoice } from '../../state/placement.ts';
+import type { Board, CellRef, Roll } from '@pixwagon/game-core';
+import {
+  candidateCells,
+  isPendingComplete,
+  startPair,
+  type PendingChoice,
+} from '../../state/placement.ts';
 import {
   ghostAt,
   heldPiece,
@@ -77,8 +82,12 @@ export function usePlayControls({
   actions,
   canCommit,
   enabled,
+  roll,
 }: {
   board: Board;
+  /** The round's offer. With nothing picked yet, the pair's first piece is
+   *  what the pointer carries (the owner: "first click should place"). */
+  roll: Roll;
   getPending: () => PendingChoice | null;
   actions: PlayActions;
   /** The composed move is complete and legal (✓ Place would be live). */
@@ -96,7 +105,11 @@ export function usePlayControls({
 
   const pending = getPending();
   const shownHover = enabled ? hover : null;
-  const found = ghostAt(board, pending, shownHover);
+  // Nothing picked yet: the pointer already carries the pair's first piece,
+  // so the very first click on the picture places it — no "choose an offer"
+  // step first (the owner's first complaint, 2026-11-05). Picking a tile
+  // still chooses anything else.
+  const found = ghostAt(board, pending ?? (enabled ? startPair(roll) : null), shownHover);
   const ghost: (Ghost & { anchor: CellRef | null }) | null = found
     ? { ...found, anchor: shownHover }
     : null;
@@ -107,6 +120,15 @@ export function usePlayControls({
   // Warn about lone squares for what is staged plus a ghost that fits, so the
   // warning shows while aiming, before the piece is dropped.
   const loneCells = loneSquaresAfter(board, ghost?.fits ? [...staged, ...ghost.cells] : staged);
+
+  /** The composed move, starting the pair (first piece in hand) when nothing
+   *  has been picked yet — see the ghost above. */
+  const ensureChoice = (): PendingChoice | null => {
+    const current = getPending();
+    if (current || !enabled) return current;
+    actions.selectTile('pair', 0);
+    return getPending();
+  };
 
   const heldIndex = (): number | null => {
     const choice = getPending();
@@ -172,8 +194,10 @@ export function usePlayControls({
 
   function onBoardPointer(event: BoardPointer) {
     if (!enabled) return;
-    const choice = getPending();
     const d = drag.current;
+    // A press (left or right) with nothing picked takes the pair's first
+    // piece into hand first; moves and releases never start a choice.
+    const choice = event.type === 'down' && event.cell ? ensureChoice() : getPending();
 
     if (event.type === 'down') {
       if (event.button === 2) {
@@ -285,7 +309,7 @@ export function usePlayControls({
 
   function onWheelTurn(direction: 1 | -1): boolean {
     if (!enabled) return false;
-    const choice = getPending();
+    const choice = ensureChoice();
     if (choice?.kind !== 'pair') return false;
     const index = heldIndex() ?? (hover ? stagedPieceAt(choice, hover) : null);
     if (index === null) return false;
@@ -297,7 +321,7 @@ export function usePlayControls({
    *  or ✓ Place when nothing is in hand. */
   function onCellPress(cell: CellRef) {
     if (!enabled) return;
-    const choice = getPending();
+    const choice = ensureChoice();
     if (!choice) return;
     if (choice.kind === 'fallback') {
       actions.toggleBlobCell(cell);
@@ -313,9 +337,9 @@ export function usePlayControls({
   }
 
   // Keys anywhere on the page (BRIEF-04: R, F, Backspace, Esc, 1–4, Enter).
-  const keyState = useRef({ enabled, canCommit, actions, getPending, turn, flip });
+  const keyState = useRef({ enabled, canCommit, actions, getPending, turn, flip, ensureChoice });
   useEffect(() => {
-    keyState.current = { enabled, canCommit, actions, getPending, turn, flip };
+    keyState.current = { enabled, canCommit, actions, getPending, turn, flip, ensureChoice };
   });
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -337,7 +361,11 @@ export function usePlayControls({
       }
       const action = keyAction(event.key);
       if (!action) return;
-      const choice = state.getPending();
+      // R or F with nothing picked turns the pair's first piece, now in hand.
+      const choice =
+        action.kind === 'rotate' || action.kind === 'mirror'
+          ? state.ensureChoice()
+          : state.getPending();
       const index = choice?.kind === 'pair' ? choice.active : null;
       switch (action.kind) {
         case 'rotate':
