@@ -49,6 +49,8 @@ export function GameScreen() {
 
   const wide = useMediaQuery(WIDE_LAYOUT);
   const finePointer = useMediaQuery(FINE_POINTER);
+  // A phone held sideways: keep the side panel compact enough for ✓ Place.
+  const short = useMediaQuery('(max-height: 31.25rem)');
   const boardArea = useRef<HTMLDivElement>(null);
   const cellSize = useFitCellSize(boardArea, board.size.width, board.size.height);
 
@@ -82,7 +84,7 @@ export function GameScreen() {
           <PicturePreview
             rows={picture.rows}
             palette={picture.palette}
-            cellSize={wide ? 10 : 3}
+            cellSize={wide ? (short ? 4 : 10) : 3}
             label={`The picture to fill: ${picture.name}`}
           />
         </div>

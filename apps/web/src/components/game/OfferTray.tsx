@@ -116,7 +116,17 @@ export function OfferTray({
       inert={busy}
       aria-busy={busy || undefined}
     >
-      <div className={['grid gap-3', wide ? 'grid-cols-1' : 'grid-cols-[3fr_2fr]'].join(' ')}>
+      {/* Side by side on a phone; stacked in a tall side panel; side by side
+          again in a short one (a phone held sideways), so ✓ Place stays on
+          screen without scrolling the panel. */}
+      <div
+        className={[
+          'grid gap-3',
+          wide
+            ? 'grid-cols-[3fr_2fr] [@media(min-height:40rem)]:grid-cols-1'
+            : 'grid-cols-[3fr_2fr]',
+        ].join(' ')}
+      >
         <OfferGroup title="The pair" hint="place both" dimmed={chosen === 'fallback'}>
           {pair.map((pieceId, index) => {
             const pendingPiece = pending?.kind === 'pair' ? pending.pieces[index] : undefined;

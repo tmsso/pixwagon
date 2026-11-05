@@ -57,6 +57,9 @@ export interface BoardPointer {
   pointerType: string;
   button: number;
   shiftKey: boolean;
+  /** Screen position, for telling a jittery tap from a drag in pixels. */
+  clientX: number;
+  clientY: number;
 }
 
 /**
@@ -313,6 +316,8 @@ export function BoardCanvas({
       pointerType: event.pointerType,
       button: event.button,
       shiftKey: event.shiftKey,
+      clientX: event.clientX,
+      clientY: event.clientY,
     };
   }
 

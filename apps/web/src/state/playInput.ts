@@ -150,6 +150,18 @@ export function ghostAt(
   return { cells, fits };
 }
 
+/** Does staged piece `index` still sit on open squares, clear of the other
+ *  piece? False after a turn swings part of it off the picture. */
+export function stagedFits(board: Board, choice: PendingChoice, index: number): boolean {
+  if (choice.kind !== 'pair') return true;
+  const piece = choice.pieces[index === 1 ? 1 : 0];
+  if (!piece.at) return true;
+  const other = stagedPieceCells(choice.pieces[index === 1 ? 0 : 1]);
+  return stagedPieceCells(piece).every(
+    (c) => cellAt(board, c) === 'fillable' && !other.some((o) => sameCell(o, c)),
+  );
+}
+
 function isLone(board: Board, cell: CellRef, covered: ReadonlySet<string>): boolean {
   const steps = [
     [1, 0],

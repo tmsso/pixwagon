@@ -23,7 +23,10 @@ export function useMediaQuery(query: string, fallback = false): boolean {
   return matches;
 }
 
-/** BRIEF-04 "Layouts": the side-panel arrangement — wide and wider than tall. */
-export const WIDE_LAYOUT = '(min-width: 56.25rem) and (orientation: landscape)';
+/** BRIEF-04 "Layouts": the side-panel arrangement whenever the screen is
+ *  wider than tall and at least 600 px wide. That includes a phone held
+ *  sideways (667×375, 844×390): stacked, it would leave the board about 60 px
+ *  of height. (The brief said 900 px; changed while building, 2026-11-05.) */
+export const WIDE_LAYOUT = '(min-width: 37.5rem) and (orientation: landscape)';
 /** A mouse or trackpad is present: show the keyboard/mouse shortcut legend. */
 export const FINE_POINTER = '(pointer: fine)';

@@ -91,12 +91,12 @@ export function PlayTable({
 
   if (wide) {
     return (
-      <div className="grid h-app grid-cols-[minmax(0,1fr)_21.25rem] bg-bg">
+      <div className="grid h-app grid-cols-[minmax(0,1fr)_min(21.25rem,46vw)] bg-bg">
         <div className="flex min-h-0 flex-col">
           {header}
           {board}
         </div>
-        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-4">
+        <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-l border-border bg-surface p-3 [@media(min-height:40rem)]:gap-4 [@media(min-height:40rem)]:p-4">
           {picture}
           <div className="border-t border-border pt-4">{tray}</div>
           {players ? <div className="flex flex-wrap gap-2">{players}</div> : null}

@@ -7,6 +7,7 @@ import {
   heldPiece,
   keyAction,
   loneSquaresAfter,
+  stagedFits,
   stagedPieceAt,
   type Ghost,
 } from '../../state/playInput.ts';
@@ -45,8 +46,13 @@ interface Drag {
  * Gestures). A plain tap still lands exactly where it touched.
  */
 const LIFT_ROWS = 2;
-/** Movement (CSS px) before a press on a tray tile counts as a drag. */
-const DRAG_SLOP = 6;
+/** Movement (CSS px) before a press counts as a drag rather than a tap —
+ *  a finger always jitters a little, and without this a tap near a square's
+ *  edge would count as a drag and land the piece two rows up. */
+const DRAG_SLOP = 8;
+/** A press on a piece within this long of dropping it there is the second
+ *  half of a double-click (place), not a pick-up. */
+const DOUBLE_CLICK_MS = 400;
 
 function same(a: CellRef | null, b: CellRef | null): boolean {
   return a !== null && b !== null && a.x === b.x && a.y === b.y;
@@ -83,6 +89,7 @@ export function usePlayControls({
   const [hover, setHover] = useState<CellRef | null>(null);
   const drag = useRef<Drag | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
+  const lastDrop = useRef<{ cell: CellRef; at: number } | null>(null);
   const setCanvas = useCallback((element: HTMLCanvasElement | null) => {
     canvas.current = element;
   }, []);
@@ -121,10 +128,40 @@ export function usePlayControls({
     return x >= 0 && y >= 0 && x < board.size.width && y < board.size.height ? { x, y } : null;
   };
 
+  /** A staged piece that no longer fits after a turn or flip goes back to
+   *  the hand, still turned, rather than sitting on the board looking placed
+   *  (handoff-04, `Main`). */
+  const settle = (index: number) => {
+    const choice = getPending();
+    if (choice && !stagedFits(board, choice, index)) actions.pickUp(index);
+  };
+
   const turn = (index: number | null, direction: 1 | -1 = 1) => {
     if (index === null) return;
     // A quarter turn back is three forward; the model only turns clockwise.
     for (let i = 0; i < (direction === 1 ? 1 : 3); i += 1) actions.rotatePiece(index);
+    settle(index);
+  };
+
+  const flip = (index: number | null) => {
+    if (index === null) return;
+    actions.mirrorPiece(index);
+    settle(index);
+  };
+
+  /** Drops the held piece with its handle on `cell` — only where it fits. A
+   *  drop that doesn't fit stays in hand, and the red ghost stays where it
+   *  was aimed so the player can see why. */
+  const drop = (cell: CellRef | null): boolean => {
+    if (!cell) return false;
+    const ghostHere = ghostAt(board, getPending(), cell);
+    if (!ghostHere?.fits) {
+      setHover(cell);
+      return false;
+    }
+    actions.placeActive(cell);
+    lastDrop.current = { cell, at: Date.now() };
+    return true;
   };
 
   function onBoardPointer(event: BoardPointer) {
@@ -137,7 +174,7 @@ export function usePlayControls({
         // Right-click turns; with Shift it flips (BRIEF-04 gesture table).
         const index = turnTarget(event.cell);
         if (index !== null) {
-          if (event.shiftKey) actions.mirrorPiece(index);
+          if (event.shiftKey) flip(index);
           else turn(index);
         }
         return;
@@ -147,8 +184,8 @@ export function usePlayControls({
         pointerId: event.pointerId,
         pointerType: event.pointerType,
         start: event.cell,
-        startX: 0,
-        startY: 0,
+        startX: event.clientX,
+        startY: event.clientY,
         moved: false,
         pieceIndex: 0,
       };
@@ -158,7 +195,20 @@ export function usePlayControls({
         return;
       }
       const index = stagedPieceAt(choice, event.cell);
-      if (index !== null && heldIndex() === null) {
+      const recent = lastDrop.current;
+      if (
+        index !== null &&
+        recent &&
+        same(recent.cell, event.cell) &&
+        Date.now() - recent.at < DOUBLE_CLICK_MS
+      ) {
+        // The second press of a double-click on the piece just dropped:
+        // leave it be, so the double-click can place the move.
+        return;
+      }
+      // A press on a staged piece always takes that piece — even with the
+      // other one in hand (which then waits in the tray).
+      if (index !== null) {
         if (event.pointerType === 'mouse') {
           // A click on a staged piece picks it up by that square.
           actions.pickUp(index, event.cell);
@@ -182,7 +232,9 @@ export function usePlayControls({
         return;
       }
       if (event.pointerId !== d.pointerId) return;
-      if (!same(event.cell, d.start)) d.moved = true;
+      if (!d.moved && Math.hypot(event.clientX - d.startX, event.clientY - d.startY) > DRAG_SLOP) {
+        d.moved = true;
+      }
       if (d.mode === 'paint') {
         const choiceNow = getPending();
         // Painting past the last square stops there, rather than restarting
@@ -210,10 +262,8 @@ export function usePlayControls({
         // A tap on a staged piece turns it in place (touch has no right-click).
         turn(d.pieceIndex);
       } else if (d.mode === 'stage' || (d.mode === 'move' && d.moved)) {
-        const target = lifted(event.cell, d);
-        if (target) actions.placeActive(target);
+        if (drop(lifted(event.cell, d)) && event.pointerType !== 'mouse') setHover(null);
       }
-      if (event.pointerType !== 'mouse') setHover(null);
       return;
     }
 
@@ -248,7 +298,7 @@ export function usePlayControls({
       return;
     }
     if (heldIndex() !== null) {
-      actions.placeActive(cell);
+      drop(cell);
       return;
     }
     const index = stagedPieceAt(choice, cell);
@@ -257,9 +307,9 @@ export function usePlayControls({
   }
 
   // Keys anywhere on the page (BRIEF-04: R, F, Backspace, Esc, 1–4, Enter).
-  const keyState = useRef({ enabled, canCommit, actions, getPending });
+  const keyState = useRef({ enabled, canCommit, actions, getPending, turn, flip });
   useEffect(() => {
-    keyState.current = { enabled, canCommit, actions, getPending };
+    keyState.current = { enabled, canCommit, actions, getPending, turn, flip };
   });
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -285,10 +335,10 @@ export function usePlayControls({
       const index = choice?.kind === 'pair' ? choice.active : null;
       switch (action.kind) {
         case 'rotate':
-          if (index !== null) state.actions.rotatePiece(index);
+          if (index !== null) state.turn(index);
           break;
         case 'mirror':
-          if (index !== null) state.actions.mirrorPiece(index);
+          if (index !== null) state.flip(index);
           break;
         case 'undo':
           state.actions.undo();
@@ -312,6 +362,10 @@ export function usePlayControls({
   const tile = {
     onPointerDown(kind: 'pair' | 'fallback', index: number, event: ReactPointerEvent) {
       if (!enabled || event.button !== 0) return;
+      // Keep focus where it was: a focused tile would turn the next Enter
+      // into "select this tile again" — picking a just-dropped piece back up
+      // — instead of ✓ Place.
+      event.preventDefault();
       actions.selectTile(kind, index);
       if (kind !== 'pair') return;
       event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -340,10 +394,10 @@ export function usePlayControls({
       if (!d || d.mode !== 'tray' || event.pointerId !== d.pointerId) return;
       drag.current = null;
       if (d.moved) {
-        const target = lifted(cellAtPoint(event.clientX, event.clientY), d);
-        if (target) actions.placeActive(target);
+        if (drop(lifted(cellAtPoint(event.clientX, event.clientY), d))) {
+          if (event.pointerType !== 'mouse') setHover(null);
+        }
       }
-      if (event.pointerType !== 'mouse') setHover(null);
     },
     onPointerCancel() {
       drag.current = null;
@@ -360,7 +414,8 @@ export function usePlayControls({
       onCellPress,
       onCursorMove: (cell: CellRef | null) => setHover(cell),
       onDoubleClick: () => {
-        if (enabled && canCommit) actions.commit();
+        // Read fresh: the first click of the pair may have just completed the move.
+        if (keyState.current.enabled && keyState.current.canCommit) actions.commit();
       },
       canvasRef: setCanvas,
       ghost,
@@ -369,9 +424,6 @@ export function usePlayControls({
     tile,
     /** The action bar's Turn / Flip: the piece in hand, else the active one. */
     turnActive: () => turn(turnTarget(null)),
-    flipActive: () => {
-      const index = turnTarget(null);
-      if (index !== null) actions.mirrorPiece(index);
-    },
+    flipActive: () => flip(turnTarget(null)),
   };
 }

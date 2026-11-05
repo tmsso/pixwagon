@@ -91,12 +91,12 @@ export function useBoardCellSize(boardCols: number): BoardCellSize {
 /**
  * Pass 04 (BRIEF-04, "Board size", replacing Annotation 11's three steps): the
  * largest whole number of CSS pixels per cell at which a `cols × rows` board
- * fits a `width × height` area, clamped to 16–64. Whole pixels for the same
+ * fits a `width × height` area, clamped to 12–64. Whole pixels for the same
  * reason the steps existed — a fractional cell draws soft edges — but no
  * longer only 20/28/40, which left a 12×8 board at 480×320 px in a 1440×900
  * window.
  */
-export const FIT_CELL_MIN = 16;
+export const FIT_CELL_MIN = 12;
 export const FIT_CELL_MAX = 64;
 
 export function fitCellSize(cols: number, rows: number, width: number, height: number): number {

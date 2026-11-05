@@ -7,14 +7,20 @@ import './design/tokens.css';
 // scripts/check-screens.tsx never pulls in `virtual:pwa-register`.
 import './pwa/register.ts';
 import { useRoomGameStore } from './state/roomGame.ts';
+import { useSoloGameStore } from './state/soloGame.ts';
 
 // Dev-only test seam: lets a headless-browser run (two players, a full
 // picture) drive the room store directly once the UI path has been clicked
 // through for real. `import.meta.env.DEV` is a compile-time constant, so a
 // production build drops this branch entirely — nothing is exposed live.
 if (import.meta.env.DEV) {
-  (window as unknown as { __pixwagonRoom?: typeof useRoomGameStore }).__pixwagonRoom =
-    useRoomGameStore;
+  const seams = window as unknown as {
+    __pixwagonRoom?: typeof useRoomGameStore;
+    __pixwagonSolo?: typeof useSoloGameStore;
+  };
+  seams.__pixwagonRoom = useRoomGameStore;
+  // Read-only use in pass 04's gesture checks: where a drop really landed.
+  seams.__pixwagonSolo = useSoloGameStore;
 }
 
 const root = document.getElementById('root');
