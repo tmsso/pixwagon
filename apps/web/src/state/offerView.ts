@@ -1,7 +1,13 @@
 import { cellsAt, getPiece } from '@pixwagon/game-core';
 import type { FallbackFaceId, Orientation, PieceId } from '@pixwagon/game-core';
 import type { FallbackFace } from '../components/game/DiceFace.tsx';
-import type { PieceOfferView } from '../components/game/RollControl.tsx';
+
+/** A piece's footprint as `PieceGlyph` draws it (moved here from the retired
+ *  `RollControl` in pass 04). */
+export interface PieceOfferView {
+  id: string;
+  cells: readonly { x: number; y: number }[];
+}
 
 /**
  * Pure view-layer conversions between game-core's wire vocabulary and the

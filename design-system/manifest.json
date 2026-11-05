@@ -142,23 +142,33 @@
       }
     },
     {
-      "name": "RollControl",
-      "path": "components/roll-control/index.html",
+      "name": "OfferTray",
+      "path": "components/offer-tray/index.html",
       "group": "Components",
-      "subtitle": "The pair vs. the single, both revealed up front; awaiting the referee",
+      "subtitle": "Pass 04: both offers as pieces in a tray, plus Undo · Turn · Flip · ✓ Place (replaces RollControl and PlacementEditor)",
       "viewport": {
-        "width": 800,
-        "height": 420
+        "width": 900,
+        "height": 900
       }
     },
     {
-      "name": "PlacementEditor",
-      "path": "components/placement-editor/index.html",
+      "name": "PieceTile",
+      "path": "components/piece-tile/index.html",
       "group": "Components",
-      "subtitle": "The composition sheet: chosen-offer bar, piece/blob radiogroup, Turn/Flip/Take back, commit",
+      "subtitle": "One tray piece: idle, held (lifted, ringed), staged (dashed, on board), dimmed",
       "viewport": {
-        "width": 900,
-        "height": 640
+        "width": 760,
+        "height": 260
+      }
+    },
+    {
+      "name": "ProgressMeter",
+      "path": "components/progress-meter/index.html",
+      "group": "Components",
+      "subtitle": "Pass 04 picture card: squares filled, in text and as a bar",
+      "viewport": {
+        "width": 520,
+        "height": 220
       }
     },
     {
@@ -195,7 +205,7 @@
       "name": "HudFrame",
       "path": "components/hud-frame/index.html",
       "group": "Components",
-      "subtitle": "In-game chrome: status, board, thumb-reach controls",
+      "subtitle": "In-game chrome — since pass 04 only the joining skeleton; games use PlayTable",
       "viewport": {
         "width": 480,
         "height": 800
