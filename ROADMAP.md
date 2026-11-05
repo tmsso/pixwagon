@@ -27,7 +27,9 @@ Companions: `CLAUDE.md` (rules and conventions — read first), `docs/architectu
 | 7     | Daily puzzle + persistence            | delivered | ⏳ device   | 7a/7b seen in two browsers; phones (step 5)                                                                         |
 | 8     | Second shape pack                     | delivered | ✅ met      | Garden ships as data; pack choice is D7                                                                             |
 | 9     | Polish                                | partly    | ⏳ device   | keyboard, safe areas, iOS hint, small-phone fixes shipped (#54); phone check is device step 6; round timer deferred |
-| P04   | Pass 04 — play table redesign         | in review | ⏳ device   | PRs #56–#68 + #60 (2026-11-05); merge to #68 + Pages, then #66 after its worker; device step 7                      |
+| P04   | Pass 04 — play table redesign         | merged    | ⏳ device   | #56–#68 merged 2026-11-05 (main 23b4cdc, protocol 4); NOT deployed — worker first, then Pages; device step 7        |
+
+> **Main is ahead of live since 2026-11-05.** Pass 04 (#56–#68, including D17's protocol 4) is merged but not deployed. The next deploy must put out the worker first (`/health` → 4), then Pages.
 
 Live (Pages redeployed 2026-10-25 from `main` at `200c775` — the pass-03 rework and Phase 9 polish, PRs #48–#55; the room worker is unchanged at version `a34dba09`, protocol 3): web app `https://pixwagon.pages.dev` (Pages) · room worker `https://pixwagon-app.tmsso.workers.dev`. Live-verified: the served bundle is the local build's (`index-DHZ1MApG.js`), contains the new copy and no preview origin; `/health` → `protocolVersion: 3`; one production room with two headless browsers — the guest got no Start button, the host started, both reached "Round 1" with chips saying "placing", no page errors. The 2026-10-22 deploy's longer check (own-board, picture 2, daily) was not repeated.
 
