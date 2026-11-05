@@ -508,7 +508,9 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
     })),
   toggleBlobCell: (cell) =>
     set((state) => ({
-      pending: updatePending(state.pending, (c) => toggleBlobPendingCell(c, cell)),
+      pending: updatePending(state.pending, (c) =>
+        toggleBlobPendingCell(c, cell, actable(state)?.board),
+      ),
     })),
   clearActive: () =>
     set((state) => ({ pending: updatePending(state.pending, clearActivePending) })),

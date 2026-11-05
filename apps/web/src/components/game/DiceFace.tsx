@@ -14,23 +14,30 @@ export interface DiceFaceProps {
 }
 
 const SIZE = { sm: 'size-8 p-1', md: 'size-12 p-1.5', lg: 'size-16 p-2' } as const;
-const DOT_GAP = { sm: 'gap-0.5', md: 'gap-1', lg: 'gap-1' } as const;
+const DOT_GAP = { sm: 'gap-0.5', md: 'gap-1', lg: 'gap-1.5' } as const;
 
 function faceLabel(face: FallbackFace): string {
   return typeof face === 'number' ? `${face}` : `${face[0]}+${face[1]}`;
 }
 
-/** A run of small filled squares — a count, not a fixed shape (see FallbackFace). */
-function BlobDots({ count, size }: { count: number; size: 'sm' | 'md' | 'lg' }) {
-  const dot = size === 'sm' ? 'size-1' : 'size-1.5';
+/**
+ * A blob as one connected run of squares, touching like a piece's cells do in
+ * `PieceGlyph` — a count, not a fixed shape (see FallbackFace). Pass 04: this
+ * used to be a row of separated round dots, so a `2` read as "two 1×1 squares"
+ * when it means one connected group of two (the owner's "doesn't fit" report).
+ */
+function BlobRun({ count, size }: { count: number; size: 'sm' | 'md' | 'lg' }) {
+  const cell = RUN_CELL[size];
   return (
-    <span className={['flex', DOT_GAP[size]].join(' ')}>
+    <span className="flex gap-px">
       {Array.from({ length: count }, (_, i) => (
-        <span key={i} className={[dot, 'rounded-sm bg-ink'].join(' ')} />
+        <span key={i} className={[cell, 'rounded-[1px] bg-ink'].join(' ')} />
       ))}
     </span>
   );
 }
+
+const RUN_CELL = { sm: 'size-1.5', md: 'size-2.5', lg: 'size-3' } as const;
 
 export function DiceFace({ face, rolling = false, size = 'md' }: DiceFaceProps) {
   return (
@@ -44,12 +51,12 @@ export function DiceFace({ face, rolling = false, size = 'md' }: DiceFaceProps) 
       ].join(' ')}
     >
       {typeof face === 'number' ? (
-        <BlobDots count={face} size={size} />
+        <BlobRun count={face} size={size} />
       ) : (
         <span className={['flex flex-col items-center', DOT_GAP[size]].join(' ')}>
-          <BlobDots count={face[0]} size={size} />
+          <BlobRun count={face[0]} size={size} />
           <span className="h-px w-full bg-border" />
-          <BlobDots count={face[1]} size={size} />
+          <BlobRun count={face[1]} size={size} />
         </span>
       )}
     </div>

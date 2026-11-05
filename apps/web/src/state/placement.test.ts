@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Roll } from '@pixwagon/game-core';
+import type { Board, CellState, Roll } from '@pixwagon/game-core';
 import {
   activeCandidateCells,
   candidateCells,
@@ -13,6 +13,9 @@ import {
   startPair,
   toggleBlobCell,
   toMoveChoice,
+  pendingProblem,
+  problemText,
+  type PendingChoice,
 } from './placement.ts';
 
 const pairRoll: Roll = { round: 1, seed: 's', pair: ['domino', 'monomino'], fallback: '1+2' };
@@ -119,13 +122,38 @@ describe('fallback blob placement', () => {
     expect(candidateCells(choice)).toEqual([]);
   });
 
-  it('refuses a cell past the blob size instead of overflowing it', () => {
-    let choice = startFallback(pairRoll);
-    // active blob is the size-1 one
+  it('a full blob hands the next tap to the next blob (compound faces)', () => {
+    let choice = startFallback(pairRoll); // blobs [1, 2]
     choice = toggleBlobCell(choice, { x: 0, y: 0 });
     choice = toggleBlobCell(choice, { x: 9, y: 9 });
     if (choice.kind !== 'fallback') throw new Error('unreachable');
     expect(choice.blobs[0]?.cells).toEqual([{ x: 0, y: 0 }]);
+    expect(choice.blobs[1]?.cells).toEqual([{ x: 9, y: 9 }]);
+    expect(choice.active).toBe(1);
+  });
+
+  it('a tap that does not touch the active blob restarts it there', () => {
+    const roll: Roll = { ...pairRoll, fallback: '3' };
+    let choice = startFallback(roll);
+    choice = toggleBlobCell(choice, { x: 1, y: 1 });
+    choice = toggleBlobCell(choice, { x: 2, y: 1 });
+    choice = toggleBlobCell(choice, { x: 6, y: 6 });
+    expect(candidateCells(choice)).toEqual([{ x: 6, y: 6 }]);
+  });
+
+  it('removing a square that splits a blob keeps the larger part', () => {
+    const roll: Roll = { ...pairRoll, fallback: '3' };
+    let choice = startFallback(roll);
+    for (const x of [1, 2, 3]) choice = toggleBlobCell(choice, { x, y: 1 });
+    choice = toggleBlobCell(choice, { x: 2, y: 1 });
+    expect(candidateCells(choice)).toHaveLength(1);
+  });
+
+  it('ignores taps on squares that cannot be filled when given the board', () => {
+    const roll: Roll = { ...pairRoll, fallback: '2' };
+    const board = twoHoleBoard();
+    const choice = toggleBlobCell(startFallback(roll), { x: 0, y: 0 }, board);
+    expect(candidateCells(choice)).toEqual([]);
   });
 
   it('is complete once every blob has its required cell count', () => {
@@ -166,5 +194,63 @@ describe('fallback blob placement', () => {
         { x: 5, y: 6 },
       ],
     ]);
+  });
+});
+
+/** The owner's report (2026-11-05): two lone 1×1 holes surrounded by filled
+ *  squares. 5×3, everything filled except (1,1) and (3,1). */
+function twoHoleBoard(): Board {
+  const cells: CellState[] = Array.from({ length: 15 }, () => 'filled');
+  cells[1 * 5 + 1] = 'fillable';
+  cells[1 * 5 + 3] = 'fillable';
+  return { size: { width: 5, height: 3 }, packId: 'test', pictureId: 'test', cells };
+}
+
+describe('the two-lone-holes report (pass 04)', () => {
+  it('a 2 is one connected group: two holes that do not touch cannot both be staged', () => {
+    const roll: Roll = { ...pairRoll, fallback: '2' };
+    let choice = startFallback(roll);
+    choice = toggleBlobCell(choice, { x: 1, y: 1 }, twoHoleBoard());
+    choice = toggleBlobCell(choice, { x: 3, y: 1 }, twoHoleBoard());
+    // The second tap restarts the group rather than composing an illegal move.
+    expect(candidateCells(choice)).toEqual([{ x: 3, y: 1 }]);
+    expect(pendingProblem(twoHoleBoard(), roll, choice)).toBe('incomplete');
+  });
+
+  it('Place is gated on the rules engine, not on the square count', () => {
+    const roll: Roll = { ...pairRoll, fallback: '2' };
+    // Composed without the board's help (as an older client could): the
+    // count is right, the move is still not legal.
+    const choice: PendingChoice = {
+      kind: 'fallback',
+      blobs: [
+        {
+          size: 2,
+          cells: [
+            { x: 1, y: 1 },
+            { x: 3, y: 1 },
+          ],
+        },
+      ],
+      active: 0,
+    };
+    expect(isPendingComplete(choice)).toBe(true);
+    expect(pendingProblem(twoHoleBoard(), roll, choice)).toBe('blob-not-contiguous');
+    expect(problemText('blob-not-contiguous')).toMatch(/touch/);
+  });
+
+  it('a 1 fills one lone hole and is legal', () => {
+    const roll: Roll = { ...pairRoll, fallback: '1' };
+    const choice = toggleBlobCell(startFallback(roll), { x: 1, y: 1 }, twoHoleBoard());
+    expect(pendingProblem(twoHoleBoard(), roll, choice)).toBeNull();
+  });
+
+  it('a 1+2 no longer drops the second tap', () => {
+    const roll: Roll = { ...pairRoll, fallback: '1+2' };
+    let choice = startFallback(roll);
+    choice = toggleBlobCell(choice, { x: 0, y: 0 });
+    choice = toggleBlobCell(choice, { x: 4, y: 0 });
+    choice = toggleBlobCell(choice, { x: 4, y: 1 });
+    expect(isPendingComplete(choice)).toBe(true);
   });
 });
