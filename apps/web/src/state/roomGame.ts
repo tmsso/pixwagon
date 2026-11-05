@@ -15,7 +15,7 @@ import {
   clearActive as clearActivePending,
   isPendingComplete,
   mirrorActivePiece,
-  placeActiveOrigin as placeActivePendingOrigin,
+  placeActive as placeActivePending,
   type PendingChoice,
   rotateActivePiece,
   setActive as setActivePending,
@@ -391,7 +391,7 @@ export interface RoomGameState extends RoomGameSlice {
   setActive: (index: number) => void;
   rotateActive: () => void;
   mirrorActive: () => void;
-  placeActiveOrigin: (cell: CellRef) => void;
+  placeActive: (cell: CellRef) => void;
   toggleBlobCell: (cell: CellRef) => void;
   clearActive: () => void;
   cancelChoice: () => void;
@@ -502,9 +502,9 @@ export const useRoomGameStore = create<RoomGameState>((set, get) => ({
     set((state) => ({ pending: updatePending(state.pending, rotateActivePiece) })),
   mirrorActive: () =>
     set((state) => ({ pending: updatePending(state.pending, mirrorActivePiece) })),
-  placeActiveOrigin: (cell) =>
+  placeActive: (cell) =>
     set((state) => ({
-      pending: updatePending(state.pending, (c) => placeActivePendingOrigin(c, cell)),
+      pending: updatePending(state.pending, (c) => placeActivePending(c, cell)),
     })),
   toggleBlobCell: (cell) =>
     set((state) => ({
