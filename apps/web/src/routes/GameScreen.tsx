@@ -12,7 +12,9 @@ import { Button } from '../components/ui/Button.tsx';
 import { useFitCellSize } from '../design/boardScale.ts';
 import { FINE_POINTER, WIDE_LAYOUT, useMediaQuery } from '../design/useMediaQuery.ts';
 import { fallbackHasLegalPlacement, pairHasLegalPlacement } from '../state/legality.ts';
-import { pendingProblem, problemText, type PendingChoice } from '../state/placement.ts';
+import { pendingProblem, problemText } from '../state/placement.ts';
+import { boardHint } from '../state/playHints.ts';
+import { ShortcutLegend } from '../components/game/ShortcutLegend.tsx';
 import { hasStaged } from '../state/playInput.ts';
 import {
   SOLO_PLAYER_ID,
@@ -159,45 +161,5 @@ export function GameScreen() {
         {...controls.board}
       />
     </PlayTable>
-  );
-}
-
-/** The one line under the board: what the pointer does right now. */
-export function boardHint(pending: PendingChoice | null, finePointer: boolean): string {
-  if (!pending) return '';
-  if (pending.kind === 'fallback') {
-    return finePointer
-      ? 'Click or drag across touching squares to paint them.'
-      : 'Tap or drag across touching squares to paint them.';
-  }
-  const held = pending.pieces[pending.active].at === null;
-  if (finePointer) {
-    return held
-      ? 'Click to drop it. Right-click or R turns it.'
-      : 'Click a piece to pick it up again, or ✓ Place.';
-  }
-  return held
-    ? 'Tap the picture to drop it.'
-    : 'Tap a piece to turn it, drag it to move it, or ✓ Place.';
-}
-
-export function ShortcutLegend() {
-  const rows: [string, string][] = [
-    ['Click / drag', 'pick up and drop'],
-    ['Right-click · R · wheel', 'turn'],
-    ['Shift + right-click · F', 'flip'],
-    ['Backspace', 'undo'],
-    ['Enter · double-click', 'place'],
-    ['Esc', 'put everything back'],
-  ];
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-ink-muted">
-      {rows.map(([keys, what]) => (
-        <div key={keys} className="contents">
-          <dt className="font-mono text-ink">{keys}</dt>
-          <dd>{what}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }
