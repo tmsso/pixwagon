@@ -9,7 +9,7 @@ import {
   isPendingComplete,
   mirrorActivePiece,
   pendingCellCount,
-  placeActiveOrigin as placeActivePendingOrigin,
+  placeActive as placeActivePending,
   type PendingChoice,
   rotateActivePiece,
   setActive as setActivePending,
@@ -77,7 +77,7 @@ export interface SoloGameState {
   setActive: (index: number) => void;
   rotateActive: () => void;
   mirrorActive: () => void;
-  placeActiveOrigin: (cell: CellRef) => void;
+  placeActive: (cell: CellRef) => void;
   toggleBlobCell: (cell: CellRef) => void;
   /** Undo before commit (ROADMAP.md Phase 2) — clears the active piece's
    *  placement or the active blob's cells, not the whole pending choice. */
@@ -170,9 +170,9 @@ export const useSoloGameStore = create<SoloGameState>((set, get) => ({
     set((state) => ({ pending: updatePending(state.pending, rotateActivePiece) })),
   mirrorActive: () =>
     set((state) => ({ pending: updatePending(state.pending, mirrorActivePiece) })),
-  placeActiveOrigin: (cell) =>
+  placeActive: (cell) =>
     set((state) => ({
-      pending: updatePending(state.pending, (c) => placeActivePendingOrigin(c, cell)),
+      pending: updatePending(state.pending, (c) => placeActivePending(c, cell)),
     })),
   toggleBlobCell: (cell) =>
     set((state) => ({

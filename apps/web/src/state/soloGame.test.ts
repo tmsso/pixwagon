@@ -3,6 +3,7 @@ import { FALLBACK_BLOB_SIZES, createBoard, issueRoll, legalCellsFor } from '@pix
 import type { Board, CellRef, Orientation } from '@pixwagon/game-core';
 import { absolutePieceCells } from './legality.ts';
 import { loadHistory } from './history.ts';
+import { orientedOffsets } from './placement.ts';
 import { initialSoloConfig, useSoloGameStore } from './soloGame.ts';
 
 describe('initialSoloConfig', () => {
@@ -120,7 +121,7 @@ function driveOrientation(target: Orientation) {
 describe('the store round loop, replayed against the Phase 1 achievability-0 witness', () => {
   it('reaches picture completion using only the public store actions a real UI would call', () => {
     // Same greedy strategy as game-core's own achievability test
-    // (moves.test.ts), driven through choose/rotate/mirror/placeActiveOrigin/
+    // (moves.test.ts), driven through choose/rotate/mirror/placeActive/
     // toggleBlobCell/commit instead of calling applyMove directly — this is
     // the test that would have caught Phase 2 slice A shipping the store's
     // rounds 1-indexed while issueRoll/Move.round are 0-indexed (rng.md):
@@ -157,10 +158,10 @@ describe('the store round loop, replayed against the Phase 1 achievability-0 wit
 
           useSoloGameStore.getState().choose('pair');
           driveOrientation(pa.orientation);
-          useSoloGameStore.getState().placeActiveOrigin(pa.origin);
+          placeAtOrigin(pa.origin);
           useSoloGameStore.getState().setActive(1);
           driveOrientation(pb.orientation);
-          useSoloGameStore.getState().placeActiveOrigin(pb.origin);
+          placeAtOrigin(pb.origin);
           useSoloGameStore.getState().commit();
           applied = true;
           break outer;
@@ -204,3 +205,14 @@ describe('the store round loop, replayed against the Phase 1 achievability-0 wit
     vi.unstubAllGlobals();
   });
 });
+
+/** The witness strategy thinks in game-core origins (bounding-box top-left);
+ *  the store thinks in anchors (pass 04) — convert through the active piece. */
+function placeAtOrigin(origin: CellRef) {
+  const state = useSoloGameStore.getState();
+  const pending = state.pending;
+  if (pending?.kind !== 'pair') throw new Error('expected a pair being composed');
+  const piece = pending.pieces[pending.active];
+  const offset = orientedOffsets(piece.pieceId, piece.orientation)[piece.anchor]!;
+  state.placeActive({ x: origin.x + offset.dx, y: origin.y + offset.dy });
+}

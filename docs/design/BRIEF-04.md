@@ -109,7 +109,9 @@ one up, aim it at the board, drop it, and confirm.**
   piece fits where it is.
 - **The anchor is a piece cell.** The cell under the pointer (or the tapped cell)
   is always one of the piece's own cells: the grabbed cell, or by default the
-  piece's first cell in reading order. Turning and flipping pivot on the anchor,
+  cell nearest the middle of the piece (decided while building, 2026-11-05: the
+  first cell in reading order put the pointer on a corner of long pieces).
+  Turning and flipping pivot on the anchor,
   so the ghost never jumps away from the pointer.
 - **Dropping stages the piece.** It is not sent yet. A staged piece can be picked
   up again, moved, turned or flipped.

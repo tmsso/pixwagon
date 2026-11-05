@@ -1,19 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import type { Board, CellState, Roll } from '@pixwagon/game-core';
+import { ALL_ORIENTATIONS, SHAPE_LIBRARY, cellsAt } from '@pixwagon/game-core';
+import type { Board, CellRef, CellState, Roll } from '@pixwagon/game-core';
 import {
   activeCandidateCells,
   candidateCells,
   clearActive,
   isPendingComplete,
   mirrorActivePiece,
-  placeActiveOrigin,
+  placeActive,
   rotateActivePiece,
   setActive,
   startFallback,
   startPair,
   toggleBlobCell,
   toMoveChoice,
+  defaultAnchor,
+  originFor,
   pendingProblem,
+  pieceCellsAt,
   problemText,
   type PendingChoice,
 } from './placement.ts';
@@ -29,17 +33,17 @@ describe('pair placement', () => {
 
   it('placing the active piece auto-advances focus to the other unplaced piece', () => {
     let choice = startPair(pairRoll);
-    choice = placeActiveOrigin(choice, { x: 2, y: 3 });
+    choice = placeActive(choice, { x: 2, y: 3 });
     expect(choice.kind).toBe('pair');
     if (choice.kind !== 'pair') throw new Error('unreachable');
-    expect(choice.pieces[0].origin).toEqual({ x: 2, y: 3 });
+    expect(choice.pieces[0].at).toEqual({ x: 2, y: 3 });
     expect(choice.active).toBe(1);
   });
 
   it('is complete once both pieces have an origin', () => {
     let choice = startPair(pairRoll);
-    choice = placeActiveOrigin(choice, { x: 0, y: 0 });
-    choice = placeActiveOrigin(choice, { x: 5, y: 5 });
+    choice = placeActive(choice, { x: 0, y: 0 });
+    choice = placeActive(choice, { x: 5, y: 5 });
     expect(isPendingComplete(choice)).toBe(true);
   });
 
@@ -60,17 +64,17 @@ describe('pair placement', () => {
 
   it("clearActive undoes only the active piece's placement", () => {
     let choice = startPair(pairRoll);
-    choice = placeActiveOrigin(choice, { x: 1, y: 1 }); // places piece 0, advances to piece 1
+    choice = placeActive(choice, { x: 1, y: 1 }); // places piece 0, advances to piece 1
     choice = setActive(choice, 0);
     choice = clearActive(choice);
     if (choice.kind !== 'pair') throw new Error('unreachable');
-    expect(choice.pieces[0].origin).toBeNull();
+    expect(choice.pieces[0].at).toBeNull();
   });
 
   it('builds the atomic MoveChoice once complete', () => {
     let choice = startPair(pairRoll);
-    choice = placeActiveOrigin(choice, { x: 0, y: 0 });
-    choice = placeActiveOrigin(choice, { x: 4, y: 4 });
+    choice = placeActive(choice, { x: 0, y: 0 });
+    choice = placeActive(choice, { x: 4, y: 4 });
     const move = toMoveChoice(choice);
     expect(move.kind).toBe('pair');
     if (move.kind !== 'pair') throw new Error('unreachable');
@@ -84,8 +88,8 @@ describe('pair placement', () => {
 
   it('activeCandidateCells is only the active piece, and is a subset of candidateCells', () => {
     let choice = startPair(pairRoll); // pair: domino (2 cells) + monomino (1 cell)
-    choice = placeActiveOrigin(choice, { x: 2, y: 3 }); // places piece 0, active -> 1
-    choice = placeActiveOrigin(choice, { x: 7, y: 7 }); // places piece 1, still active 1
+    choice = placeActive(choice, { x: 2, y: 3 }); // places piece 0, active -> 1
+    choice = placeActive(choice, { x: 7, y: 7 }); // places piece 1, still active 1
 
     const all = candidateCells(choice);
     const active = activeCandidateCells(choice);
@@ -254,3 +258,51 @@ describe('the two-lone-holes report (pass 04)', () => {
     expect(isPendingComplete(choice)).toBe(true);
   });
 });
+
+describe('anchors (pass 04): the tapped square is always part of the piece', () => {
+  const at = { x: 6, y: 6 };
+  for (const piece of SHAPE_LIBRARY) {
+    for (const orientation of ALL_ORIENTATIONS) {
+      const label = `${piece.id} ${orientation.rotation}°${orientation.mirrored ? ' mirrored' : ''}`;
+      it(`${label}: every anchor covers the tapped square and agrees with game-core`, () => {
+        piece.cells.forEach((_, anchor) => {
+          const pending = { pieceId: piece.id, orientation, anchor };
+          const cells = pieceCellsAt(pending, at);
+          expect(cells).toContainEqual(at);
+          // The wire origin reproduces exactly the same squares in game-core.
+          const origin = originFor(pending, at);
+          const viaCore = cellsAt(piece, orientation).map((o) => ({
+            x: origin.x + o.dx,
+            y: origin.y + o.dy,
+          }));
+          expect(sortCells(viaCore)).toEqual(sortCells(cells));
+        });
+      });
+    }
+  }
+
+  it('turning and flipping a staged piece pivot on its anchor', () => {
+    const roll: Roll = { round: 1, seed: 's', pair: ['tetromino-s', 'tetromino-t'], fallback: '1' };
+    let choice = setActive(startPair(roll), 0);
+    choice = placeActive(choice, at);
+    choice = setActive(choice, 0);
+    for (let i = 0; i < 4; i += 1) {
+      choice = rotateActivePiece(choice);
+      expect(activeCandidateCells(choice)).toContainEqual(at);
+    }
+    choice = mirrorActivePiece(choice);
+    expect(activeCandidateCells(choice)).toContainEqual(at);
+  });
+
+  it('the default anchor sits inside the piece, near its middle', () => {
+    // The S tetromino's bounding-box top-left (0,0) is empty; its handle is not.
+    const s = SHAPE_LIBRARY.find((p) => p.id === 'tetromino-s')!;
+    const handle = s.cells[defaultAnchor('tetromino-s')]!;
+    expect([handle.dx, handle.dy]).not.toEqual([0, 0]);
+    expect(defaultAnchor('monomino')).toBe(0);
+  });
+});
+
+function sortCells(cells: readonly CellRef[]): CellRef[] {
+  return [...cells].sort((a, b) => a.y - b.y || a.x - b.x);
+}

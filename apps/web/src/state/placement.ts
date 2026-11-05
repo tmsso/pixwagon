@@ -9,7 +9,6 @@ import type {
   PieceId,
   Roll,
 } from '@pixwagon/game-core';
-import { absolutePieceCells } from './legality.ts';
 
 /**
  * The pending, not-yet-committed choice a player is composing this round —
@@ -24,8 +23,19 @@ const CANONICAL_ORIENTATION: Orientation = { rotation: 0, mirrored: false };
 export interface PendingPiece {
   pieceId: PieceId;
   orientation: Orientation;
-  /** Where the piece is anchored; `null` until the player taps the board. */
-  origin: CellRef | null;
+  /**
+   * Which of the piece's own cells is "the handle" — an index into the
+   * piece's canonical cells (`getPiece(id).cells`), so it names the same
+   * physical square whatever the orientation. Pass 04 (BRIEF-04 note 2): the
+   * square under the pointer is always this cell. Before, a tap set the
+   * piece's bounding-box top-left, which for S, T and L shapes in some
+   * orientations isn't part of the piece, so the piece landed beside the tap.
+   */
+  anchor: number;
+  /** The board square the anchor sits on; `null` while the piece is off the
+   *  board (in the tray, or held). Turning and flipping keep this fixed, so a
+   *  piece pivots on its handle instead of jumping. */
+  at: CellRef | null;
 }
 
 export interface PendingBlob {
@@ -39,13 +49,83 @@ export type PendingChoice =
   | { kind: 'pair'; pieces: readonly [PendingPiece, PendingPiece]; active: 0 | 1 }
   | { kind: 'fallback'; blobs: readonly PendingBlob[]; active: number };
 
+function newPiece(pieceId: PieceId): PendingPiece {
+  return { pieceId, orientation: CANONICAL_ORIENTATION, anchor: defaultAnchor(pieceId), at: null };
+}
+
+/**
+ * The piece's cells at `orientation`, normalized to start at (0, 0) like
+ * game-core's `cellsAt` — but in canonical order rather than sorted, so index
+ * `i` is always the same physical square. That is what lets `anchor` survive a
+ * turn or a flip.
+ */
+export function orientedOffsets(
+  pieceId: PieceId,
+  orientation: Orientation,
+): { dx: number; dy: number }[] {
+  let cells = getPiece(pieceId).cells.map((c) => ({ dx: c.dx, dy: c.dy }));
+  for (let i = 0; i < orientation.rotation / 90; i += 1) {
+    // Same clockwise turn as game-core's shapes.ts (y points down).
+    cells = cells.map(({ dx, dy }) => ({ dx: -dy, dy: dx }));
+  }
+  if (orientation.mirrored) cells = cells.map(({ dx, dy }) => ({ dx: -dx, dy }));
+  const minX = Math.min(...cells.map((c) => c.dx));
+  const minY = Math.min(...cells.map((c) => c.dy));
+  return cells.map((c) => ({ dx: c.dx - minX, dy: c.dy - minY }));
+}
+
+/** The handle a piece starts with: the cell nearest the middle of its
+ *  bounding box (first such cell in reading order on a tie), so the pointer
+ *  sits inside the piece, not on a corner of it. */
+export function defaultAnchor(pieceId: PieceId): number {
+  const cells = getPiece(pieceId).cells;
+  const cx = Math.max(...cells.map((c) => c.dx)) / 2;
+  const cy = Math.max(...cells.map((c) => c.dy)) / 2;
+  let best = 0;
+  let bestDistance = Infinity;
+  cells.forEach((c, index) => {
+    const distance = Math.abs(c.dx - cx) + Math.abs(c.dy - cy);
+    const earlier = c.dy < cells[best]!.dy || (c.dy === cells[best]!.dy && c.dx < cells[best]!.dx);
+    if (distance < bestDistance || (distance === bestDistance && earlier)) {
+      best = index;
+      bestDistance = distance;
+    }
+  });
+  return best;
+}
+
+/** Where game-core's `PiecePlacement.origin` (the bounding-box top-left) is
+ *  for a piece whose anchor sits on `at`. The wire format is unchanged; only
+ *  the client thinks in anchors. */
+export function originFor(
+  piece: Pick<PendingPiece, 'pieceId' | 'orientation' | 'anchor'>,
+  at: CellRef,
+): CellRef {
+  const offset = orientedOffsets(piece.pieceId, piece.orientation)[piece.anchor]!;
+  return { x: at.x - offset.dx, y: at.y - offset.dy };
+}
+
+/** The board squares a piece covers with its anchor on `at`. */
+export function pieceCellsAt(
+  piece: Pick<PendingPiece, 'pieceId' | 'orientation' | 'anchor'>,
+  at: CellRef,
+): CellRef[] {
+  const origin = originFor(piece, at);
+  return orientedOffsets(piece.pieceId, piece.orientation).map((o) => ({
+    x: origin.x + o.dx,
+    y: origin.y + o.dy,
+  }));
+}
+
+/** The squares a staged piece covers, or none while it is off the board. */
+export function stagedPieceCells(piece: PendingPiece): CellRef[] {
+  return piece.at ? pieceCellsAt(piece, piece.at) : [];
+}
+
 export function startPair(roll: Roll): PendingChoice {
   return {
     kind: 'pair',
-    pieces: [
-      { pieceId: roll.pair[0], orientation: CANONICAL_ORIENTATION, origin: null },
-      { pieceId: roll.pair[1], orientation: CANONICAL_ORIENTATION, origin: null },
-    ],
+    pieces: [newPiece(roll.pair[0]), newPiece(roll.pair[1])],
     active: 0,
   };
 }
@@ -89,18 +169,28 @@ export function mirrorActivePiece(choice: PendingChoice): PendingChoice {
   return { ...choice, pieces };
 }
 
-/** Places (or re-places) the active piece's origin. */
-export function placeActiveOrigin(choice: PendingChoice, origin: CellRef): PendingChoice {
+/** Puts the active piece on the board with its anchor on `cell` (or moves it
+ *  there — never a second copy). */
+export function placeActive(choice: PendingChoice, cell: CellRef): PendingChoice {
   if (choice.kind !== 'pair') return choice;
   const pieces = choice.pieces.map((piece, index) =>
-    index === choice.active ? { ...piece, origin } : piece,
+    index === choice.active ? { ...piece, at: cell } : piece,
   ) as [PendingPiece, PendingPiece];
   // Once the active piece is placed, hand focus to whichever piece still
   // isn't — a plain two-tap flow needs no explicit "switch piece" step for
   // the common case; clicking a piece card still overrides this manually.
   const other = choice.active === 0 ? 1 : 0;
-  const active = pieces[other]!.origin === null ? (other as 0 | 1) : choice.active;
+  const active = pieces[other]!.at === null ? (other as 0 | 1) : choice.active;
   return { ...choice, pieces, active };
+}
+
+/** `placeActive` for callers that think in game-core origins — the bots in
+ *  `scripts/` and tests that enumerate `legalCellsFor`. */
+export function placeActiveByOrigin(choice: PendingChoice, origin: CellRef): PendingChoice {
+  if (choice.kind !== 'pair') return choice;
+  const piece = choice.pieces[choice.active];
+  const offset = orientedOffsets(piece.pieceId, piece.orientation)[piece.anchor]!;
+  return placeActive(choice, { x: origin.x + offset.dx, y: origin.y + offset.dy });
 }
 
 function sameCell(a: CellRef, b: CellRef): boolean {
@@ -186,7 +276,7 @@ export function toggleBlobCell(choice: PendingChoice, cell: CellRef, board?: Boa
 export function clearActive(choice: PendingChoice): PendingChoice {
   if (choice.kind === 'pair') {
     const pieces = choice.pieces.map((piece, index) =>
-      index === choice.active ? { ...piece, origin: null } : piece,
+      index === choice.active ? { ...piece, at: null } : piece,
     ) as [PendingPiece, PendingPiece];
     return { ...choice, pieces };
   }
@@ -200,9 +290,7 @@ export function clearActive(choice: PendingChoice): PendingChoice {
  *  renders as `candidate`. */
 export function candidateCells(choice: PendingChoice): CellRef[] {
   if (choice.kind === 'pair') {
-    return choice.pieces
-      .filter((piece): piece is PendingPiece & { origin: CellRef } => piece.origin !== null)
-      .flatMap((piece) => absolutePieceCells(piece.pieceId, piece.orientation, piece.origin));
+    return choice.pieces.flatMap(stagedPieceCells);
   }
   return choice.blobs.flatMap((blob) => blob.cells);
 }
@@ -215,7 +303,7 @@ export function candidateCells(choice: PendingChoice): CellRef[] {
 export function activeCandidateCells(choice: PendingChoice): CellRef[] {
   if (choice.kind === 'pair') {
     const piece = choice.pieces[choice.active];
-    return piece.origin ? absolutePieceCells(piece.pieceId, piece.orientation, piece.origin) : [];
+    return stagedPieceCells(piece);
   }
   return [...(choice.blobs[choice.active]?.cells ?? [])];
 }
@@ -224,7 +312,7 @@ export function activeCandidateCells(choice: PendingChoice): CellRef[] {
  *  legality (fit, overlap, contiguity) is still `applyMove`'s call at
  *  commit time, this only says "there's a complete choice to submit". */
 export function isPendingComplete(choice: PendingChoice): boolean {
-  if (choice.kind === 'pair') return choice.pieces.every((piece) => piece.origin !== null);
+  if (choice.kind === 'pair') return choice.pieces.every((piece) => piece.at !== null);
   return choice.blobs.every((blob) => blob.cells.length === blob.size);
 }
 
@@ -241,14 +329,14 @@ export function pendingCellCount(choice: PendingChoice): number {
 export function toMoveChoice(choice: PendingChoice): MoveChoice {
   if (choice.kind === 'pair') {
     const [a, b] = choice.pieces;
-    if (a.origin === null || b.origin === null) {
+    if (a.at === null || b.at === null) {
       throw new Error('toMoveChoice called on an incomplete pair placement');
     }
     return {
       kind: 'pair',
       placements: [
-        { pieceId: a.pieceId, orientation: a.orientation, origin: a.origin },
-        { pieceId: b.pieceId, orientation: b.orientation, origin: b.origin },
+        { pieceId: a.pieceId, orientation: a.orientation, origin: originFor(a, a.at) },
+        { pieceId: b.pieceId, orientation: b.orientation, origin: originFor(b, b.at) },
       ],
     };
   }

@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { Roll } from '@pixwagon/game-core';
 import {
-  placeActiveOrigin,
+  placeActive,
   setActive,
   startFallback,
   startPair,
@@ -42,7 +42,7 @@ describe('PlacementEditor — pair', () => {
   });
 
   it('shows "On the board" for a placed piece', () => {
-    const markup = html(placeActiveOrigin(startPair(roll), { x: 3, y: 3 }));
+    const markup = html(placeActive(startPair(roll), { x: 3, y: 3 }));
     expect(markup).toContain('On the board');
   });
 
@@ -58,15 +58,15 @@ describe('PlacementEditor — pair', () => {
     // `disabled=""` is the real attribute; the class list also contains the
     // literal "disabled:" Tailwind prefixes, so match the attribute exactly.
     expect(html(startPair(roll))).toMatch(/aria-label="Take back"[^>]*disabled=""/);
-    const placed = html(placeActiveOrigin(startPair(roll), { x: 1, y: 1 }));
+    const placed = html(placeActive(startPair(roll), { x: 1, y: 1 }));
     expect(placed).not.toMatch(/aria-label="Take back"[^>]*disabled=""/);
   });
 
   it('disables the commit button until the choice is complete', () => {
     expect(html(startPair(roll))).toMatch(/disabled=""[^>]*>Place 3 squares</);
 
-    let choice = placeActiveOrigin(startPair(roll), { x: 0, y: 0 });
-    choice = placeActiveOrigin(choice, { x: 5, y: 5 });
+    let choice = placeActive(startPair(roll), { x: 0, y: 0 });
+    choice = placeActive(choice, { x: 5, y: 5 });
     expect(html(choice, true)).not.toMatch(/disabled=""[^>]*>Place 3 squares</);
   });
 });

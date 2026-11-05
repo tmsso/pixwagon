@@ -61,7 +61,7 @@ export function PlacementEditor({
 }: PlacementEditorProps) {
   const isPair = pending.kind === 'pair';
   const anythingPlaced = isPair
-    ? pending.pieces.some((piece) => piece.origin !== null)
+    ? pending.pieces.some((piece) => piece.at !== null)
     : pending.blobs.some((blob) => blob.cells.length > 0);
 
   return (
@@ -78,10 +78,10 @@ export function PlacementEditor({
             <PieceOrBlobCard
               key={index}
               active={pending.active === index}
-              placed={piece.origin !== null}
+              placed={piece.at !== null}
               onSelect={() => onSetActive(index)}
               status={
-                piece.origin
+                piece.at
                   ? 'On the board'
                   : pending.active === index
                     ? 'Tap the board'

@@ -40,7 +40,7 @@ import {
   spacing,
 } from '../../apps/web/src/design/tokens.ts';
 import {
-  placeActiveOrigin,
+  placeActive,
   setActive,
   startFallback,
   startPair,
@@ -673,8 +673,8 @@ export const cards: Card[] = [
         fallback: '1+2',
       };
       const pairFresh = startPair(demoRoll);
-      const pairOneDown = placeActiveOrigin(pairFresh, { x: 3, y: 3 });
-      const pairBothDown = placeActiveOrigin(pairOneDown, { x: 6, y: 6 });
+      const pairOneDown = placeActive(pairFresh, { x: 3, y: 3 });
+      const pairBothDown = placeActive(pairOneDown, { x: 6, y: 6 });
       let singleMidway = toggleBlobCell(startFallback(demoRoll), { x: 2, y: 2 });
       singleMidway = toggleBlobCell(setActive(singleMidway, 1), { x: 5, y: 5 });
 

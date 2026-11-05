@@ -203,7 +203,7 @@ function RoomGame({ snapshot }: { snapshot: RoomSnapshot }) {
   function handleCellPress(cell: CellRef) {
     // `pending` only exists while this player can act (`choose` checks).
     if (!pending) return;
-    if (pending.kind === 'pair') store.placeActiveOrigin(cell);
+    if (pending.kind === 'pair') store.placeActive(cell);
     else store.toggleBlobCell(cell);
   }
 

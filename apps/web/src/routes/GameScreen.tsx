@@ -41,7 +41,7 @@ export function GameScreen() {
   const setActive = useSoloGameStore((state) => state.setActive);
   const rotateActive = useSoloGameStore((state) => state.rotateActive);
   const mirrorActive = useSoloGameStore((state) => state.mirrorActive);
-  const placeActiveOrigin = useSoloGameStore((state) => state.placeActiveOrigin);
+  const placeActive = useSoloGameStore((state) => state.placeActive);
   const toggleBlobCell = useSoloGameStore((state) => state.toggleBlobCell);
   const clearActive = useSoloGameStore((state) => state.clearActive);
   const cancelChoice = useSoloGameStore((state) => state.cancelChoice);
@@ -60,7 +60,7 @@ export function GameScreen() {
 
   function handleCellPress(cell: CellRef) {
     if (!pending) return;
-    if (pending.kind === 'pair') placeActiveOrigin(cell);
+    if (pending.kind === 'pair') placeActive(cell);
     else toggleBlobCell(cell);
   }
 
